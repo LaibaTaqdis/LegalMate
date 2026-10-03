@@ -1,0 +1,82 @@
+/* =========================================================
+   LAWYER PORTAL
+   ========================================================= */
+.lp { display: flex; flex-direction: column; gap: 18px; }
+.lp .page-title { margin-top: 4px; }
+
+.lp-pending-banner {
+  display: flex; align-items: center; gap: 16px; padding: 16px 20px; border-radius: 12px;
+  background: var(--amber-50); border: 1px solid var(--amber-200); color: #9a6400;
+}
+.lp-pending-banner div { display: flex; flex-direction: column; gap: 3px; }
+.lp-pending-banner b { font-size: 14.5px; color: var(--ink); }
+.lp-pending-banner span { font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+.lp-rejected-banner { background: var(--red-50); border-color: var(--red-100); color: var(--red); }
+
+.lp-upcoming { display: flex; flex-direction: column; }
+.lp-list { list-style: none; display: flex; flex-direction: column; margin-top: 4px; }
+.lp-row { display: flex; align-items: center; gap: 14px; padding: 11px 0; border-bottom: 1px solid var(--line-2); }
+.lp-row:last-child { border-bottom: 0; }
+.lp-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.lp-row-main b { font-size: 13.5px; font-weight: 600; }
+.lp-row-main span { font-size: 12.5px; color: var(--muted); }
+.lp-row-time { font-size: 13px; color: var(--ink-2); white-space: nowrap; }
+
+.lp-profile-grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.lp-sidebar { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 84px; }
+
+.lp-status { display: flex; align-items: flex-start; gap: 14px; }
+.lp-status div { display: flex; flex-direction: column; gap: 6px; }
+.lp-status p { margin: 0; line-height: 1.5; }
+
+.lp-form { display: flex; flex-direction: column; gap: 16px; }
+.lp-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.lp-fee-preview { font-size: 13.5px; color: var(--ink-2); }
+.lp-fee-preview b { color: var(--ink); }
+.lp-save-btn { align-self: flex-start; padding: 0 28px; }
+
+.lp-avail-title { display: flex; align-items: center; gap: 9px; }
+.lp-avail-title svg { color: var(--navy-800); }
+.lp-avail-sub { margin: 6px 0 14px; line-height: 1.5; }
+.lp-avail-label { display: block; margin: 14px 0 8px; }
+.lp-avail-label:first-of-type { margin-top: 0; }
+.lp-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.lp-day { height: 38px; border-radius: 8px; border: 1px solid var(--line); font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.lp-day:hover { border-color: #c9d3e1; }
+.lp-day.active { background: var(--orange); border-color: var(--orange); color: #1b1300; }
+.lp-slots { display: flex; flex-wrap: wrap; gap: 8px; min-height: 24px; }
+.lp-slot { gap: 6px; padding-right: 6px; }
+.lp-slot button { display: inline-grid; place-items: center; color: inherit; opacity: .7; }
+.lp-slot button:hover { opacity: 1; }
+.lp-add-slot { display: flex; gap: 8px; margin-top: 10px; }
+.lp-add-slot .input { height: 36px; font-size: 13px; }
+.lp-add-slot .btn { flex: none; height: 36px; }
+
+.lp-consult-list { display: flex; flex-direction: column; gap: 10px; }
+.lp-consult-card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; }
+.lp-consult-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.lp-consult-main b { font-size: 14px; font-weight: 600; }
+.lp-consult-main span { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
+.lp-consult-main span i { font-style: normal; color: var(--muted-2); }
+.lp-consult-side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.lp-consult-fee { font-size: 14px; font-weight: 700; color: var(--ink); }
+
+.lp-pay-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.lp-history-title { margin-bottom: 10px; }
+.lp-pay-list { display: flex; flex-direction: column; }
+.lp-pay-row { display: flex; align-items: center; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line-2); }
+.lp-pay-row:last-child { border-bottom: 0; }
+.lp-pay-row > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.lp-pay-row > div b { font-size: 13.5px; font-weight: 600; }
+.lp-pay-row > div span { font-size: 12.5px; color: var(--muted); }
+.lp-pay-amount { font-size: 14px; font-weight: 700; color: var(--ink); }
+
+@media (max-width: 1240px) {
+  .lp-profile-grid { grid-template-columns: 1fr; }
+  .lp-sidebar { position: static; }
+}
+@media (max-width: 900px) {
+  .lp-form-row, .lp-pay-tiles { grid-template-columns: 1fr; }
+  .lp-consult-card { flex-wrap: wrap; }
+  .lp-days { grid-template-columns: repeat(4, 1fr); }
+}

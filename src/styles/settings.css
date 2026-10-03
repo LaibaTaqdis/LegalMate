@@ -1,0 +1,62 @@
+/* =========================================================
+   SETTINGS
+   ========================================================= */
+.st-grid { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 16px; margin-top: 18px; align-items: start; }
+.st-nav { padding: 16px 12px; }
+.st-user { display: flex; align-items: center; gap: 12px; padding: 4px 8px 16px; margin-bottom: 8px; border-bottom: 1px solid var(--line-2); }
+.st-avatar { width: 48px; height: 48px; font-size: 16px; }
+.st-user div { display: flex; flex-direction: column; }
+.st-user b { font-size: 15px; }
+.st-user span { font-size: 12.5px; color: var(--muted); }
+.st-nav ul { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.st-nav li button { display: flex; align-items: center; gap: 14px; width: 100%; padding: 11px 10px; border-radius: 8px; text-align: left; color: var(--navy-800); }
+.st-nav li button:hover { background: var(--bg-2); }
+.st-nav li button.active { background: #e8f0fc; }
+.st-nav li button span { flex: 1; display: flex; flex-direction: column; }
+.st-nav li button b { font-size: 14px; font-weight: 600; color: var(--ink); }
+.st-nav li button small { font-size: 12px; color: var(--muted); }
+.st-nav li button > svg:last-child { color: var(--muted-2); }
+.st-logout { display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 10px; padding: 12px 10px; border-top: 1px solid var(--line-2); color: var(--red); font-weight: 600; font-size: 14px; }
+.st-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.st-card { padding: 20px 22px; }
+.st-card-head { margin-bottom: 16px; }
+.st-card-head h2 { font-size: 19px; font-weight: 700; }
+.st-card-head p { margin-top: 4px; font-size: 13.5px; color: var(--muted); }
+.st-photo { display: flex; align-items: center; gap: 16px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 18px; }
+.st-avatar-lg { width: 64px; height: 64px; font-size: 20px; }
+.st-photo div { flex: 1; display: flex; flex-direction: column; }
+.st-photo b { font-size: 14px; }
+.st-photo span { font-size: 12.5px; color: var(--muted); }
+.st-form { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 18px; }
+.st-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; }
+.st-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 14px 0; border-bottom: 1px solid var(--line-2); }
+.st-row:last-child { border-bottom: 0; }
+.st-row > div:first-child { display: flex; flex-direction: column; gap: 2px; }
+.st-row b { font-size: 14px; font-weight: 600; }
+.st-row span { font-size: 12.5px; color: var(--muted); }
+.st-select { width: 280px; }
+.st-h3 { margin: 16px 0 2px; font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.st-session, .st-app { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-top: 1px solid var(--line-2); }
+.st-session > svg { color: var(--navy-800); }
+.st-session div, .st-app div { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.st-session b, .st-app b { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.st-session span:not(.pill), .st-app span { font-size: 12.5px; color: var(--muted); }
+.st-g { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); }
+.st-storage { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--line-2); }
+.st-storage > svg { color: var(--navy-800); }
+.st-storage > div { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.st-storage b { font-size: 14px; }
+.st-storage span { font-size: 12.5px; color: var(--muted); }
+.st-storage .progress { max-width: 360px; }
+.st-themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 8px; }
+.st-themes .depth { align-items: center; }
+.st-themes .depth > svg { color: var(--navy-800); }
+
+@media (max-width: 1000px) {
+  .st-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .st-form, .st-themes { grid-template-columns: 1fr; }
+  .st-row { flex-direction: column; align-items: flex-start; }
+  .st-select { width: 100%; }
+}

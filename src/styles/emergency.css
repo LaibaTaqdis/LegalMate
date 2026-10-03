@@ -1,0 +1,73 @@
+/* =========================================================
+   EMERGENCY MODE
+   ========================================================= */
+.em { display: flex; flex-direction: column; gap: 22px; }
+.em .page-title { margin-top: 4px; }
+
+.em-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 16px; align-items: stretch; }
+
+.em-sos {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 26px 28px;
+  border-radius: var(--radius-lg); color: #fff; background: linear-gradient(135deg, #d92b2b, #a91d1d);
+  box-shadow: var(--shadow-lg);
+}
+.em-sos-ring {
+  display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%;
+  background: rgba(255, 255, 255, .16); border: 1.5px solid rgba(255, 255, 255, .4);
+}
+.em-sos h2 { font-family: var(--font-display); font-size: 22px; font-weight: 800; letter-spacing: -.01em; }
+.em-sos p { font-size: 13.5px; line-height: 1.5; color: rgba(255, 255, 255, .88); max-width: 420px; }
+.em-sos-btn { margin-top: 6px; background: #fff; color: #a91d1d; }
+.em-sos-btn:hover { background: #ffe9e9; }
+.em-sos-hint { font-size: 12px; color: rgba(255, 255, 255, .8); }
+
+.em-quick { display: flex; flex-direction: column; gap: 10px; }
+.em-qcard { display: flex; align-items: center; gap: 14px; padding: 14px 16px; text-align: left; flex: 1; transition: border-color .15s, box-shadow .15s; }
+.em-qcard:hover { box-shadow: var(--shadow-md); }
+.em-qcard.on { border-color: var(--green); background: var(--green-50); }
+.em-qcard div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.em-qcard b { font-size: 14px; font-weight: 700; }
+.em-qcard span { font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+.em-qcard i { font-style: normal; font-size: 12.5px; font-weight: 600; color: var(--blue); }
+
+.em-section-title { margin-bottom: 12px; }
+.em-cat-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.em-cat { padding: 16px; }
+.em-cat-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.em-cat-head b { font-size: 14.5px; }
+.em-cat ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.em-cat li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 8px; border-top: 1px solid var(--line-2); font-size: 13px; color: var(--ink-2); }
+.em-cat li:first-child { padding-top: 0; border-top: 0; }
+.em-num { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--red); white-space: nowrap; }
+.em-num:hover { text-decoration: underline; }
+
+.em-empty { padding: 10px 2px; }
+.em-contact-list { list-style: none; display: flex; flex-direction: column; margin-top: 10px; }
+.em-contact { display: flex; align-items: center; gap: 14px; padding: 12px 4px; border-bottom: 1px solid var(--line-2); }
+.em-contact:last-child { border-bottom: 0; }
+.em-contact-main { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.em-contact-main b { font-size: 14px; font-weight: 600; }
+.em-contact-main span { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); }
+.em-primary { height: 20px; font-size: 10.5px; padding: 0 8px; }
+.em-contact-phone { font-size: 13px; color: var(--ink-2); white-space: nowrap; }
+.em-remove { color: var(--muted); }
+.em-remove:hover { color: var(--red); }
+
+.em-confirm-body { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 28px 26px; }
+.em-confirm-body h3 { font-size: 19px; font-weight: 700; }
+.em-confirm-body p { font-size: 13.5px; color: var(--ink-2); line-height: 1.5; }
+.em-confirm-btns { display: flex; gap: 12px; margin-top: 10px; width: 100%; }
+.em-confirm-btns .btn { flex: 1; }
+
+.em-add-form { display: flex; flex-direction: column; gap: 14px; padding: 20px; }
+.em-add-head { display: flex; align-items: center; justify-content: space-between; }
+.em-add-head b { font-size: 16px; font-weight: 700; }
+
+@media (max-width: 1240px) {
+  .em-top { grid-template-columns: 1fr; }
+  .em-cat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .em-cat-grid { grid-template-columns: 1fr; }
+  .em-contact { flex-wrap: wrap; }
+}
