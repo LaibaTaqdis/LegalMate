@@ -2,7 +2,7 @@
 
 Python backend for the LegalMate AI legal chatbot (RAG over Pakistani federal + Punjab law, DeepSeek Flash for generation).
 
-Status: **Phase 0 (scaffold) and Phase 1 (corpus pipeline) done.** Embedding/indexing (Phase 2), chat engine (Phase 3) and the API (Phase 4) come next.
+Status: **Phases 0-2 done** (scaffold, corpus pipeline, embeddings + hybrid retrieval, validated locally; not yet loaded into a Supabase project). Chat engine (Phase 3) and the API (Phase 4) come next.
 
 ## Who runs what
 
@@ -13,6 +13,16 @@ Status: **Phase 0 (scaffold) and Phase 1 (corpus pipeline) done.** Embedding/ind
 | Running the app / chat engine (Phase 3+) | **everyone** | `requirements.txt` (added in Phase 3; ~1 GB, no PyTorch, no GPU) |
 
 Teammates never touch the 290 MB of PDFs; they use the shared index in Supabase.
+
+## Build-time vs runtime (what a deployment needs)
+
+| | Build the knowledge base (one person, occasionally) | Run / deploy the app |
+|---|---|---|
+| Code | `ingest/`, `retrieval/embed_chunks.py`, `db/`, `evals/` | `retrieval/` (runtime: `kb.py`, `search.py`, `lexical.py`) + the API (Phase 4) |
+| Settings | `LEGALMATE_DATASET_DIR`, `LEGALMATE_CHECKLIST` (machine-specific paths to the raw PDFs) | `DATABASE_URL`, `DEEPSEEK_API_KEY`, `JWT_SECRET` |
+| Data | raw PDFs (290 MB, not in git) -> `backend/data/` (gitignored) | nothing local: the knowledge base lives in Supabase |
+
+The two path variables exist only because the raw PDFs are not in git, so each machine that builds the index must say where they are. They live in the gitignored `backend/.env`, so they are never deployed, and the running app never reads them (checked: `retrieval.kb` imports with no `.env` and without the `ingest/` package). The knowledge base is built once, loaded into Supabase with `python -m db.load`, and the deployed server only talks to Supabase and DeepSeek.
 
 ## Corpus pipeline
 
@@ -60,6 +70,42 @@ See `reports/corpus_qa.md` for everything uncertain.
 - Garbled text layers in several official gazettes (e.g. NADRA Ordinance, Food Safety Authority Act 2026) are re-OCR'd and the better version kept per page (the OCR pass takes ~30 min once).
 - Amendment links now respect the instrument type ("Police Order (Second Amendment) Act" amends the Police Order, not the Police Act) and never point at a later law.
 - Repeal status carries a `status_scope`: the Trust Act and Canal and Drainage Act are repealed in **Punjab** only.
+
+## Phase 2: index and retrieval
+
+```powershell
+python -m retrieval.embed_chunks                  # BAAI/bge-small-en-v1.5, 384-d, resumable. ~27 min on a 24-core CPU, once
+python -m db.local_pg                             # (dev) throw-away local Postgres with pgvector; prints its URL
+python -m db.load --url <postgres url>            # schema + replace all rows + HNSW/GIN indexes (or set DATABASE_URL in .env)
+python -m evals.run_eval                          # offline evaluation, writes reports/retrieval_eval_<model>.md
+python -m evals.run_eval_kb --url <postgres url>  # the same questions through the production path, with timings
+```
+
+**Design (all decided by measurement on 108 gold questions, `evals/gold.py`):**
+
+- Chunks are embedded as `header + text` with `BAAI/bge-small-en-v1.5` (ONNX/CPU through fastembed). Queries use the bge query prefix (+5.5 points hit@10 over no prefix: 89.8% vs 84.3%).
+- Retrieval = **pgvector** (cosine, HNSW) in Postgres **+ BM25 keyword search inside the app** (SQLite FTS5 built from the same table at startup, ~2 s, ~20 MB), fused with weighted reciprocal-rank fusion (1:1, k=60), then a soft jurisdiction preference (+15% for the user's province/ICT, -30% for another one) and de-duplication of identical Federal/Punjab texts.
+- Postgres full-text search was tried and **rejected for ranking**: no BM25, keyword-only hit@10 75% vs 90%, and 4x slower. `db/schema.sql` keeps a pure-SQL `hybrid_search` as a fallback only.
+- `lookup_section('Penal Code', '379')` gives exact section lookups (base laws first, amendments last).
+
+| Setup (hit rate %, question already rewritten to English) | hit@1 | hit@5 | hit@10 | hit@20 | MRR |
+|---|---|---|---|---|---|
+| keyword only (BM25) | 55.6 | 81.5 | 89.8 | 96.3 | 0.667 |
+| vector only | 50.9 | 82.4 | 89.8 | 91.7 | 0.646 |
+| **hybrid + jurisdiction (chosen)** | **62.0** | **86.1** | **94.4** | **97.2** | **0.724** |
+| production path (pgvector + BM25), measured | 61.1 | 85.2 | 94.4 | 97.2 | 0.716 |
+
+- Production latency (this machine): query embedding ~87 ms, vector 7 ms, keyword 16 ms, fetch 6 ms; ~116 ms median end to end. Expect slower embedding on a 2018 i5.
+- Database size with everything indexed: **~141 MB** (limit 500 MB). Use `db.load` in replace mode; upserting leaves dead rows and nearly doubles the size.
+- Weight/`rrf_k` differences are within noise (see the grid in the report), so the standard 1:1, k=60 is used.
+
+**What the evaluation says about Phase 3:**
+
+1. **The analyser's English rewrite is the biggest lever**: the same search gets hit@10 of 94% on rewritten queries but only 58% on raw user questions. Prompts must produce a good search query (and, ideally, statutory hints such as "section 154 CrPC information in cognizable cases": "FIR" never finds s.154 by itself).
+2. **A score threshold cannot decide "no source found"**: out-of-scope questions score as high as real ones (best cosine 0.74 vs real p10 0.71). That decision must come from the analyser's intent classification and the answer-time check, not from retrieval scores.
+3. hit@10 (not hit@1) is what matters: the answer step sees the top 8-10 chunks.
+
+Not done: an embedding-model comparison against `bge-base-en-v1.5` (about 65-130 min of CPU to embed; `python -m retrieval.embed_chunks --model BAAI/bge-base-en-v1.5` then `python -m evals.run_eval --model BAAI/bge-base-en-v1.5`; `db/schema.sql` would need `vector(768)`). The bottleneck measured above is query formulation, not the model, so `bge-small` stays. Loading into the real Supabase project is also still to do.
 
 ## Known data issues (also in the QA report)
 

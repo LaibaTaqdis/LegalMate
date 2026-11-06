@@ -35,14 +35,21 @@ INTERIM_DIR = DATA_DIR / "interim"      # manifest, cleaned docs
 PROCESSED_DIR = DATA_DIR / "processed"  # chunks.jsonl (what gets embedded/loaded)
 REPORTS_DIR = BACKEND_DIR / "reports"
 
-_ds = os.environ.get("LEGALMATE_DATASET_DIR")
-if not _ds:
-    raise SystemExit(
-        "LEGALMATE_DATASET_DIR is not set. Copy backend/.env.example to backend/.env and point it at the "
-        "folder that contains Federal/, Punjab/ and pdfs/ (the dataset is not stored in git).")
-DATASET_DIR = Path(_ds).resolve()
-CURATED_CSV = DATASET_DIR / "For_AI_Chatbot.csv"
-CHECKLIST_XLSX = Path(os.environ.get("LEGALMATE_CHECKLIST", DATASET_DIR.parent / "LegalMate_Law_Checklist_v2.xlsx"))
+def __getattr__(name: str):
+    """DATASET_DIR / CURATED_CSV / CHECKLIST_XLSX are resolved lazily (PEP 562): only the corpus-building stages touch the
+    raw dataset, so importing this module for DATA_DIR (db.load, tools) never requires the dataset to exist."""
+    if name in ("DATASET_DIR", "CURATED_CSV", "CHECKLIST_XLSX"):
+        ds = os.environ.get("LEGALMATE_DATASET_DIR")
+        if not ds:
+            raise SystemExit(
+                "LEGALMATE_DATASET_DIR is not set. This is only needed to BUILD the knowledge base from the raw PDFs. "
+                "Copy backend/.env.example to backend/.env and point it at the folder that contains Federal/, Punjab/ "
+                "and pdfs/ (the dataset is not stored in git).")
+        dataset = Path(ds).resolve()
+        return {"DATASET_DIR": dataset,
+                "CURATED_CSV": dataset / "For_AI_Chatbot.csv",
+                "CHECKLIST_XLSX": Path(os.environ.get("LEGALMATE_CHECKLIST", dataset.parent / "LegalMate_Law_Checklist_v2.xlsx"))}[name]
+    raise AttributeError(name)
 
 # Chunking (characters; legal English is ~4 chars/token). bge-small max is 512 tokens.
 MAX_CHUNK_CHARS = 1800

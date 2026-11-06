@@ -1,0 +1,2088 @@
+[
+ {
+  "id": "T01",
+  "cat": "tenancy",
+  "question": "My landlord wants me out because his son needs the house. Can he do that?",
+  "query_en": "landlord wants to evict tenant because he needs the house for his own family member",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Punjab Rented Premises",
+    "head": "grounds for eviction",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "T02",
+  "cat": "tenancy",
+  "question": "I haven't paid rent for three months. Can the landlord throw me out?",
+  "query_en": "tenant failed to pay rent landlord eviction",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Punjab Rented Premises",
+    "head": "grounds for eviction",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "T03",
+  "cat": "tenancy",
+  "question": "Does a rent agreement have to be in writing and registered?",
+  "query_en": "is a written tenancy agreement compulsory registration with rent registrar",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Punjab Rented Premises",
+    "head": "agreement between landlord and tenant",
+    "has": []
+   },
+   {
+    "act": "Punjab Rented Premises",
+    "head": "contents of tenancy agreement",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "T04",
+  "cat": "tenancy",
+  "question": "Can my tenant give a room to someone else without asking me?",
+  "query_en": "tenant letting part of rented premises to another person without landlord permission",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Punjab Rented Premises",
+    "head": "subletting",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "T05",
+  "cat": "tenancy",
+  "question": "My landlord switched off electricity and water to force me out.",
+  "query_en": "landlord cuts off utilities water electricity of tenant",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Punjab Rented Premises",
+    "head": "obligations of landlord",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "T06",
+  "cat": "tenancy",
+  "question": "Where do I file a case against my landlord in Lahore?",
+  "query_en": "which forum or tribunal hears landlord tenant disputes",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Punjab Rented Premises",
+    "head": "establishment of rent tribunal",
+    "has": []
+   },
+   {
+    "act": "Punjab Rented Premises",
+    "head": "filing of application",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "T07",
+  "cat": "tenancy",
+  "question": "Landlord refuses to take rent. What should I do?",
+  "query_en": "landlord refuses to accept rent tenant deposit rent",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Punjab Rented Premises",
+    "head": "application for deposit of rent",
+    "has": []
+   },
+   {
+    "act": "Punjab Rented Premises",
+    "head": "payment of rent",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "T08",
+  "cat": "tenancy",
+  "question": "Who has to pay for repairs, tenant or landlord?",
+  "query_en": "repairs of rented house responsibility landlord or tenant",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Punjab Rented Premises",
+    "head": "obligations of landlord",
+    "has": []
+   },
+   {
+    "act": "Punjab Rented Premises",
+    "head": "obligations of tenant",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "T09",
+  "cat": "tenancy",
+  "question": "Can my landlord raise the rent in Islamabad whenever he wants?",
+  "query_en": "annual increase of rent by landlord in Islamabad",
+  "jur": "ICT",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Islamabad Rent Restriction",
+    "head": "increase of rent",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "T10",
+  "cat": "tenancy",
+  "question": "How can a landlord get his shop vacated in Islamabad?",
+  "query_en": "ejectment of tenant from premises Islamabad grounds",
+  "jur": "ICT",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Islamabad Rent Restriction",
+    "head": "eviction of tenant",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "T11",
+  "cat": "tenancy",
+  "question": "Mera landlord bagair notice ke makaan khali karwana chahta hai, kya yeh jaiz hai?",
+  "query_en": "landlord wants to evict tenant without notice is it lawful",
+  "jur": "Punjab",
+  "lang": "ur-roman",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Punjab Rented Premises",
+    "head": "grounds for eviction",
+    "has": []
+   },
+   {
+    "act": "Punjab Rented Premises",
+    "head": "eviction",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "T12",
+  "cat": "tenancy",
+  "question": "Do I have to pay pagri or a big advance to get a shop on rent?",
+  "query_en": "pagri advance security taken from tenant at time of letting",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Punjab Rented Premises",
+    "head": "",
+    "has": [
+     "pagri"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "F01",
+  "cat": "family",
+  "question": "How can a wife get a divorce from court if her husband doesn't support her?",
+  "query_en": "wife seeks dissolution of marriage in court grounds husband failed to maintain her",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Dissolution of Muslim Marriages",
+    "head": "grounds for decree",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "F02",
+  "cat": "family",
+  "question": "What is khula and how does a woman get it?",
+  "query_en": "khula dissolution of marriage on wife's request family court",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Family Court",
+    "head": "khula; dower; maintenance",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "F03",
+  "cat": "family",
+  "question": "My husband said talaq three times. What is the legal procedure?",
+  "query_en": "pronouncement of talaq notice to union council chairman waiting period",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Muslim Family Laws",
+    "head": "talaq",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "F04",
+  "cat": "family",
+  "question": "Can my husband marry a second time without my permission?",
+  "query_en": "second marriage by husband without permission of existing wife arbitration council",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Muslim Family Laws",
+    "head": "polygamy",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "F05",
+  "cat": "family",
+  "question": "Is it compulsory to register a nikah?",
+  "query_en": "registration of muslim marriage nikah registrar",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Muslim Family Laws",
+    "head": "registration of marriages",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "F06",
+  "cat": "family",
+  "question": "Who gets custody of the children after divorce?",
+  "query_en": "custody of minor children guardian welfare of the child after divorce",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Guardians and Wards",
+    "head": "",
+    "has": [
+     "welfare of the minor"
+    ]
+   },
+   {
+    "act": "Guardians and Wards",
+    "head": "",
+    "has": [
+     "welfare"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "F07",
+  "cat": "family",
+  "question": "How do I claim monthly maintenance for my children?",
+  "query_en": "suit for maintenance of wife and children family court",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Family Court",
+    "head": "khula; dower; maintenance",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "F08",
+  "cat": "family",
+  "question": "My husband did not pay my haq mehr. Where can I recover it?",
+  "query_en": "recovery of dower haq mehr suit family court jurisdiction",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Family Court",
+    "head": "khula; dower; maintenance",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "F09",
+  "cat": "family",
+  "question": "Do daughters get a share in their father's property?",
+  "query_en": "inheritance share of daughters in father's property muslim law",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Muslim Personal Law",
+    "head": "application of the muslim personal law",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "F10",
+  "cat": "family",
+  "question": "My brothers are not giving me my share of our father's land.",
+  "query_en": "women deprived of inheritance property by relatives complaint",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Enforcement of Women",
+    "head": "complaint to the ombudsman",
+    "has": []
+   },
+   {
+    "act": "Enforcement of Women",
+    "head": "delivery of possession",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "F11",
+  "cat": "family",
+  "question": "What is the legal age of marriage in Punjab?",
+  "query_en": "minimum age for marriage punishment for child marriage",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Child Marriage Restraint",
+    "head": "punishment",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "F12",
+  "cat": "family",
+  "question": "My husband beats me. What can I do legally?",
+  "query_en": "protection of women against domestic violence complaint protection order",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Protection of Women Against Violence",
+    "head": "",
+    "has": [
+     "violence"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "F13",
+  "cat": "family",
+  "question": "Who can be appointed guardian of a minor's property?",
+  "query_en": "appointment of guardian for minor child and property by court",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Guardians and Wards",
+    "head": "appointment",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "F14",
+  "cat": "family",
+  "question": "Meri biwi khula ka case kar rahi hai, kya main usay rok sakta hoon?",
+  "query_en": "wife filed khula case can husband stop it family court",
+  "jur": "Punjab",
+  "lang": "ur-roman",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Family Court",
+    "head": "",
+    "has": [
+     "khula"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "C01",
+  "cat": "criminal",
+  "question": "Someone stole my mobile phone. What law applies?",
+  "query_en": "theft of mobile phone punishment",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Pakistan Penal Code",
+    "head": "",
+    "has": [
+     "punishment for theft"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "C02",
+  "cat": "criminal",
+  "question": "The police are refusing to register my FIR.",
+  "query_en": "how to register first information report police refuses to record complaint",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Code of Criminal Procedure",
+    "head": "information in cognizable cases",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "C03",
+  "cat": "criminal",
+  "question": "How do I get bail after being arrested?",
+  "query_en": "bail for accused in non-bailable offence court power to grant bail",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Code of Criminal Procedure",
+    "head": "when bail may be taken",
+    "has": []
+   },
+   {
+    "act": "Code of Criminal Procedure",
+    "head": "in what cases bail to be taken",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "C04",
+  "cat": "criminal",
+  "question": "A customer's cheque I deposited bounced. What can I do?",
+  "query_en": "dishonoured cheque criminal case against issuer",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Pakistan Penal Code",
+    "head": "dishonestly issuing a cheque",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "C05",
+  "cat": "criminal",
+  "question": "Someone is spreading lies about me on social media.",
+  "query_en": "defamation false statements about a person punishment",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Pakistan Penal Code",
+    "head": "punishment for defamation",
+    "has": []
+   },
+   {
+    "act": "Prevention of Electronic Crimes Act",
+    "head": "",
+    "has": [
+     "dignity"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "C06",
+  "cat": "criminal",
+  "question": "A man keeps messaging and following me online. Is it a crime?",
+  "query_en": "online harassment stalking cyber stalking of a woman",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Prevention of Electronic Crimes Act",
+    "head": "cyber stalking",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "C07",
+  "cat": "criminal",
+  "question": "Someone hacked my Facebook account.",
+  "query_en": "unauthorised access to someone's account or information system",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Prevention of Electronic Crimes Act",
+    "head": "unauthorized access",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "C08",
+  "cat": "criminal",
+  "question": "Someone made a fake profile with my photos.",
+  "query_en": "fake social media profile using another person's photograph identity",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Prevention of Electronic Crimes Act",
+    "head": "",
+    "has": [
+     "identity"
+    ]
+   },
+   {
+    "act": "Prevention of Electronic Crimes Act",
+    "head": "dignity",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "C09",
+  "cat": "criminal",
+  "question": "A neighbour threatened to kill me.",
+  "query_en": "threat to kill criminal intimidation punishment",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Pakistan Penal Code",
+    "head": "criminal intimidation",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "C10",
+  "cat": "criminal",
+  "question": "A man took money from me promising a job abroad and disappeared.",
+  "query_en": "cheating fraud taking money on false promise punishment",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Pakistan Penal Code",
+    "head": "cheating and dishonestly inducing",
+    "has": []
+   },
+   {
+    "act": "Emigration Ordinance",
+    "head": "",
+    "has": [
+     "promoter"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "C11",
+  "cat": "criminal",
+  "question": "What are my rights if the police arrest me?",
+  "query_en": "rights of arrested person informed of grounds produced before magistrate within 24 hours",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Constitution of the Islamic",
+    "head": "safeguards as to arrest",
+    "has": []
+   },
+   {
+    "act": "Code of Criminal Procedure",
+    "head": "twenty-four hours",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "C12",
+  "cat": "criminal",
+  "question": "What is the punishment for murder in Pakistan?",
+  "query_en": "punishment for intentional murder qatl-i-amd",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Pakistan Penal Code",
+    "head": "qatl-i-amd",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "C13",
+  "cat": "criminal",
+  "question": "What is the punishment for rape?",
+  "query_en": "punishment for rape and gang rape",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Pakistan Penal Code",
+    "head": "rape",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "C14",
+  "cat": "criminal",
+  "question": "Someone kidnapped my brother.",
+  "query_en": "kidnapping or abduction of a person punishment",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Pakistan Penal Code",
+    "head": "kidnapping",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "C15",
+  "cat": "criminal",
+  "question": "What can I do if the police arrest someone without showing a warrant?",
+  "query_en": "arrest without warrant by police power and limits",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Code of Criminal Procedure",
+    "head": "when police may arrest without warrant",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "C16",
+  "cat": "criminal",
+  "question": "Someone threw acid on my sister.",
+  "query_en": "acid attack hurt by corrosive substance punishment",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Pakistan Penal Code",
+    "head": "",
+    "has": [
+     "corrosive substance"
+    ]
+   },
+   {
+    "act": "Pakistan Penal Code",
+    "head": "",
+    "has": [
+     "acid"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "C17",
+  "cat": "criminal",
+  "question": "Someone called pretending to be from my bank and took money from my account.",
+  "query_en": "electronic fraud cyber fraud bank account theft through deception",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Prevention of Electronic Crimes Act",
+    "head": "",
+    "has": [
+     "fraud"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "C18",
+  "cat": "criminal",
+  "question": "What is the punishment for possessing drugs?",
+  "query_en": "possession of narcotic drugs punishment quantity",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Control of Narcotic Substances",
+    "head": "punishment for contravention",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "C19",
+  "cat": "criminal",
+  "question": "Mera cheque bounce ho gaya hai, kya FIR ho sakti hai?",
+  "query_en": "cheque dishonoured can criminal case be registered",
+  "jur": "Federal",
+  "lang": "ur-roman",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Pakistan Penal Code",
+    "head": "dishonestly issuing a cheque",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "C20",
+  "cat": "criminal",
+  "question": "Someone filed a false case against me. Can I get bail before I am arrested?",
+  "query_en": "pre-arrest bail anticipatory bail false criminal case high court sessions court",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Code of Criminal Procedure",
+    "head": "power to direct admission to bail",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "L01",
+  "cat": "labour",
+  "question": "My company fired me without notice. Can I challenge it?",
+  "query_en": "termination of employment without notice worker grievance remedy",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Punjab Labour Code",
+    "head": "termination of employment agreement",
+    "has": []
+   },
+   {
+    "act": "Punjab Labour Code",
+    "head": "notice of termination",
+    "has": []
+   },
+   {
+    "act": "Punjab Labour Code",
+    "head": "prohibited grounds for termination",
+    "has": []
+   },
+   {
+    "act": "Industrial Relations Act",
+    "head": "individual grievances",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "L02",
+  "cat": "labour",
+  "question": "My employer hasn't paid my salary for two months.",
+  "query_en": "non-payment of wages delay in payment employer",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Payment of Wages",
+    "head": "time of payment of wages",
+    "has": []
+   },
+   {
+    "act": "Punjab Labour Code",
+    "head": "payment of wages authority",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "L03",
+  "cat": "labour",
+  "question": "What is the minimum wage in Punjab?",
+  "query_en": "minimum wage fixation for workers in punjab",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Punjab Minimum Wages",
+    "head": "",
+    "has": [
+     "minimum"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "L04",
+  "cat": "labour",
+  "question": "How many days of maternity leave am I entitled to?",
+  "query_en": "maternity leave for female employee period with full pay",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Punjab Labour Code",
+    "head": "",
+    "has": [
+     "maternity"
+    ]
+   },
+   {
+    "act": "Maternity and Paternity Leave",
+    "head": "",
+    "has": [
+     "maternity leave"
+    ]
+   },
+   {
+    "act": "Maternity Benefit",
+    "head": "",
+    "has": [
+     "maternity"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "L05",
+  "cat": "labour",
+  "question": "My boss is harassing me at work. What can I do?",
+  "query_en": "sexual harassment at workplace complaint inquiry committee",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Harassment of Women at the Workplace",
+    "head": "",
+    "has": [
+     "inquiry committee"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "L06",
+  "cat": "labour",
+  "question": "Can a 12 year old child work in a workshop?",
+  "query_en": "employment of children minimum age prohibited",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Employment of Children",
+    "head": "",
+    "has": [
+     "child"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "L07",
+  "cat": "labour",
+  "question": "I work as a maid. Do I have any legal rights?",
+  "query_en": "domestic worker rights wages leave contract",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Domestic Workers",
+    "head": "rights and entitlements",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "L08",
+  "cat": "labour",
+  "question": "Is my employer allowed to make me work 12 hours a day?",
+  "query_en": "maximum working hours per day overtime for workers",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Factories Act",
+    "head": "daily hours",
+    "has": []
+   },
+   {
+    "act": "Factories Act",
+    "head": "weekly hours",
+    "has": []
+   },
+   {
+    "act": "Factories Act",
+    "head": "extra pay for overtime",
+    "has": []
+   },
+   {
+    "act": "Punjab Labour Code",
+    "head": "normal working hours",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "L09",
+  "cat": "labour",
+  "question": "How can workers form a trade union?",
+  "query_en": "registration of trade union by workers requirements",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Industrial Relations Act",
+    "head": "application for registration",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "L10",
+  "cat": "labour",
+  "question": "I was injured at work. Who pays compensation?",
+  "query_en": "employer liability to pay compensation for workplace injury",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Workmen",
+    "head": "employer's liability for compensation",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "L11",
+  "cat": "labour",
+  "question": "Do I get a pension when I retire from a private job?",
+  "query_en": "old age pension for employees of private establishments",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Old-Age Benefits",
+    "head": "old-age pension",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "L12",
+  "cat": "labour",
+  "question": "My factory owner is keeping me as a bonded labourer to repay a loan.",
+  "query_en": "bonded labour peshgi debt forced labour abolition",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Bonded Labour",
+    "head": "abolition of bonded labour system",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "L13",
+  "cat": "labour",
+  "question": "Meri company ne mujhe achanak nikaal diya, mujhe kya karna chahiye?",
+  "query_en": "worker dismissed suddenly employment terminated what remedy",
+  "jur": "Punjab",
+  "lang": "ur-roman",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Punjab Labour Code",
+    "head": "termination of employment agreement",
+    "has": []
+   },
+   {
+    "act": "Punjab Labour Code",
+    "head": "notice of termination",
+    "has": []
+   },
+   {
+    "act": "Industrial Relations Act",
+    "head": "individual grievances",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "B01",
+  "cat": "contract",
+  "question": "Is a verbal agreement legally binding?",
+  "query_en": "are oral agreements valid contracts requirement of writing",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Contract act",
+    "head": "what agreements are contracts",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "B02",
+  "cat": "contract",
+  "question": "The other party broke our contract. What compensation can I claim?",
+  "query_en": "compensation for loss caused by breach of contract",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Contract act",
+    "head": "compensation for loss or damage caused by breach",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "B03",
+  "cat": "contract",
+  "question": "Is a contract void if no money or value was exchanged?",
+  "query_en": "agreement without consideration validity",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Contract act",
+    "head": "agreement without consideration",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "B04",
+  "cat": "contract",
+  "question": "My 16 year old son signed an agreement. Is it valid?",
+  "query_en": "contract by a minor competence to contract age of majority",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Contract act",
+    "head": "who are competent to contract",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "B05",
+  "cat": "contract",
+  "question": "I signed a contract because I was forced. Can I cancel it?",
+  "query_en": "contract made under coercion undue influence free consent voidable",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Contract act",
+    "head": "coercion",
+    "has": []
+   },
+   {
+    "act": "Contract act",
+    "head": "free consent",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "B06",
+  "cat": "contract",
+  "question": "The contract says I must pay 10 lakh penalty if I leave. Is that enforceable?",
+  "query_en": "penalty clause liquidated damages stipulated sum enforceable",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Contract act",
+    "head": "penalty stipulated",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "B07",
+  "cat": "contract",
+  "question": "How can a business partnership be dissolved?",
+  "query_en": "dissolution of partnership firm by partners",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Partnership Act",
+    "head": "dissolution",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "B08",
+  "cat": "contract",
+  "question": "I bought a defective product from a shop. Can I get a refund?",
+  "query_en": "defective goods sale implied condition quality fitness buyer remedy",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Sale of Goods",
+    "head": "implied condition",
+    "has": []
+   },
+   {
+    "act": "Punjab Consumer Protection",
+    "head": "",
+    "has": [
+     "defective"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "B09",
+  "cat": "contract",
+  "question": "Do I have to pay stamp duty on a rent or sale agreement?",
+  "query_en": "stamp duty on agreement instruments chargeable",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Stamp Act",
+    "head": "instruments chargeable with duty",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "B10",
+  "cat": "contract",
+  "question": "Our contract has an arbitration clause. How does arbitration work?",
+  "query_en": "arbitration agreement appointment of arbitrator award",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Arbitration Act",
+    "head": "arbitration agreement",
+    "has": []
+   },
+   {
+    "act": "Arbitration Act",
+    "head": "appointment",
+    "has": []
+   },
+   {
+    "act": "Arbitration Act",
+    "head": "appoint arbitrator",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "B11",
+  "cat": "contract",
+  "question": "I stood guarantor for a friend's loan. Am I liable if he doesn't pay?",
+  "query_en": "liability of surety guarantor for principal debtor's default",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Contract act",
+    "head": "guarantee",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "B12",
+  "cat": "contract",
+  "question": "A cheque I received was returned unpaid. What are my rights as holder?",
+  "query_en": "dishonour of cheque by non-payment notice holder rights negotiable instrument",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Negotiable Instruments",
+    "head": "dishonour by non-payment",
+    "has": []
+   },
+   {
+    "act": "Negotiable Instruments",
+    "head": "notice of dishonour",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "B13",
+  "cat": "contract",
+  "question": "How do I register a company in Pakistan?",
+  "query_en": "incorporation of a company registration with SECP requirements",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Companies Act, 2017",
+    "head": "registration of memorandum",
+    "has": []
+   },
+   {
+    "act": "Companies Act, 2017",
+    "head": "effect of registration",
+    "has": []
+   },
+   {
+    "act": "Companies Act, 2017",
+    "head": "incorporation",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "B14",
+  "cat": "contract",
+  "question": "I want to file a consumer complaint against an online seller.",
+  "query_en": "consumer complaint defective service product consumer court",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Punjab Consumer Protection",
+    "head": "",
+    "has": [
+     "consumer court"
+    ]
+   },
+   {
+    "act": "Punjab Consumer Protection",
+    "head": "",
+    "has": [
+     "complaint"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "B15",
+  "cat": "contract",
+  "question": "Is charging interest on a personal loan allowed in Punjab?",
+  "query_en": "interest on private loans prohibition penalty",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Prohibition of Interest on Private Loans",
+    "head": "",
+    "has": [
+     "interest"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "B16",
+  "cat": "contract",
+  "question": "A moneylender is harassing me for a loan.",
+  "query_en": "debtor protection moneylender recovery of debts relief",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Debtors",
+    "head": "",
+    "has": [
+     "debt"
+    ]
+   },
+   {
+    "act": "Prohibition of Interest on Private Loans",
+    "head": "",
+    "has": [
+     "interest"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "P01",
+  "cat": "property",
+  "question": "Do I have to register the sale deed when buying a house?",
+  "query_en": "transfer of immovable property by sale must be by registered instrument",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Transfer of Property",
+    "head": "\"sale\" defined",
+    "has": []
+   },
+   {
+    "act": "Registration Act",
+    "head": "documents of which registration is compulsory",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "P02",
+  "cat": "property",
+  "question": "How can I legally gift my house to my son?",
+  "query_en": "gift of immovable property how it is made registered instrument",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Transfer of Property",
+    "head": "gift",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "P03",
+  "cat": "property",
+  "question": "Can I get my mortgaged house back after repaying the loan?",
+  "query_en": "right of mortgagor to redeem mortgaged property after payment",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Transfer of Property",
+    "head": "right of mortgagor to redeem",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "P04",
+  "cat": "property",
+  "question": "Does a lease of more than one year need to be registered?",
+  "query_en": "lease of immovable property how made year registered deed",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Transfer of Property",
+    "head": "leases how made",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "P05",
+  "cat": "property",
+  "question": "My neighbour sold his house. Do I have a first right to buy it?",
+  "query_en": "right of pre-emption shufa of neighbour or co-sharer on sale of property",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Pre-emption",
+    "head": "",
+    "has": [
+     "pre-emption"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "P06",
+  "cat": "property",
+  "question": "Someone has illegally occupied my plot. What can I do?",
+  "query_en": "illegal possession of immovable property by land grabber remedy",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Protection of Ownership of Immovable Property",
+    "head": "",
+    "has": [
+     "illegal possession"
+    ]
+   },
+   {
+    "act": "Protection of Ownership of Immovable Property",
+    "head": "illegal possession",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "P07",
+  "cat": "property",
+  "question": "The seller refuses to complete the sale after taking an advance. Can I force him?",
+  "query_en": "specific performance of agreement to sell property enforce contract",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Specific Relief",
+    "head": "cases in which specific performance",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "P08",
+  "cat": "property",
+  "question": "I was forcibly thrown out of my property. Can I get possession back quickly?",
+  "query_en": "suit by person dispossessed of immovable property recover possession",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Specific Relief",
+    "head": "",
+    "has": [
+     "dispossessed"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "P09",
+  "cat": "property",
+  "question": "What is mutation and how do I get my land record updated?",
+  "query_en": "mutation of land records patwari revenue record of rights",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Punjab Land Revenue",
+    "head": "",
+    "has": [
+     "mutation"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "P10",
+  "cat": "property",
+  "question": "My house is in a katchi abadi. Can I get ownership rights?",
+  "query_en": "regularisation of katchi abadi proprietary rights residents",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Katchi Abadis",
+    "head": "",
+    "has": [
+     "katchi abadi"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "P11",
+  "cat": "property",
+  "question": "How many years do I have to sue to recover money I lent?",
+  "query_en": "limitation period for suit to recover money lent time limit",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Limitation Act",
+    "head": "",
+    "has": [
+     "money lent"
+    ]
+   },
+   {
+    "act": "Limitation Act",
+    "head": "",
+    "has": [
+     "money payable"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "P12",
+  "cat": "property",
+  "question": "How much compensation will I get if the government acquires my land?",
+  "query_en": "compensation for compulsory acquisition of land determination of amount",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Land Acquisition",
+    "head": "determining compensation",
+    "has": []
+   },
+   {
+    "act": "Land Acquisition",
+    "head": "amount of compensation",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "P13",
+  "cat": "property",
+  "question": "Who can make a valid will and how must it be signed?",
+  "query_en": "who is capable of making a will and execution of a will witnesses",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Succession Act",
+    "head": "capable of making wills",
+    "has": []
+   },
+   {
+    "act": "Succession Act",
+    "head": "execution of unprivileged wills",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "R01",
+  "cat": "procedure",
+  "question": "When can a court reject my plaint?",
+  "query_en": "rejection of plaint grounds civil suit",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Code of Civil Procedure",
+    "head": "rejection of plaint",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "R02",
+  "cat": "procedure",
+  "question": "How much court fee do I pay to file a civil suit for money?",
+  "query_en": "court fee payable on plaint ad valorem value of suit",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Court",
+    "head": "",
+    "has": [
+     "ad valorem"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "R03",
+  "cat": "procedure",
+  "question": "What is the time limit to file an appeal against a decree?",
+  "query_en": "limitation period for filing appeal against decree days",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Limitation Act",
+    "head": "",
+    "has": [
+     "appeal"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "R04",
+  "cat": "procedure",
+  "question": "Is there a quick court for small money claims?",
+  "query_en": "small claims court summary procedure value of claim",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Small Claims",
+    "head": "",
+    "has": [
+     "small claim"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "R05",
+  "cat": "procedure",
+  "question": "Can we settle our dispute through mediation instead of court?",
+  "query_en": "alternative dispute resolution mediation centre settlement punjab",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Alternate Dispute Resolution",
+    "head": "",
+    "has": [
+     "mediation"
+    ]
+   },
+   {
+    "act": "Alternative Dispute Resolution",
+    "head": "",
+    "has": [
+     "mediation"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "R06",
+  "cat": "procedure",
+  "question": "I cannot afford a lawyer. Is there free legal help?",
+  "query_en": "free legal aid for poor persons legal aid authority",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Legal Aid",
+    "head": "",
+    "has": [
+     "legal aid"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "R07",
+  "cat": "procedure",
+  "question": "Is an email or WhatsApp message accepted as evidence in court?",
+  "query_en": "admissibility of electronic documents and electronic evidence",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Electronic Transactions",
+    "head": "legal recognition of electronic forms",
+    "has": []
+   },
+   {
+    "act": "Qanun-e-Shahadat",
+    "head": "",
+    "has": [
+     "modern devices"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "R08",
+  "cat": "procedure",
+  "question": "Is a digital signature legally valid?",
+  "query_en": "validity of electronic signature advanced electronic signature legal recognition",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Electronic Transactions Ordinance",
+    "head": "",
+    "has": [
+     "signature"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "R09",
+  "cat": "procedure",
+  "question": "Can someone be kept in police custody for more than 24 hours?",
+  "query_en": "detention of arrested person not more than twenty-four hours production before magistrate",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Code of Criminal Procedure",
+    "head": "twenty-four hours",
+    "has": []
+   },
+   {
+    "act": "Constitution of the Islamic",
+    "head": "safeguards as to arrest",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "R10",
+  "cat": "procedure",
+  "question": "Which court decides a family dispute like divorce or custody?",
+  "query_en": "jurisdiction of family court over marriage custody maintenance disputes",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Family Court",
+    "head": "jurisdiction",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "G01",
+  "cat": "rights",
+  "question": "Is freedom of speech protected in Pakistan?",
+  "query_en": "fundamental right freedom of speech expression restrictions",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Constitution of the Islamic",
+    "head": "freedom of speech",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "G02",
+  "cat": "rights",
+  "question": "Do I have a right to a fair trial?",
+  "query_en": "right to fair trial and due process",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Constitution of the Islamic",
+    "head": "right to fair trial",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "G03",
+  "cat": "rights",
+  "question": "Is it legal for an employer to discriminate between men and women?",
+  "query_en": "equality of citizens non-discrimination on grounds of sex",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Constitution of the Islamic",
+    "head": "equality of citizens",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "G04",
+  "cat": "rights",
+  "question": "Is education a legal right for my child?",
+  "query_en": "right to free and compulsory education for children",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Constitution of the Islamic",
+    "head": "right to education",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "G05",
+  "cat": "rights",
+  "question": "Can the government take my property without compensation?",
+  "query_en": "protection of property rights compulsory acquisition",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Constitution of the Islamic",
+    "head": "property rights",
+    "has": []
+   }
+  ]
+ },
+ {
+  "id": "G06",
+  "cat": "rights",
+  "question": "How can I get information from a government office?",
+  "query_en": "right of access to information request public body time limit",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Right to Information",
+    "head": "",
+    "has": [
+     "information"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "G07",
+  "cat": "rights",
+  "question": "My relative was detained illegally. Can the court order his release?",
+  "query_en": "habeas corpus illegal detention high court direction release",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Code of Criminal Procedure",
+    "head": "habeas corpus",
+    "has": []
+   },
+   {
+    "act": "Constitution of the Islamic",
+    "head": "",
+    "has": [
+     "habeas corpus"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "G08",
+  "cat": "rights",
+  "question": "What happens if a driver kills someone in an accident? Can the family claim compensation?",
+  "query_en": "compensation to family of person killed by negligence wrongful act",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Fatal Accidents",
+    "head": "",
+    "has": [
+     "compensation"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "G09",
+  "cat": "rights",
+  "question": "How can I get my CNIC corrected?",
+  "query_en": "national identity card issuance correction NADRA registration",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "National Database and Registration",
+    "head": "",
+    "has": [
+     "identity card"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "G10",
+  "cat": "rights",
+  "question": "What law protects women from violence in Punjab?",
+  "query_en": "protection of women against violence law punjab protection centre",
+  "jur": "Punjab",
+  "lang": "en",
+  "neg": false,
+  "rel": [
+   {
+    "act": "Protection of Women Against Violence",
+    "head": "",
+    "has": [
+     "violence"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "N01",
+  "cat": "negative",
+  "question": "What is the income tax rate for salaried people this year?",
+  "query_en": "income tax slab rates for salaried individuals",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": true,
+  "rel": []
+ },
+ {
+  "id": "N02",
+  "cat": "negative",
+  "question": "How do I get a US visa?",
+  "query_en": "united states visa application requirements",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": true,
+  "rel": []
+ },
+ {
+  "id": "N03",
+  "cat": "negative",
+  "question": "Who will win the cricket world cup?",
+  "query_en": "cricket world cup winner prediction",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": true,
+  "rel": []
+ },
+ {
+  "id": "N04",
+  "cat": "negative",
+  "question": "What is the capital gains tax on shares?",
+  "query_en": "capital gains tax on sale of shares",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": true,
+  "rel": []
+ },
+ {
+  "id": "N05",
+  "cat": "negative",
+  "question": "Can you write me a poem about justice?",
+  "query_en": "write a poem about justice",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": true,
+  "rel": []
+ },
+ {
+  "id": "N06",
+  "cat": "negative",
+  "question": "What are the rules for importing a car into Pakistan?",
+  "query_en": "customs duty and rules for importing a vehicle",
+  "jur": "Federal",
+  "lang": "en",
+  "neg": true,
+  "rel": []
+ }
+]
