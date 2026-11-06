@@ -1,15 +1,13 @@
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  AlertCircle, ArrowLeft, ArrowRight, Check, CheckCircle2, ChevronDown, Eye, EyeOff, Globe, IdCard, Loader2, Lock, Mail, Phone,
-  ShieldCheck, User, Users, PartyPopper
+  AlertCircle, ArrowRight, Check, CheckCircle2, ChevronDown, Eye, EyeOff, Globe, IdCard, Loader2, Lock, Mail, Phone,
+  ShieldCheck, Sparkles, User, Users, PartyPopper
 } from 'lucide-react'
 import { Checkbox, Logo } from '../components/common'
 import { PakFlag } from '../components/Icons'
-import { useUI } from '../components/UIContext'
 import { useAuth } from '../context/AuthContext'
-import { authService } from '../api/services/authService'
-import { USE_MOCKS } from '../api/config'
+import { isMock } from '../api/config'
 import { LanguagePicker } from './Login'
 
 function PasswordInput({ value, onChange, placeholder }) {
@@ -26,7 +24,7 @@ function PasswordInput({ value, onChange, placeholder }) {
 }
 
 function Stepper({ step }) {
-  const steps = ['Personal Details', 'Verification', 'Complete']
+  const steps = ['Personal Details', 'Complete']
   return (
     <ol className="su-stepper">
       {steps.map((s, i) => (
@@ -39,37 +37,13 @@ function Stepper({ step }) {
   )
 }
 
-function OtpInput({ value, onChange }) {
-  const refs = useRef([])
-  const set = (i, v) => {
-    const d = v.replace(/\D/g, '').slice(-1)
-    const arr = value.split('')
-    arr[i] = d
-    onChange(arr.join('').slice(0, 6))
-    if (d && i < 5) refs.current[i + 1]?.focus()
-  }
-  return (
-    <div className="otp">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <input key={i} ref={el => (refs.current[i] = el)} inputMode="numeric" maxLength={1} value={value[i] || ''}
-          onChange={e => set(i, e.target.value)}
-          onKeyDown={e => { if (e.key === 'Backspace' && !value[i] && i > 0) refs.current[i - 1]?.focus() }}
-          aria-label={`Digit ${i + 1}`} />
-      ))}
-    </div>
-  )
-}
-
 export default function Signup() {
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [f, setF] = useState({ name: '', cnic: '', email: '', phone: '', lang: 'en', password: '', confirm: '', agree: false })
-  const [otp, setOtp] = useState('')
-  const [verification, setVerification] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const { verifyOtp } = useAuth()
-  const { toast } = useUI()
+  const { register: createAccount } = useAuth()
   const set = k => v => setF(p => ({ ...p, [k]: v }))
 
   const run = async fn => {
@@ -80,28 +54,20 @@ export default function Signup() {
 
   const register = e => {
     e.preventDefault()
-    if (!USE_MOCKS) {
-      if (!f.name.trim() || !f.email.trim() || !f.phone.trim()) return setError('Please fill in your name, email and phone number.')
+    if (!isMock('auth')) {
+      if (!f.name.trim() || !f.email.trim()) return setError('Please fill in your name and email address.')
       if (!rules.every(r => r.ok)) return setError('Please choose a password that meets all the requirements.')
       if (!f.agree) return setError('Please accept the Terms of Service and Privacy Policy.')
     }
     run(async () => {
-      const res = await authService.register({
-        fullName: f.name.trim(), cnic: f.cnic, email: f.email.trim(), phone: `+92${f.phone.replace(/\s/g, '')}`,
+      await createAccount({
+        fullName: f.name.trim(), cnic: f.cnic || undefined, email: f.email.trim(),
+        phone: f.phone.trim() ? `+92${f.phone.replace(/\s/g, '')}` : undefined,
         preferredLanguage: f.lang, password: f.password, acceptedTerms: f.agree,
       })
-      setVerification(res)
       setStep(1)
     })
   }
-
-  const verify = e => {
-    e.preventDefault()
-    if (!USE_MOCKS && otp.length !== 6) return setError('Enter the 6-digit code.')
-    run(async () => { await verifyOtp({ verificationId: verification?.verificationId, code: otp }); setStep(2) })
-  }
-
-  const resend = () => run(async () => { await authService.resendOtp(verification?.verificationId); toast('A new code has been sent.') })
 
   const rules = useMemo(() => {
     const p = f.password
@@ -160,16 +126,16 @@ export default function Signup() {
                   <span className="input-wrap su-input"><User size={18} /><input value={f.name} onChange={e => set('name')(e.target.value)} placeholder="Enter your full name" autoComplete="name" /></span>
                 </label>
                 <label className="field">
-                  <span className="field-label">CNIC or identity number</span>
+                  <span className="field-label">CNIC or identity number <i className="su-opt">(optional)</i></span>
                   <span className="input-wrap su-input"><IdCard size={18} /><input value={f.cnic} onChange={e => set('cnic')(formatCnic(e.target.value))} placeholder="XXXXX-XXXXXXX-X" inputMode="numeric" /></span>
-                  <span className="su-help"><ShieldCheck size={14} /> Your CNIC is used only for verification and kept private.</span>
+                  <span className="su-help"><ShieldCheck size={14} /> Optional. Only the last 4 digits are kept, and they are never shared with the AI.</span>
                 </label>
                 <label className="field">
                   <span className="field-label">Email address</span>
                   <span className="input-wrap su-input"><Mail size={18} /><input type="email" value={f.email} onChange={e => set('email')(e.target.value)} placeholder="name@example.com" autoComplete="email" /></span>
                 </label>
                 <label className="field">
-                  <span className="field-label">Phone number</span>
+                  <span className="field-label">Phone number <i className="su-opt">(optional)</i></span>
                   <span className="input-wrap su-input su-phone">
                     <Phone size={18} />
                     <span className="su-cc"><PakFlag width={20} /> +92 <ChevronDown size={14} /></span>
@@ -227,24 +193,12 @@ export default function Signup() {
           )}
 
           {step === 1 && (
-            <form className="su-form su-verify" onSubmit={verify}>
-              <span className="su-verify-icon"><ShieldCheck size={30} /></span>
-              <h2 className="su-title">Verify your phone number</h2>
-              <p className="su-sub">We've sent a 6-digit code to <b>{verification?.maskedDestination || `+92 ${f.phone || '300 1234567'}`}</b>. Enter it below to verify your account.</p>
-              <OtpInput value={otp} onChange={setOtp} />
-              <p className="su-resend">Didn't receive the code? <button type="button" className="auth-link" onClick={resend} disabled={busy}>Resend code</button></p>
-              {error && <p className="form-error" role="alert"><AlertCircle size={16} /> {error}</p>}
-              <button className="btn btn-orange btn-lg btn-block su-submit" disabled={busy}>{busy && <Loader2 size={18} className="spin" />} Verify &amp; Continue {!busy && <ArrowRight size={18} />}</button>
-              <button type="button" className="btn btn-outline btn-lg btn-block" onClick={() => setStep(0)}><ArrowLeft size={18} /> Back</button>
-            </form>
-          )}
-
-          {step === 2 && (
             <div className="su-form su-verify">
               <span className="su-verify-icon su-done"><PartyPopper size={30} /></span>
               <h2 className="su-title">Welcome to LegalMate{f.name ? `, ${f.name.split(' ')[0]}` : ''}!</h2>
-              <p className="su-sub">Your account is ready. You can now ask legal questions, analyse documents and keep your records safe in your Legal Vault.</p>
-              <button className="btn btn-orange btn-lg btn-block su-submit" onClick={() => navigate('/dashboard')}>Go to Dashboard <ArrowRight size={18} /></button>
+              <p className="su-sub">Your account is ready. Tell LegalMate a little about your situation (about a minute) and every answer will be tailored to where you live and what you do. You can skip this and change it later.</p>
+              <button className="btn btn-orange btn-lg btn-block su-submit" onClick={() => navigate('/profile-setup')}><Sparkles size={18} /> Personalise my answers</button>
+              <button type="button" className="btn btn-outline btn-lg btn-block" onClick={() => navigate('/dashboard')}>Skip for now <ArrowRight size={18} /></button>
             </div>
           )}
         </div>

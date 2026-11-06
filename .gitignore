@@ -76,3 +76,6 @@ frontend/_backup_old_src/
 
 # Private project notes (plan, status, work log): local only, never committed
 project-notes/
+
+# Local tooling
+.claude/

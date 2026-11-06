@@ -10,7 +10,7 @@ import { Ring, useClickOutside } from '../components/common'
 import { ErrorState, Skeleton } from '../components/States'
 import { useUI } from '../components/UIContext'
 import { useAuth } from '../context/AuthContext'
-import { USE_MOCKS } from '../api/config'
+import { isMock } from '../api/config'
 import { chatService } from '../api/services/chatService'
 import { TOPIC_CARDS } from '../api/mocks/chat'
 import { formatDate, formatTime } from '../utils/format'
@@ -180,7 +180,7 @@ function ConversationList({ activeId }) {
 function Composer({ onSend, placeholder, big, disabled }) {
   const { toast, language } = useUI()
   const [text, setText] = useState('')
-  const [lang, setLang] = useState(language === 'English' ? 'اردو' : language)
+  const [lang, setLang] = useState(language === 'اردو' ? 'اردو' : 'English')   // answer language follows the interface language; the user can switch it per message
   const [langOpen, setLangOpen] = useState(false)
   const [recording, setRecording] = useState(false)
   const [files, setFiles] = useState([]) // { id, name, uploading }
@@ -243,7 +243,7 @@ function Composer({ onSend, placeholder, big, disabled }) {
 }
 
 /* ---------------- Answer bubble ---------------- */
-function Answer({ m, onCite, onPanel, panel }) {
+function Answer({ m, onCite, onPanel, panel, onAsk }) {
   const { toast } = useUI()
   const navigate = useNavigate()
   const [vote, setVote] = useState(m.feedback || null)
@@ -293,6 +293,11 @@ function Answer({ m, onCite, onPanel, panel }) {
           {m.outro && <p>{m.outro}</p>}
         </div>
         <p className="msg-done">{m.doneTime}</p>
+        {m.followUps?.length > 0 && (
+          <div className="followups" aria-label="Suggested follow-up questions">
+            {m.followUps.map(q => <button key={q} className="followup" onClick={() => onAsk(q)}>{q}</button>)}
+          </div>
+        )}
         <div className="answer-actions">
           <button className={`chip-btn chip-sources ${panel === 'sources' ? 'on' : ''}`} onClick={() => onPanel('sources')}><NotebookText size={16} /> Sources: {m.sources?.length || 0} <ChevronDown size={15} /></button>
           {m.confidence && <button className={`chip-btn chip-conf ${panel === 'confidence' ? 'on' : ''}`} onClick={() => onPanel('confidence')}><CheckCircle2 size={16} /> {m.confidence.score}% Confidence</button>}
@@ -305,6 +310,58 @@ function Answer({ m, onCite, onPanel, panel }) {
           <button onClick={copy} aria-label="Copy"><Copy size={19} /></button>
           <button onClick={() => toast('More options coming soon', 'info')} aria-label="More"><MoreHorizontal size={19} /></button>
         </div>
+      </div>
+    </div>
+  )
+}
+
+/* ---------------- Clarifying questions and plain replies ---------------- */
+function Clarify({ m, onAsk, answered }) {
+  const qs = m.questions || []
+  const [picked, setPicked] = useState({})
+  const ready = qs.length > 0 && qs.every(q => picked[q.id])
+  const send = (map = picked) => onAsk(qs.map(q => `${q.text} ${map[q.id]}`).join(' '))
+  const choose = (q, o) => {
+    if (answered) return
+    const next = { ...picked, [q.id]: o }
+    setPicked(next)
+    if (qs.length === 1) send(next)          // one question: tapping an option answers it at once
+  }
+  return (
+    <div className="msg-bot">
+      <span className="msg-bot-avatar"><img src="/assets/img/logo-mark-gold.png" alt="" /></span>
+      <div className="msg-bot-body">
+        <p className="msg-meta"><b>LegalMate</b> {m.time}</p>
+        <div className="answer clarify">
+          <p>{Array.isArray(m.intro) ? <Rich parts={m.intro} onCite={() => {}} /> : m.intro}</p>
+          {qs.map(q => (
+            <div key={q.id} className="clarify-q">
+              <b>{q.text}</b>
+              <div className="clarify-opts" role="radiogroup" aria-label={q.text}>
+                {(q.options || []).map(o => (
+                  <button key={o} role="radio" aria-checked={picked[q.id] === o} disabled={answered}
+                    className={`ps-chip ${picked[q.id] === o ? 'on' : ''}`} onClick={() => choose(q, o)}>{o}</button>
+                ))}
+              </div>
+            </div>
+          ))}
+          {qs.length > 1 && !answered && (
+            <button className="btn btn-orange" disabled={!ready} onClick={() => send()}>Continue <ArrowRight size={16} /></button>
+          )}
+          {!answered && <p className="clarify-hint">Or type your own answer below.</p>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PlainReply({ m }) {
+  return (
+    <div className="msg-bot">
+      <span className="msg-bot-avatar"><img src="/assets/img/logo-mark-gold.png" alt="" /></span>
+      <div className="msg-bot-body">
+        <p className="msg-meta"><b>LegalMate</b> {m.time}</p>
+        <div className="answer"><p>{m.text}</p></div>
       </div>
     </div>
   )
@@ -343,9 +400,12 @@ function SourcesPanel({ message, onClose, highlight }) {
               <span className={`pill ${s.type === 'Rule' ? 'pill-purple' : s.type === 'Judgment' ? 'pill-purple' : 'pill-blue'}`}>{s.type}</span>
             </div>
             <blockquote>{s.quote}</blockquote>
+            {s.quoteVerified === false && <p className="source-flag"><AlertTriangle size={14} /> We could not match this quote word for word. Please check the original text.</p>}
+            {s.note && <p className="source-flag"><AlertTriangle size={14} /> {s.note}</p>}
+            {s.pages && <span className="source-pages">{s.pages}{s.jurisdiction ? ` · ${s.jurisdiction}` : ''}</span>}
             {s.url
               ? <a className="link small" href={s.url} target="_blank" rel="noreferrer">View full source <ArrowRight size={15} /></a>
-              : <button className="link small" onClick={() => toast(`Opening ${s.title} - ${s.section}`, 'info')}>View full source <ArrowRight size={15} /></button>}
+              : isMock('chat') && <button className="link small" onClick={() => toast(`Opening ${s.title} - ${s.section}`, 'info')}>View full source <ArrowRight size={15} /></button>}
           </div>
         ))}
         {!sources.length && <p className="conv-empty">No sources for this answer.</p>}
@@ -415,6 +475,7 @@ export default function Chat() {
   const s = useStore()
   const [banner, setBanner] = useState(true)
   const [typing, setTyping] = useState(false)
+  const [stage, setStage] = useState('')
   const [highlight, setHighlight] = useState(null)
   const scrollRef = useRef(null)
 
@@ -438,10 +499,15 @@ export default function Chat() {
     seen.current.len = messages.length
   }, [id, messages.length, typing])
 
+  const STAGES = { thinking: 'Reading your question…', searching_sources: 'Searching Pakistani laws…', writing_answer: 'Writing and checking the answer…' }
   const reply = async (convId, text, opts = {}) => {
     setTyping(true)
+    setStage(STAGES.thinking)
     try {
-      const answer = normMsg(await chatService.sendMessage(convId, { content: text, ...opts }))
+      const answer = normMsg(await chatService.sendMessage(convId, { content: text, ...opts }, {
+        onStatus: ({ state }) => state && setStage(STAGES[state] || ''),
+        onConversation: conv => { upsertConv(conv); store.emit() },
+      }))
       store.msgs[convId] = [...(store.msgs[convId] || []), answer]
       const c = store.convs?.find(x => x.id === convId)
       if (c) upsertConv({ ...c, preview: `${text.slice(0, 32)}...`, time: now(), group: 'Today' })
@@ -450,6 +516,7 @@ export default function Chat() {
       toast(e.message || 'LegalMate could not answer right now. Please try again.', 'info')
     } finally {
       setTyping(false)
+      setStage('')
     }
   }
 
@@ -475,7 +542,7 @@ export default function Chat() {
 
   // Mock mode opens the seeded demo conversations; with a backend a topic card starts a new conversation.
   const openTopic = card => {
-    if (USE_MOCKS && store.convs?.some(c => c.id === card.key)) return navigate(`/chat/${card.key}`)
+    if (isMock('chat') && store.convs?.some(c => c.id === card.key)) return navigate(`/chat/${card.key}`)
     startConversation(card.starter, { topic: card.key })
   }
 
@@ -495,7 +562,7 @@ export default function Chat() {
   /* ----- Empty state (screen 6) ----- */
   if (!id || (!conv && s.convs && !s.loading[id] && !s.msgs[id])) {
     // The design shows the "Tenant rights in Pakistan" header on the empty state; with a real backend it is a fresh chat.
-    const designHeader = USE_MOCKS && !isNew && !id
+    const designHeader = isMock('chat') && !isNew && !id
     return (
       <div className="chat-page">
         <ConversationList activeId={designHeader ? 'tenant-rights' : null} />
@@ -566,13 +633,18 @@ export default function Chat() {
               <div className="msg-user-bubble"><p>{m.text}</p><span>{m.time}</span></div>
               <span className="avatar msg-user-avatar">{user?.initials}</span>
             </div>
+          ) : m.kind === 'clarify' ? (
+            <Clarify key={m.id} m={m} onAsk={text => sendFollowUp(text)} answered={messages[messages.length - 1] !== m || typing} />
+          ) : m.kind === 'info' ? (
+            <PlainReply key={m.id} m={m} />
           ) : (
-            <Answer key={m.id} m={m} onCite={onCite} panel={activePanel} onPanel={p => setPanel(activePanel === p ? null : p)} />
+            <Answer key={m.id} m={m} onCite={onCite} onAsk={text => !typing && sendFollowUp(text)} panel={activePanel} onPanel={p => setPanel(activePanel === p ? null : p)} />
           ))}
           {typing && (
             <div className="msg-bot">
               <span className="msg-bot-avatar"><img src="/assets/img/logo-mark-gold.png" alt="" /></span>
               <div className="typing"><i /><i /><i /></div>
+              {stage && <span className="typing-label" role="status">{stage}</span>}
             </div>
           )}
         </div>

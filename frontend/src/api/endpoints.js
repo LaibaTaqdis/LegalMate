@@ -5,8 +5,6 @@ export const EP = {
     login: '/auth/login',
     google: '/auth/google',
     register: '/auth/register',
-    verifyOtp: '/auth/verify-otp',
-    resendOtp: '/auth/resend-otp',
     refresh: '/auth/refresh',
     logout: '/auth/logout',
     forgotPassword: '/auth/forgot-password',
@@ -117,6 +115,7 @@ export const EP = {
   },
   settings: {
     profile: '/users/me',
+    onboardingProfile: '/users/me/profile',
     avatar: '/users/me/avatar',
     password: '/users/me/password',
     security: '/users/me/security',

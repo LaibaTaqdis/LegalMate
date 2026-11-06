@@ -6,6 +6,7 @@ import Landing from './pages/Landing'
 import Onboarding from './pages/Onboarding'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
+import ProfileSetup from './pages/ProfileSetup'
 import Dashboard from './pages/Dashboard'
 import Chat from './pages/Chat'
 import Upload from './pages/Upload'
@@ -56,6 +57,7 @@ export default function App() {
 
         <Route element={<RequireRole role="client"><AppLayout /></RequireRole>}>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/profile-setup" element={<ProfileSetup />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/chat/:id" element={<Chat />} />
           <Route path="/documents" element={<Navigate to="/documents/upload" replace />} />

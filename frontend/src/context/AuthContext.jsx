@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { USE_MOCKS } from '../api/config'
+import { isMock } from '../api/config'
 import { tokenStore } from '../api/tokenStore'
 import { authService } from '../api/services/authService'
 import { initials } from '../utils/format'
@@ -21,7 +21,7 @@ export function AuthProvider({ children }) {
 
   // Restore the session on first load. In mock mode a demo user is always signed in.
   useEffect(() => {
-    if (!USE_MOCKS && !tokenStore.accessToken) { setReady(true); return }
+    if (!isMock('auth') && !tokenStore.accessToken) { setReady(true); return }
     authService.me()
       .then(u => setUser(normalize(u)))
       .catch(() => tokenStore.clear())
@@ -42,7 +42,7 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async creds => startSession(await authService.login(creds), creds.remember), [startSession])
   const loginWithGoogle = useCallback(async () => startSession(await authService.googleLogin()), [startSession])
-  const verifyOtp = useCallback(async payload => startSession(await authService.verifyOtp(payload)), [startSession])
+  const register = useCallback(async payload => startSession(await authService.register(payload)), [startSession])
 
   const logout = useCallback(async () => {
     try { await authService.logout(tokenStore.refreshToken) } catch { /* ignore network errors on logout */ }
@@ -53,7 +53,7 @@ export function AuthProvider({ children }) {
   const updateUser = useCallback(patch => setUser(u => normalize({ ...u, ...patch, initials: undefined })), [])
 
   return (
-    <AuthContext.Provider value={{ user, ready, login, loginWithGoogle, verifyOtp, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, ready, login, loginWithGoogle, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   )

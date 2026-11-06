@@ -6,7 +6,7 @@ import { GoogleIcon } from '../components/Icons'
 import { useUI } from '../components/UIContext'
 import { homeFor, useAuth } from '../context/AuthContext'
 import { authService } from '../api/services/authService'
-import { USE_MOCKS } from '../api/config'
+import { isMock } from '../api/config'
 
 const ROLES = [
   { key: 'client', label: 'Client', icon: User },
@@ -49,7 +49,7 @@ export default function Login() {
   const submit = async e => {
     e.preventDefault()
     // Mock mode lets any input through; with a backend, empty credentials are rejected up front.
-    if (!USE_MOCKS && (!email.trim() || !password)) return setError('Enter your email or phone number and password.')
+    if (!isMock('auth') && (!email.trim() || !password)) return setError('Enter your email or phone number and password.')
     setBusy(true)
     setError('')
     try {
@@ -70,7 +70,9 @@ export default function Login() {
     if (!email.trim()) return setError('Enter your email or phone number first, then tap “Forgot password?”.')
     await authService.forgotPassword(email.trim()).catch(() => {})
     setError('')
-    toast('If an account exists, we have sent password reset instructions.', 'info')
+    toast(isMock('auth')
+      ? 'If an account exists, we have sent password reset instructions.'
+      : 'Password reset by email is not available yet. Please contact the LegalMate team to reset your password.', 'info')
   }
 
   return (
@@ -133,11 +135,14 @@ export default function Login() {
             {busy ? <Loader2 size={18} className="spin" /> : null} Log In {!busy && <ArrowRight size={18} />}
           </button>
 
-          <div className="auth-or"><span>or continue with</span></div>
-
-          <button type="button" className="btn btn-outline btn-lg btn-block auth-google" onClick={google}>
-            <GoogleIcon size={22} /> Continue with Google
-          </button>
+          {isMock('auth') && (
+            <>
+              <div className="auth-or"><span>or continue with</span></div>
+              <button type="button" className="btn btn-outline btn-lg btn-block auth-google" onClick={google}>
+                <GoogleIcon size={22} /> Continue with Google
+              </button>
+            </>
+          )}
 
           <p className="auth-switch">Don't have an account? <Link to="/signup">Sign up</Link></p>
           <p className="auth-switch">Are you a lawyer? <Link to="/lawyer/apply">Apply to join LegalMate</Link></p>

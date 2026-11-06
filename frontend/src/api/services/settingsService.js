@@ -1,5 +1,5 @@
 import { api, upload } from '../client'
-import { USE_MOCKS } from '../config'
+import { USE_MOCKS, isMock } from '../config'
 import { EP } from '../endpoints'
 import { mock } from '../mock'
 import { MOCK_SETTINGS, MOCK_USER } from '../mocks/user'
@@ -10,10 +10,10 @@ const merge = (a, b) => Object.fromEntries(Object.entries({ ...a, ...b }).map(([
 export const settingsService = {
   /* ---------- Profile ---------- */
   /** -> User */
-  getProfile: signal => (USE_MOCKS ? mock(MOCK_USER) : api.get(EP.settings.profile, { signal })),
+  getProfile: signal => (isMock('profile') ? mock(MOCK_USER) : api.get(EP.settings.profile, { signal })),
   /** patch: { name, email, phone, city, address } -> User */
   updateProfile: patch => {
-    if (!USE_MOCKS) return api.patch(EP.settings.profile, patch)
+    if (!isMock('profile')) return api.patch(EP.settings.profile, patch)
     Object.assign(MOCK_USER, patch)
     return mock(MOCK_USER, 400)
   },

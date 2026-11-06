@@ -8,6 +8,25 @@ This document lists every backend API the LegalMate frontend needs to run fully 
 
 ---
 
+## Implementation status (what the FastAPI backend in `backend/app` does today)
+
+The frontend switches services to the real backend one by one (`VITE_REAL_SERVICES=auth,chat,profile`, see `frontend/.env.example`). Everything else keeps running on mocks until it is built.
+
+| Area | Status |
+|---|---|
+| Auth: `register`, `login`, `refresh`, `logout`, `me`, `forgot-password` | **Done.** No OTP step (accounts are usable at once). `forgot-password` always answers 204 but sends no email yet (no mail service). Google sign-in is not built. |
+| Account: `GET/PATCH /users/me`, `POST /users/me/password` | **Done.** Email and phone changes are not re-verified yet. |
+| Onboarding profile: `GET/PUT /users/me/profile` | **Done** (new, see section 13). It gives the chatbot context about the user. |
+| Chat: conversations, streaming messages, feedback, source reports | **Done** (section 5). |
+| Chat: `POST /chat/messages/:id/save` (Legal Vault) | Answers `501 NOT_IMPLEMENTED`. |
+| Documents: `POST /documents`, `POST /analyses`, chat attachments | Answer `501 NOT_IMPLEMENTED` until the document phase. |
+| Settings: security, sessions, preferences, avatar, export, delete account, integrations | Not built (mock). |
+| Dashboard, vault, briefs, calculators, legal aid, lawyers, bookings, admin, community, emergency, offline, WhatsApp | Not built (mock). |
+
+Limits that exist today: 30 questions per hour and 100 per day per user, one answer at a time per user, 8 failed sign-ins per account per 15 minutes, 6 sign-ups per hour per address, 4000 characters per message.
+
+---
+
 ## 1. Conventions
 
 ### 1.1 Format
@@ -19,7 +38,7 @@ This document lists every backend API the LegalMate frontend needs to run fully 
 
 ### 1.2 Authentication
 - JWT bearer tokens: `Authorization: Bearer <accessToken>`.
-- Login, register+OTP and refresh return `{ user, accessToken, refreshToken }`.
+- Login and register return `{ user, accessToken, refreshToken }`; refresh returns `{ accessToken, refreshToken }`. Register signs the user in immediately (no OTP step).
 - The access token should be short-lived (about 15 min). The refresh token is long-lived and rotated on each refresh.
 - On `401`, the frontend calls `POST /auth/refresh` once and retries the request. If the refresh fails, the user is sent to `/login`.
 - All endpoints require auth except the ones under `/auth/*` marked **public**.
@@ -68,9 +87,7 @@ File endpoints return the binary with `Content-Type` and `Content-Disposition: a
 | **Auth** |||
 | 1 | POST | `/auth/login` | Login |
 | 2 | GET | `/auth/google` | Login (redirect) |
-| 3 | POST | `/auth/register` | Signup step 1 |
-| 4 | POST | `/auth/verify-otp` | Signup step 2 |
-| 5 | POST | `/auth/resend-otp` | Signup step 2 |
+| 3 | POST | `/auth/register` | Signup (signs in at once, no OTP) |
 | 6 | POST | `/auth/forgot-password` | Login |
 | 7 | POST | `/auth/refresh` | API client (automatic) |
 | 8 | POST | `/auth/logout` | Top bar, Settings |
@@ -150,6 +167,7 @@ File endpoints return the binary with `Content-Type` and `Content-Disposition: a
 | **Settings** |||
 | 75 | GET | `/users/me` | Settings → Profile |
 | 76 | PATCH | `/users/me` | Save profile |
+| 76a | GET, PUT | `/users/me/profile` | Profile setup (onboarding questions that give the chatbot context) |
 | 77 | POST | `/users/me/avatar` (multipart) | Change photo |
 | 78 | POST | `/users/me/password` | Change password |
 | 79 | GET | `/users/me/security` | 2FA / login alerts |
@@ -216,7 +234,7 @@ File endpoints return the binary with `Content-Type` and `Content-Disposition: a
   "avatarUrl": null,
   "role": "client",
   "roleLabel": "Citizen Account",
-  "preferredLanguage": "en"
+  "preferredLanguage": "en", "profileCompleted": true, "joinedAt": "2026-11-06T10:00:00+00:00"
 }
 ```
 The frontend derives `initials` and `firstName` itself if you do not send them. `role` is one of `client`, `lawyer`, `admin` and decides which app shell (nav + routes) the frontend renders after login — see `src/context/AuthContext.jsx`'s `homeFor()`. A `lawyer` user's response should also include `lawyerId`, the id of their row in `/lawyers` (so the lawyer portal can load "my profile").
@@ -228,7 +246,7 @@ The frontend derives `initials` and `firstName` itself if you do not send them. 
 // 200
 { "user": { ...User }, "accessToken": "jwt", "refreshToken": "opaque" }
 ```
-`role` is the tab the person picked on the sign-in screen (Client/Lawyer/Admin); reject the login with `403 FORBIDDEN` if the account's actual role does not match it, rather than silently logging them into the wrong portal. `401 INVALID_CREDENTIALS` for a wrong email/phone or password. If 2FA is enabled, you may return `{ "twoFactorRequired": true, "verificationId": "..." }` and reuse `/auth/verify-otp`.
+`role` is the tab the person picked on the sign-in screen (Client/Lawyer/Admin); reject the login with `403 FORBIDDEN` if the account's actual role does not match it, rather than silently logging them into the wrong portal. `401 INVALID_CREDENTIALS` for a wrong email/phone or password. Too many failed attempts: `429 RATE_LIMITED` with `Retry-After`.
 
 ### GET `/auth/google?redirect=<url>` (public)
 Starts Google OAuth. After the callback, redirect to `redirect` with tokens delivered securely (e.g. a short-lived one-time `code` that the frontend exchanges, or HttpOnly cookies).
@@ -236,31 +254,21 @@ Starts Google OAuth. After the callback, redirect to `redirect` with tokens deli
 ### POST `/auth/register` (public)
 ```json
 // request
-{ "fullName": "Arfah Rizwan", "cnic": "35202-1234567-1", "email": "arfah@example.com",
-  "phone": "+923001234567", "preferredLanguage": "en|ur|both", "password": "Str0ng!pass", "acceptedTerms": true }
+{ "fullName": "Arfah Rizwan", "email": "arfah@example.com", "password": "Str0ng!pass", "acceptedTerms": true,
+  "phone": "+923001234567", "cnic": "35202-1234567-1", "preferredLanguage": "en|ur|both" }
 // 201
-{ "verificationId": "ver_123", "channel": "sms", "maskedDestination": "+92 300 ***4567" }
+{ "user": { ...User }, "accessToken": "jwt", "refreshToken": "opaque" }
 ```
-Validate: CNIC format `XXXXX-XXXXXXX-X`, a unique email and phone, and a password with at least 8 characters, one uppercase letter, one number and one special character. Send a 6-digit OTP by SMS.
-
-### POST `/auth/verify-otp` (public)
-```json
-{ "verificationId": "ver_123", "code": "123456" }
-// 200 -> { "user": {...}, "accessToken": "...", "refreshToken": "..." }
-```
-`422 INVALID_OTP` or `OTP_EXPIRED`.
-
-### POST `/auth/resend-otp` (public)
-`{ "verificationId": "ver_123" }` → `204`. Rate-limit this (e.g. 1 per 30 s).
+`phone`, `cnic` and `preferredLanguage` are optional. Validation: valid email; password of at least 8 characters with one uppercase letter, one number and one special character; `acceptedTerms` must be true; phone is a Pakistani mobile number in any common form (stored as `+923001234567`); CNIC format `XXXXX-XXXXXXX-X`. `409 CONFLICT` (with `details.field` = `email` or `phone`) if already registered. Only the last 4 digits of the CNIC are stored, and `User.cnic` comes back masked (`*****-***567-1`). Rate limited per address. Public registration only creates `client` accounts; admins and lawyers are created with `python -m app.create_admin`.
 
 ### POST `/auth/forgot-password` (public)
-`{ "identifier": "email or phone" }` → `204`. Always returns 204, even when no account exists, so the endpoint cannot be used to check whether an account exists.
+`{ "identifier": "email or phone" }` → `204`. Always returns 204, even when no account exists, so the endpoint cannot be used to check whether an account exists. **No email is sent yet** (no mail service in this version).
 
 ### POST `/auth/refresh` (public)
-`{ "refreshToken": "..." }` → `{ "accessToken": "...", "refreshToken": "..." }`
+`{ "refreshToken": "..." }` → `{ "accessToken": "...", "refreshToken": "..." }`. The old refresh token stops working. Presenting a rotated token again (after a 10 second grace for two tabs racing) signs that whole login session out. `401 INVALID_REFRESH` or `TOKEN_EXPIRED`.
 
 ### POST `/auth/logout`
-`{ "refreshToken": "..." }` → `204` (revokes the refresh token).
+`{ "refreshToken": "..." }` → `204` (ends that login session; works even when the access token has expired).
 
 ### GET `/auth/me`
 → `User`
@@ -338,9 +346,21 @@ Assistant message (structured answer):
       "quote": "“The terms of a written tenancy agreement shall be binding...”", "url": "https://..." }
   ],
   "confidence": { "score": 87, "relevance": 92, "agreement": 84, "recency": 86, "checked": 4, "verifiedAt": "..." },
+  "followUps": ["Optional suggested next questions (0-2)"],
   "feedback": null
 }
 ```
+Extra fields on each source: `quoteVerified` (false when the quoted text could not be matched word for word in the law's text; show a warning), `pages` (`"p. 4"`), `jurisdiction` (`Federal|Punjab|ICT`), `status` and `note` (for example "Amended later by ..." or "Marked repealed in Punjab ...": show it next to the source). `kind` is `"answer"`.
+
+Other assistant message kinds (the UI renders each differently):
+```json
+// kind "clarify": the question was too general. Show the options as tappable chips; the user's choice is sent as an ordinary next message.
+{ "id": "msg_3", "role": "assistant", "kind": "clarify", "intro": "To give you accurate guidance I need a little more information...",
+  "questions": [ { "id": "q1", "text": "Are you the tenant or the landlord?", "options": ["Tenant", "Landlord"] } ], "createdAt": "..." }
+// kind "info": a plain reply with no sources (greeting, out of scope, nothing found in the database).
+{ "id": "msg_4", "role": "assistant", "kind": "info", "reason": "greeting|out_of_scope|unclear|no_source", "text": "Hello! I can explain Pakistani law...", "createdAt": "..." }
+```
+At most one round of clarifying questions is asked per conversation; after the user answers, the assistant always answers.
 **Rich text** (`intro`, `law`, each item in `steps`) is an array of plain strings, `{ "b": "bold text" }` and `{ "cite": <source id> }`. Citation numbers must match `sources[].id`. Clicking a citation opens the Sources panel on that source.
 
 **Confidence** values are percentages (0-100). The UI labels 80 and above as "High Confidence" and 60-79 as "Medium Confidence". Compute them from your retrieval/verification pipeline:
@@ -358,7 +378,7 @@ Assistant message (structured answer):
 // 201
 { "conversation": { ...Conversation } }
 ```
-Generate `title` and `tag` (legal area) from the question. The frontend then sends the first message with endpoint 20.
+Creates the empty conversation with a provisional `title` (a topic card's own title, otherwise the start of the question) and `tag` `General`. The frontend then sends the first message with endpoint 20, and the stream's `conversation` event carries the real generated `title`/`tag` (once, until the user renames it).
 
 ### GET `/chat/conversations/:id`
 → `{ "conversation": Conversation, "messages": Message[] }` (oldest first)
@@ -382,19 +402,25 @@ data: {"state":"thinking"}
 event: status
 data: {"state":"searching_sources"}
 
+event: status
+data: {"state":"writing_answer"}
+
+event: conversation
+data: { ...Conversation (new title/tag/preview/updatedAt) }
+
 event: answer
-data: { ...assistant Message (full JSON) }
+data: { ...assistant Message (full JSON, any kind) }
 ```
 - Store both the user message and the assistant message.
-- If something fails, send `event: error` with `data: {"message":"..."}`.
-- Optional: `event: delta` with `{ "text": "..." }` chunks for token streaming (the current UI shows a typing indicator and waits for `answer`).
+- If something fails, the stream ends with `event: error` and `data: {"code":"UNAVAILABLE|RATE_LIMITED|INTERNAL","message":"..."}`; the unanswered user message is removed, so the user can simply send it again. A `: keep-alive` comment line is sent every 10 seconds on slow answers. Checks that fail before streaming starts (not your conversation, empty text, rate limits, attachments) are ordinary HTTP errors: `404`, `400`, `429`, `422`.
+- Token streaming (`event: delta`) is not used: the answer is verified in full before it is sent, so the UI shows the progress labels instead.
 - Update the conversation's `preview` and `updatedAt`.
 
 ### POST `/chat/messages/:id/feedback`
 `{ "vote": "up|down", "comment": "optional" }` → `204`. `comment: "sources"` means the vote came from the Sources panel.
 
 ### POST `/chat/messages/:id/save`
-Saves the answer as a document in the Legal Vault → `{ "documentId": "doc_9" }`
+Saves the answer as a document in the Legal Vault → `{ "documentId": "doc_9" }`. **Not built yet: answers `501 NOT_IMPLEMENTED`.**
 
 ### POST `/chat/sources/report`
 `{ "messageId": "msg_2", "sourceId": 1, "reason": "user_report" }` → `204`
@@ -712,10 +738,27 @@ Receives incoming WhatsApp messages. Supported commands: `/ask <question>` (answ
 ### GET `/users/me` → `User`
 ### PATCH `/users/me`
 `{ "name", "email", "phone", "city", "address" }` → `User`. CNIC is read-only once verified. Re-verify an email or phone number when it changes.
+### GET `/users/me/profile` and PUT `/users/me/profile`
+The onboarding questions. The answers are given to the chatbot as context (where the user lives, their situation), so it can pick the right laws and explain at the right level. **No name, CNIC, phone, email or address is ever part of it or sent to the model.** Every field is optional; each choice must be one of the listed values (anything else is `400`).
+```json
+{
+  "province": "Punjab|Sindh|Khyber Pakhtunkhwa|Balochistan|Islamabad Capital Territory|Gilgit-Baltistan|Azad Jammu & Kashmir",
+  "city": "Lahore",
+  "userType": "Citizen|Young adult|Business owner (SME)|Student",
+  "employmentStatus": "Employed|Self-employed|Unemployed|Student|Retired",
+  "roles": ["Tenant", "Landlord", "Employee", "Employer", "Business owner", "Property buyer or seller", "Parent or guardian"],
+  "ageBand": "18-24|25-34|35-44|45-59|60+",
+  "maritalStatus": "Single|Married|Divorced|Widowed|Prefer not to say",
+  "language": "en|ur|both",
+  "interests": ["Property and tenancy", "Family", "Criminal", "Employment", "Business and contracts", "Consumer", "Cyber and online", "Constitutional rights"],
+  "completed": true
+}
+```
+`PUT` replaces all answers (an empty body is a valid "skipped" form) and marks the profile completed; `GET` returns the same shape. `language` also updates `User.preferredLanguage`, `city` also updates `User.city`.
 ### POST `/users/me/avatar` (multipart, JPG/PNG ≤ 2 MB)
 → `{ "avatarUrl": "https://..." }`
 ### POST `/users/me/password`
-`{ "currentPassword", "newPassword" }` → `204` (`422 WRONG_PASSWORD`). Revoke other sessions.
+`{ "currentPassword", "newPassword" }` → `204` (`422 WRONG_PASSWORD`). Signs out every other device; this one stays signed in.
 ### GET `/users/me/security`
 → `{ "twoFactorEnabled": true, "loginAlerts": true }`
 ### PATCH `/users/me/security`
@@ -854,7 +897,7 @@ These reuse the marketplace's `Lawyer` and `Booking` shapes (section 15), scoped
 
 | Area | What is needed |
 |---|---|
-| Auth | JWT + refresh-token rotation, bcrypt/argon2 passwords, SMS OTP provider (e.g. Twilio / local SMS gateway), Google OAuth, optional NADRA CNIC verification |
+| Auth | JWT + refresh-token rotation, argon2 passwords (done); Google OAuth, mail service for password reset and email verification, optional NADRA CNIC verification (not built; SMS OTP is not used in this version) |
 | AI chat | RAG over Pakistani laws (Acts, Rules, judgments) with a vector store, citation extraction, confidence scoring, Urdu + English support, SSE streaming |
 | Document analysis | File storage (S3-compatible, encrypted at rest), virus scan, OCR for scans/images, clause/risk/deadline extraction, background job queue, PDF report generation |
 | Case briefs | LLM generation into the section/block schema, PDF + DOCX export, share links with expiry/password, invite emails/SMS |
