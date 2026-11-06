@@ -208,7 +208,11 @@ def test_engine_flows():
     assert out["message"]["kind"] == "info" and llm.live_calls == 1
     # budget exhausted: no exception, a friendly info message
     out = ChatEngine(FakeKB([passage(1)]), ScriptedLLM(BudgetExceeded("cap"))).respond("question about tenancy")
-    assert out["message"]["kind"] == "info" and out["message"]["reason"] == "error"
+    assert out["message"]["kind"] == "info" and out["message"]["reason"] == "busy"
+    # progress callbacks fire in order for a full legal answer
+    seen: list[str] = []
+    ChatEngine(FakeKB([passage(1)]), ScriptedLLM(ANALYSIS, ANSWER)).respond("question about tenancy", on_status=seen.append)
+    assert seen == ["understanding", "searching_sources", "writing_answer"], seen
     # no sources found: no answer call
     llm = ScriptedLLM(ANALYSIS, ANSWER)
     out = ChatEngine(FakeKB([]), llm).respond("obscure question")

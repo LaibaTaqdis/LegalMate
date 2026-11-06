@@ -8,6 +8,7 @@ Startup cost (about 20 MB read from Postgres, a few seconds) is paid once per pr
 """
 from __future__ import annotations
 
+import threading
 import time
 
 import numpy as np
@@ -23,8 +24,9 @@ ROW_COLS = ("chunk_id, doc_id, act_title, year, jurisdiction, applies_to, tier, 
 class KnowledgeBase:
     def __init__(self, database_url: str, model: str = "BAAI/bge-small-en-v1.5", embedder: QueryEmbedder | None = None,
                  ef_search: int = 100):
-        self.conn = psycopg.connect(database_url, autocommit=True)
-        self.conn.execute(f"set hnsw.ef_search = {int(ef_search)}")
+        self._url, self._ef = database_url, int(ef_search)
+        self._conn_lock = threading.Lock()
+        self.conn = self._connect()
         self.embedder = embedder or QueryEmbedder(model)
         t0 = time.time()
         self.meta: dict[str, tuple] = {}              # chunk_id -> (jurisdiction, applies_to set, repealed, text hash)
@@ -45,6 +47,33 @@ class KnowledgeBase:
         self._qcache: dict[tuple, np.ndarray] = {}
         self.startup_seconds = time.time() - t0
 
+    # ------------------------------------------------------------------ connection (Supabase's pooler drops idle connections)
+    def _connect(self):
+        conn = psycopg.connect(self._url, autocommit=True)
+        conn.execute(f"set hnsw.ef_search = {self._ef}")
+        return conn
+
+    def _run(self, sql: str, params=None):
+        """conn.execute with one automatic reconnect if the server closed the connection while idle."""
+        try:
+            return self.conn.execute(sql, params)
+        except (psycopg.OperationalError, psycopg.InterfaceError):
+            with self._conn_lock:
+                if self.conn.closed or self._broken():
+                    try:
+                        self.conn.close()
+                    except Exception:
+                        pass
+                    self.conn = self._connect()
+            return self.conn.execute(sql, params)
+
+    def _broken(self) -> bool:
+        try:
+            self.conn.execute("select 1")
+            return False
+        except Exception:
+            return True
+
     # ------------------------------------------------------------------ retrieval
     def embed_query(self, text: str, use_prefix: bool = True) -> np.ndarray:
         """Query embedding with a small cache (the same query is embedded once per turn, however many searches use it)."""
@@ -59,7 +88,7 @@ class KnowledgeBase:
         """Best chunks of specific laws (vector search restricted to them). Used when a query names an Act we hold."""
         qv = self.embed_query(query)
         v = "[" + ",".join(f"{x:.6f}" for x in qv) + "]"
-        rows = self.conn.execute(
+        rows = self._run(
             "select chunk_id, 1 - (embedding <=> %s::vector) from law_chunks where doc_id = any(%s) and unit_type <> 'toc' "
             "order by embedding <=> %s::vector limit %s", [v, doc_ids, v, k]).fetchall()
         from .search import Hit
@@ -68,7 +97,7 @@ class KnowledgeBase:
 
     def _vector(self, qv: np.ndarray, depth: int) -> list[tuple[str, float]]:
         v = "[" + ",".join(f"{x:.6f}" for x in qv) + "]"
-        rows = self.conn.execute(
+        rows = self._run(
             "select chunk_id, 1 - (embedding <=> %s::vector) from law_chunks order by embedding <=> %s::vector limit %s",
             [v, v, depth]).fetchall()
         return [(r[0], float(r[1])) for r in rows if r[0] in self.meta]      # drops toc chunks (not in meta)
@@ -104,7 +133,7 @@ class KnowledgeBase:
         sql = (f"select {cols}, {cos_sql} as cosine, d.is_amendment, d.source_urls, d.n_pages, "
                "coalesce((select array_agg(x.title order by x.year) from law_documents x where x.doc_id = any (d.amended_by)), '{}') as amended_by_titles "
                "from law_chunks c join law_documents d on d.doc_id = c.doc_id where c.chunk_id = any(%s)")
-        cur = self.conn.execute(sql, ([v] if v else []) + [ids])
+        cur = self._run(sql, ([v] if v else []) + [ids])
         names = [d.name for d in cur.description]
         by_id = {r[0]: dict(zip(names, r)) for r in cur.fetchall()}
         out = []
@@ -117,7 +146,7 @@ class KnowledgeBase:
     def lookup_section(self, act_like: str, section: str, limit: int = 5) -> list[dict]:
         """Exact lookup when the user names a section: ("Penal Code", "379"), ("Constitution", "10")."""
         cols = ", ".join("c." + c.strip() for c in ROW_COLS.split(","))
-        cur = self.conn.execute(
+        cur = self._run(
             f"select {cols} from law_chunks c join law_documents d on d.doc_id = c.doc_id "
             "where c.act_title ilike %s and c.section_nums @> array[%s] "
             # base laws before the amending instruments that merely mention the same section number

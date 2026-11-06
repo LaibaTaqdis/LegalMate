@@ -13,6 +13,7 @@ from __future__ import annotations
 import re
 import time
 from datetime import datetime, timezone
+from typing import Callable
 
 from . import prompts
 from .confidence import score as confidence_score
@@ -74,6 +75,16 @@ class ActRouter:
     def match(self, text: str) -> list[str]:
         t = " " + _alias_norm(text) + " "
         return sorted({d for alias, d in self.aliases if alias in t})
+
+
+BUSY_TEXT = "LegalMate has reached its answer limit for today. Please try again tomorrow."
+
+
+def _failure_text(e: Exception, fallback: str) -> tuple[str, str]:
+    """(reason, text) for a failed model call: a spent budget is reported as 'busy', anything else as 'error'."""
+    if isinstance(e, BudgetExceeded):
+        return "busy", BUSY_TEXT
+    return "error", fallback
 
 
 def _now() -> str:
@@ -144,7 +155,9 @@ class ChatEngine:
 
     # ------------------------------------------------------------------ the whole turn
     def respond(self, text: str, *, history: list[dict] | None = None, profile: dict | None = None, language: str = "en",
-                attachment_text: str | None = None) -> dict:
+                attachment_text: str | None = None, on_status: Callable[[str], None] | None = None) -> dict:
+        """`on_status` (optional) is called with 'understanding', 'searching_sources', 'writing_answer' as the turn progresses."""
+        status = on_status or (lambda s: None)
         t0 = time.time()
         history = history or []
         meta: dict = {"calls_live_before": self.llm.live_calls}
@@ -156,10 +169,12 @@ class ChatEngine:
         if GREETING.match(clean) and not attachment_text:
             return self._done(self._info("greeting", "Hello! I can explain Pakistani law in plain language, with the sources I used. "
                                                       "Ask me about tenancy, family, criminal, labour, contract or property matters, or upload a document."), meta, t0, None)
+        status("understanding")
         try:
             analysis = self.analyse(clean, hist, profile, language, bool(attachment_text))
         except (BudgetExceeded, CacheMiss, LLMError) as e:
-            return self._done(self._info("error", f"I can't answer right now ({type(e).__name__}). Please try again later."), meta, t0, None, error=str(e))
+            reason, text = _failure_text(e, "I can't answer right now. Please try again in a few minutes.")
+            return self._done(self._info(reason, text), meta, t0, None, error=f"{type(e).__name__}: {e}")
         meta["analysis"] = {k: analysis[k] for k in ("intent", "language", "jurisdiction", "emergency", "needs_clarification", "search_queries", "tag")}
         conv = {"title": analysis["title"], "tag": analysis["tag"]}
         emergency = EMERGENCY if analysis["emergency"] else None
@@ -172,6 +187,7 @@ class ChatEngine:
 
         jur = norm_jurisdiction(analysis["jurisdiction"]) or norm_jurisdiction((profile or {}).get("province")) \
             or norm_jurisdiction((profile or {}).get("city"))
+        status("searching_sources")
         t1 = time.time()
         passages = self.retrieve(analysis["search_queries"], jur)
         meta["retrieval_seconds"] = round(time.time() - t1, 3)
@@ -182,10 +198,12 @@ class ChatEngine:
         doc_note = (attachment_text or "")[:3000]
         msgs = prompts.answer_messages(clean, history=hist, profile_line=profile_line(profile), answer_language=answer_lang,
                                        passages=passages, document_note=doc_note)
+        status("writing_answer")
         try:
             ans = parse_json(self.llm.complete(msgs, tag="answer", max_tokens=1400).text)
         except (BudgetExceeded, CacheMiss, LLMError, ValueError) as e:
-            return self._done(self._info("error", "I could not prepare an answer just now. Please try again."), meta, t0, conv, error=str(e))
+            reason, text = _failure_text(e, "I could not prepare an answer just now. Please try again.")
+            return self._done(self._info(reason, text), meta, t0, conv, error=f"{type(e).__name__}: {e}")
         message = self._build_answer(ans, passages, answer_lang, emergency, meta)
         return self._done(message, meta, t0, conv)
 

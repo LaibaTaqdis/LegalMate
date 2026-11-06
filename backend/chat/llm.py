@@ -97,7 +97,7 @@ class DeepSeek:
             body["response_format"] = {"type": "json_object"}
         key = hashlib.sha256(json.dumps(body, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
         cache_file = self.s.cache_dir / f"{key}.json"
-        if cache_file.exists():
+        if self.s.cache_enabled and cache_file.exists():
             c = json.loads(cache_file.read_text(encoding="utf-8"))
             self.cache_hits += 1
             return LLMResult(c["text"], c.get("usage", {}), cached=True, cost=0.0, seconds=0.0)
@@ -127,7 +127,8 @@ class DeepSeek:
         self.cost += cost
         self.tokens_in += usage.get("prompt_tokens", 0)
         self.tokens_out += usage.get("completion_tokens", 0)
-        cache_file.write_text(json.dumps({"text": text, "usage": usage, "tag": tag}, ensure_ascii=False), encoding="utf-8")
+        if self.s.cache_enabled:
+            cache_file.write_text(json.dumps({"text": text, "usage": usage, "tag": tag}, ensure_ascii=False), encoding="utf-8")
         return LLMResult(text, usage, cached=False, cost=cost, seconds=dt)
 
     # ------------------------------------------------------------------ bookkeeping

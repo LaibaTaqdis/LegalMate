@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import re
 import sqlite3
+import threading
 from typing import Hashable, Iterable
 
 _STOP = set("a an the of to in on for and or is are was were be been i my me we our you your he she it they them his her its their "
@@ -25,7 +26,9 @@ class LexicalIndex:
     def __init__(self, rows: Iterable[tuple[Hashable, str, str]], path: str = ":memory:"):
         """rows = (key, header, body). `path` may be a file to keep the index between runs."""
         self.keys: list[Hashable] = []
-        self.db = sqlite3.connect(path)
+        # A server answers from several threads: one connection, used by one thread at a time (see the lock in search()).
+        self.db = sqlite3.connect(path, check_same_thread=False)
+        self._lock = threading.Lock()
         self.db.execute("DROP TABLE IF EXISTS f")
         self.db.execute("CREATE VIRTUAL TABLE f USING fts5(header, body, tokenize='porter unicode61')")
         batch = []
@@ -48,6 +51,7 @@ class LexicalIndex:
             return []
         match = " OR ".join(f'"{t}"' for t in ts)
         # bm25() is lower-is-better; weights are per column (header, body)
-        rows = self.db.execute(
-            f"SELECT rowid, bm25(f, {header_weight}, 1.0) AS s FROM f WHERE f MATCH ? ORDER BY s LIMIT ?", (match, k)).fetchall()
+        with self._lock:
+            rows = self.db.execute(
+                f"SELECT rowid, bm25(f, {header_weight}, 1.0) AS s FROM f WHERE f MATCH ? ORDER BY s LIMIT ?", (match, k)).fetchall()
         return [(self.keys[int(r)], -float(s)) for r, s in rows]

@@ -39,6 +39,7 @@ class Settings:
     price_in_hit: float
     price_out: float
     database_url: str
+    cache_enabled: bool = True     # the API turns this off: the cache would keep (scrubbed) user questions on the server's disk
 
 
 def get_settings() -> Settings:
@@ -61,4 +62,5 @@ def get_settings() -> Settings:
         price_in_hit=float(os.environ.get("LLM_PRICE_IN_CACHED", "0.03")),
         price_out=float(os.environ.get("LLM_PRICE_OUT", "1.20")),
         database_url=os.environ.get("DATABASE_URL", ""),
+        cache_enabled=os.environ.get("LLM_CACHE", "on").lower() != "off",
     )

@@ -160,7 +160,53 @@ Measured (prices are **estimates** from third-party reports, check DeepSeek's pr
 
 **Experiment, kept switched off:** routing a query that names an Act to a search inside that Act (`route_acts`) gave no measurable gain on the gold set.
 
-**Known limits:** the verifier checks that citations, quotes, sections and figures exist in the sources, not that the conclusion follows from them (an optional cheap third "entailment" call could); negative claims depend on a possibly outdated corpus; confidence cannot capture that; the emergency numbers (15, 1122) are static text to be replaced by the verified Emergency directory; streaming, document attachments and the API come in Phases 4-5.
+**Known limits:** the verifier checks that citations, quotes, sections and figures exist in the sources, not that the conclusion follows from them (an optional cheap third "entailment" call could); negative claims depend on a possibly outdated corpus; confidence cannot capture that; the emergency numbers (15, 1122) are static text to be replaced by the verified Emergency directory; the API and streaming are Phase 4 (below); document attachments come in Phase 5.
+
+## Phase 4: the API (`backend/app`) and the frontend wiring
+
+```powershell
+pip install -r requirements.txt                       # adds fastapi, uvicorn, argon2, pyjwt, psycopg-pool
+python -m uvicorn app.asgi:app --port 8000            # from backend/. Needs backend/.env (DATABASE_URL, JWT_SECRET, DEEPSEEK_API_KEY)
+python -m pytest tests -q                             # 35 tests: 25 API + 10 engine. Local Postgres, fake model: ZERO DeepSeek calls
+python -m app.migrations_check                        # proves every table is protected by Row Level Security (run against Supabase)
+python -m app.create_admin --email you@example.com --name "Your Name"     # admins/lawyers cannot self-register
+```
+
+Frontend (`frontend/.env.local`, copy of `.env.example`): `VITE_REAL_SERVICES=auth,chat,profile` and `VITE_PROXY_TARGET=http://localhost:8000`, then `npm install` and `npm run dev`. Services not listed keep running on mocks.
+
+**What it does**
+
+| Part | Detail |
+|---|---|
+| Accounts | Own JWT login (no OTP). Argon2id passwords. Access token 15 min; refresh token is random, stored only as a SHA-256, rotated on every use; replaying an old one signs the whole login session out. Wrong email and wrong password look identical (and take equally long). 8 failed sign-ins per account per 15 minutes then 429. |
+| Authorisation | Every request re-reads the user from the database, so a suspended account loses access immediately. Every conversation query filters by the signed-in user; another user's id answers 404 (tested). |
+| Profile | `PUT /users/me/profile` stores the onboarding answers (fixed choices; the only free text is the city, restricted to letters and digits). They are given to the chatbot as context. Name, CNIC, phone, email and address are never sent to the model. |
+| Chat | `POST /chat/conversations/:id/messages` streams Server-Sent Events: `status` (thinking, searching_sources, writing_answer), `conversation` (generated title and tag), `answer` (the message: answer, clarify or info). The user message and the answer are saved by the worker, not the stream, so an answer is not lost if the browser disconnects. A failed turn leaves no half conversation (the question is removed, the user retries). |
+| Limits | 30 questions per hour and 100 per day per user (the daily count comes from the database, so restarts do not reset it), one answer at a time per user, at most 4 answers computed at once, the DeepSeek daily cap from Phase 3 as the final guard. Over the cap the user sees a plain message, not an error page. |
+| Database | Tables `users`, `refresh_tokens`, `conversations`, `messages`, `source_reports` in their own schema `app` (not exposed by Supabase's REST API), applied automatically by `app/migrations/*.sql` at start-up. Row Level Security is on for all of them with no policies, and also on the law tables, which were open to the public anon key before. |
+| Engine | One shared `KnowledgeBase` + `ChatEngine` built in the background at start-up (about 30 s: it streams 21,113 chunks into the in-memory keyword index). If Supabase is unreachable the API keeps running and chat answers 503 with a retry every 30 s; the keyword index is thread-safe and the Supabase connection reconnects itself after the pooler drops it. |
+| Privacy of the server itself | The DeepSeek disk cache is OFF in the API (`LLM_CACHE=on` to enable): it would keep users' scrubbed questions on disk. Engine diagnostics saved with each answer are timings and verification results, never the question. Errors shown to the browser never include internals (tested). |
+
+**Not built yet (the API answers clearly, the UI says so):** password reset by email (needs a mail service), Google sign-in, Save to Vault (501), document upload and attachments (501, Phase 5), account deletion and data export, the settings tabs other than profile, and every other module. The frontend keeps those on mocks.
+
+**Frontend changes:** per-service mock switch (`isMock('chat')`; `VITE_USE_MOCKS=false` still means everything real); sign-up has no OTP step and CNIC and phone are optional; new `/profile-setup` page (offered right after sign-up, skippable); the chat shows clarifying questions as tappable chips, plain replies, a progress label while thinking, follow-up suggestions, source warnings (quote not matched word for word, repealed or amended law) and auto-generated conversation titles; the Google button and the fake "reset email sent" message are hidden or made honest while the backend is real.
+
+**Found and fixed while testing the phase**
+
+| Issue | Fix |
+|---|---|
+| The keyword index (SQLite) raises an error when a request thread uses a connection made by another thread, so every chat would have failed | `check_same_thread=False` plus a lock around searches |
+| Supabase's pooler closes idle connections; the next question would fail | `KnowledgeBase._run` reconnects once and retries |
+| A crashed engine left the user's question in the conversation with no answer | any failure after saving the question removes it again (test `test_failed_turns_leave_no_half_conversation`) |
+| The engine reported a spent daily budget as a generic error | now a distinct `busy` reason with a plain message; the API maps it to 429 |
+| The chat composer asked for Urdu answers by default when the interface was English (invisible with mocks) | defaults to the interface language |
+| `Info` component name clashed with the `Info` icon import (caught by the production build) | renamed `PlainReply` |
+| CNIC "last digit group" is one digit, a useless mask | store and show the last 4 digits |
+| The static per-run cap of 30 calls (meant for scripts) would stop a server within minutes | the API uses the daily cap unless `LLM_MAX_CALLS_PER_RUN` is set on purpose |
+
+**Measured end to end** (real browser, real Supabase, real DeepSeek, 5 live calls in total): sign-up, profile, greeting (0 calls), a legal question with a Punjab tenant profile (2 calls, 13 s including Urdu output, 3 sources, 87% confidence, conversation auto-titled), a vague question that asked two clarifying questions and then answered (1 + 2 calls, 11 s), reload (conversation restored), silent token refresh, wrong-password message.
+
+**Before deploying:** set `TRUST_PROXY=1` only when running behind a proxy you control (Cloudflare tunnel, Render); otherwise every user looks like one address to the rate limiter. Set `APP_ENV=production` (hides `/docs`) and `CORS_ORIGINS` to the real frontend address. The in-memory rate limiter and the DeepSeek ledger live on the server's disk: a host with an ephemeral disk resets them on restart (the per-user daily limit survives, it is counted in the database).
 
 ## Known data issues (also in the QA report)
 
