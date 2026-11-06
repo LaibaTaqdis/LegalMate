@@ -2,7 +2,7 @@
 
 Python backend for the LegalMate AI legal chatbot (RAG over Pakistani federal + Punjab law, DeepSeek Flash for generation).
 
-Status: **Phases 0-2 done** (scaffold, corpus pipeline, embeddings + hybrid retrieval, validated locally; not yet loaded into a Supabase project). Chat engine (Phase 3) and the API (Phase 4) come next.
+Status: **Phases 0-3 done** (scaffold, corpus pipeline, embeddings + hybrid retrieval loaded in Supabase, chat engine with verification). The API and frontend wiring (Phase 4) come next.
 
 ## Who runs what
 
@@ -105,7 +105,62 @@ python -m evals.run_eval_kb --url <postgres url>  # the same questions through t
 2. **A score threshold cannot decide "no source found"**: out-of-scope questions score as high as real ones (best cosine 0.74 vs real p10 0.71). That decision must come from the analyser's intent classification and the answer-time check, not from retrieval scores.
 3. hit@10 (not hit@1) is what matters: the answer step sees the top 8-10 chunks.
 
-Not done: an embedding-model comparison against `bge-base-en-v1.5` (about 65-130 min of CPU to embed; `python -m retrieval.embed_chunks --model BAAI/bge-base-en-v1.5` then `python -m evals.run_eval --model BAAI/bge-base-en-v1.5`; `db/schema.sql` would need `vector(768)`). The bottleneck measured above is query formulation, not the model, so `bge-small` stays. Loading into the real Supabase project is also still to do.
+Not done: an embedding-model comparison against `bge-base-en-v1.5` (about 65-130 min of CPU to embed; `python -m retrieval.embed_chunks --model BAAI/bge-base-en-v1.5` then `python -m evals.run_eval --model BAAI/bge-base-en-v1.5`; `db/schema.sql` would need `vector(768)`). The bottleneck measured above is query formulation, not the model, so `bge-small` stays. The knowledge base IS loaded into Supabase (494 documents, 21,138 chunks, 145 MB) and the production path was evaluated against it: same quality (hit@10 94.4%), median ~220 ms per search from Pakistan to the Mumbai region (50 ms network round trip per query; one fetch round trip per search).
+
+## Phase 3: chat engine (`backend/chat`)
+
+```powershell
+python -m tests.test_chat_offline                 # 10 tests, fake LLM + fake search: ZERO DeepSeek calls
+python -m chat.pilot --plan                       # the pilot scenarios, expected calls and cost. NO calls
+python -m chat.pilot --dry                        # real retrieval + real prompt sizes from Supabase. NO calls
+python -m chat.pilot --only S02 S07 --cap 6       # live, hard stop after 6 live calls; cached afterwards
+python -m evals.run_eval_analyser --plan          # the 114-question analyser evaluation: how many calls
+```
+
+**One message in, one frontend-shaped message out, at most TWO DeepSeek calls:**
+
+| Message | Calls | What happens |
+|---|---|---|
+| greeting / thanks | 0 | answered locally |
+| vague ("I need help with my property") | 1 | analyser -> up to 2 questions with tappable options (`kind: clarify`); never asks twice |
+| out of scope / prompt injection | 1 | analyser -> polite redirect (`kind: info`) |
+| legal question | 2 | **analyser** (intent, language, jurisdiction, emergency, title/tag, THREE English search queries) -> retrieval (code) -> **answerer** (JSON, cites passages as `[[n]]`) -> verification (code) |
+
+- **Analyser output is the lever**: three queries (plain issue / statutory phrasing + Act name / section-heading style, e.g. "What agreements are contracts"). Merged by reciprocal-rank fusion, max 3 passages per Act and 2 per section, 8 passages sent to the answerer.
+- **Verification is code, not an LLM** (`chat/verify.py`): every `[[n]]` must be a supplied passage (others are stripped); every quote must be a verbatim substring (otherwise replaced by the closest real sentence and flagged); section numbers and figures in the answer must appear in the sources (number words like "fifty per centum" count as 50). Confidence (`chat/confidence.py`) = 0.5 relevance + 0.3 agreement + 0.2 recency, capped at 45 when the model says the sources are insufficient. It is a heuristic, not a probability.
+- **Privacy** (`chat/pii.py`): CNIC, phone, email, IBAN and card numbers are replaced with placeholders before anything leaves for DeepSeek; the profile sent to the model contains only non-identifying fields (province, city, user type...).
+- **Answer shape** matches `frontend/BACKEND_API.md` (`intro`, `lawTitle`, `law`, `steps`, `important`, `outro`, `sources`, `confidence`) plus extras for the UI to adopt: `kind` (answer | clarify | info), `questions[]`, `followUps`, `sufficient`, per-source `pages`, `status`, `note` (repealed / amended-later warnings), `quoteVerified`, and an `emergency` note in `important`.
+
+**Keeping DeepSeek usage (and cost) low, on purpose** (`chat/llm.py`):
+
+| Safeguard | Detail |
+|---|---|
+| Disk cache | identical request = never paid twice (`data/llm_cache/`); `LLM_MODE=replay` never touches the network |
+| Hard caps | `LLM_MAX_CALLS_PER_RUN` (default 30) and `LLM_DAILY_CALL_CAP` (default 200, counted from the ledger); over the cap raises `BudgetExceeded`, and the engine turns it into a friendly message |
+| Ledger | every live call: tokens, seconds, tag (`data/llm_ledger.jsonl`); never the key or the question |
+| Thinking off | `DeepSeek thinking` is ON by default and bills hidden reasoning tokens (57 of 68 output tokens for "hello"); we send `thinking: disabled` (`DEEPSEEK_THINKING=on` to change) |
+| Prompt caching | the long static system prompts come first and are identical on every call, so DeepSeek's automatic prefix cache bills them at the cached rate |
+| Evaluate offline | retrieval variants are recomputed from the CACHED analyser outputs, so trying a new retrieval design costs nothing |
+
+Measured (prices are **estimates** from third-party reports, check DeepSeek's pricing page): about 2 calls and **0.2-0.3 US cents per answered message**, 6-9 s end to end (two sequential model calls). All development, testing and evaluation of this phase used about 155 live calls, roughly **6 US cents**.
+
+**Evaluation of the real analyser on the 114 gold questions** (`reports/analyser_eval.md`, 111 calls, 2.3 cents):
+
+| Queries used | hit@1 | hit@8 (what the answerer sees) | MRR |
+|---|---|---|---|
+| plain query only | 40.7 | 70.4 | 0.511 |
+| statutory query only | 52.8 | 74.1 | 0.613 |
+| section-heading query only | 56.5 | 78.7 | 0.652 |
+| **all three merged (production)** | **58.3** | **88.9** | **0.687** |
+| my hand-written reference queries | 61.1 | 89.8 | 0.709 |
+
+0 of 108 real questions triggered a needless clarification; 5 of 6 out-of-scope questions were declined; the analyser never contradicted a profile's province. Many of the remaining "misses" are narrow gold labels (a specific chunk), not wrong answers.
+
+**Bugs found and fixed through the pilot:** table-of-contents chunks (25, mostly CrPC and the Contract Act) were being retrieved instead of law (now labelled `toc` and skipped); the verifier counted an invalid citation as a citation, flagged years inside Act titles, and could not match "fifty per centum" to "50"; the model's "X is not listed" claims needed hedging ("in the text available to me"), now in the prompt.
+
+**Experiment, kept switched off:** routing a query that names an Act to a search inside that Act (`route_acts`) gave no measurable gain on the gold set.
+
+**Known limits:** the verifier checks that citations, quotes, sections and figures exist in the sources, not that the conclusion follows from them (an optional cheap third "entailment" call could); negative claims depend on a possibly outdated corpus; confidence cannot capture that; the emergency numbers (15, 1122) are static text to be replaced by the verified Emergency directory; streaming, document attachments and the API come in Phases 4-5.
 
 ## Known data issues (also in the QA report)
 

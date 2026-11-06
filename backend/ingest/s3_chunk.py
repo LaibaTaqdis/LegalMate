@@ -31,6 +31,18 @@ FOOTNOTE_REST = re.compile(r"^(Subs\.|Ins\.|Rep\.|Added by|Inserted by|Substitut
 STUB_RE = re.compile(r"\b(?:Rep\.|Repealed|Omitted|Deleted)\s+(?:by|vide)\b|\[\s*\*?\s*(?:Repeal(?:ed)?|Omitted|Deleted)\.?\s*\]|^\[?\d{1,3}[A-Z]{0,2}\.\s*(?:\[?\*[\s*]*\]?|Omitted|Repealed)\.?\s*$", re.I)
 TOC_WORD = re.compile(r"\bC\s?O\s?N\s?T\s?E\s?N\s?T\s?S\b|Updated till \d{1,2}\.\d{1,2}\.\d{4}")
 SUBCLAUSE_RE = re.compile(r"^\s*\(\w{1,5}\)\s")
+_TOC_LINE = re.compile(r"^\s*\[?\d{1,3}[A-Z]{0,2}(?:-[A-Z]{1,2})?\.?\s+\S")
+
+
+def looks_like_toc(text: str) -> bool:
+    """A 'preamble' that is really a table of contents that survived TOC removal (CrPC, Contract Act ...): many short
+    numbered heading lines and almost no sentences. Such chunks match keywords like 'contract' strongly but hold no law, so
+    they are labelled `toc` and skipped by retrieval (the chunk list stays the same, so embeddings stay aligned)."""
+    lines = [l for l in text.split("\n") if l.strip()]
+    if len(lines) < 6:
+        return False
+    numbered = sum(bool(_TOC_LINE.match(l)) for l in lines) / len(lines)
+    return numbered >= 0.5 and sum(len(l) for l in lines) / len(lines) < 110
 TAIL_SPLIT_CHARS = 12000
 
 
@@ -421,7 +433,8 @@ def make_chunks(doc: dict, units: list[Unit], notes: list[list]) -> list[dict]:
             "act_title": title, "year": doc["year"], "doc_type": doc["doc_type"], "jurisdiction": doc["jurisdiction"],
             "applies_to": doc["applies_to"], "tier": doc["tier"], "legal_status": doc["legal_status"],
             "status_scope": doc.get("status_scope", doc["jurisdiction"]), "status_note": doc.get("status_note", "")[:200],
-            "unit_type": u0.kind, "section_no": "" if u0.kind == "tail" else (u0.num if len(label_units) == 1 else f"{u0.num}-{u1.num}"),
+            "unit_type": "toc" if (u0.kind == "preamble" and looks_like_toc(text)) else u0.kind,
+            "section_no": "" if u0.kind == "tail" else (u0.num if len(label_units) == 1 else f"{u0.num}-{u1.num}"),
             "section_nums": [x.num for x in label_units if x.num], "section_label": label, "heading": heading, "part": u0.part, "chapter": u0.chapter,
             "order": u0.order, "schedule": u0.schedule, "page_start": ps, "page_end": pe,
             "part_index": part_i + 1, "parts_total": part_n,

@@ -1,0 +1,7 @@
+# Runtime dependencies (what a teammate or a server needs to run the chat engine). No PyTorch, no GPU, ~1 GB installed.
+# Building the knowledge base from the raw PDFs needs requirements-ingest.txt instead (one person, occasionally).
+fastembed>=0.9               # query embeddings (ONNX, CPU)
+numpy>=1.26
+psycopg[binary]>=3.2         # Supabase / Postgres
+httpx>=0.27                  # DeepSeek API client
+# Added with the API (Phase 4): fastapi, uvicorn, python-multipart, pyjwt/argon2-cffi, pymupdf, python-docx, rapidocr-onnxruntime

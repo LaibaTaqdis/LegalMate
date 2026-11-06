@@ -1,0 +1,2050 @@
+[
+ {
+  "id": "T01",
+  "question": "My landlord wants me out because his son needs the house. Can he do that?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "landlord wants to evict tenant because family needs house for own use",
+    "Punjab Rented Premises Act grounds for ejectment of tenant personal bona fide need",
+    "Grounds for eviction of tenant where premises required for own use"
+   ],
+   "tag": "Property Law",
+   "title": "Landlord eviction for son"
+  }
+ },
+ {
+  "id": "T02",
+  "question": "I haven't paid rent for three months. Can the landlord throw me out?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "tenant has not paid rent for three months can landlord evict without court order",
+    "Punjab Rented Premises Act default in payment of rent ejectment of tenant",
+    "Grounds for eviction of tenant on failure to pay rent"
+   ],
+   "tag": "Property Law",
+   "title": "Rent arrears eviction"
+  }
+ },
+ {
+  "id": "T03",
+  "question": "Does a rent agreement have to be in writing and registered?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "whether a rent agreement for a house must be in writing and registered in Pakistan",
+    "Punjab Rented Premises Act requirements for tenancy agreement in writing and registration",
+    "Requirement of writing and registration of lease of immovable property"
+   ],
+   "tag": "Property Law",
+   "title": "Rent agreement writing and registration"
+  }
+ },
+ {
+  "id": "T04",
+  "question": "Can my tenant give a room to someone else without asking me?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "tenant giving room to another person without landlord permission subletting",
+    "Punjab Rented Premises Act transfer of possession or subletting without consent of landlord",
+    "Grounds for eviction of tenant for subletting without written consent"
+   ],
+   "tag": "Property Law",
+   "title": "Tenant subletting room"
+  }
+ },
+ {
+  "id": "T05",
+  "question": "My landlord switched off electricity and water to force me out.",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "landlord disconnects electricity and water to force tenant to vacate remedies",
+    "Punjab Rented Premises Act 2009 landlord obligations and tenant right to essential services",
+    "Grounds for eviction of tenant and protection against harassment by landlord"
+   ],
+   "tag": "Property Law",
+   "title": "Landlord cut utilities"
+  }
+ },
+ {
+  "id": "T06",
+  "question": "Where do I file a case against my landlord in Lahore?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "where to file suit against landlord in Lahore rent dispute jurisdiction",
+    "Punjab Rented Premises Act 2009 Rent Tribunal jurisdiction landlord tenant",
+    "Jurisdiction of civil courts and Rent Tribunal in rent matters"
+   ],
+   "tag": "Property Law",
+   "title": "Filing case against landlord"
+  }
+ },
+ {
+  "id": "T07",
+  "question": "Landlord refuses to take rent. What should I do?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "landlord refuses to accept rent tenant rights protection from eviction",
+    "Punjab Rented Premises Act tender of rent refusal by landlord",
+    "Rent tendered but refused by landlord effect on tenancy"
+   ],
+   "tag": "Property Law",
+   "title": "Landlord refusing rent"
+  }
+ },
+ {
+  "id": "T08",
+  "question": "Who has to pay for repairs, tenant or landlord?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "who is responsible for repairs of rented house tenant or landlord",
+    "Punjab Rented Premises Act obligations of landlord to keep premises in repair",
+    "Obligation of landlord to make repairs to rented premises"
+   ],
+   "tag": "Property Law",
+   "title": "Repair costs tenant or landlord"
+  }
+ },
+ {
+  "id": "T09",
+  "question": "Can my landlord raise the rent in Islamabad whenever he wants?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "ICT",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "can landlord increase rent during tenancy without agreement",
+    "Islamabad Rent Restriction Act increase of rent by landlord",
+    "Increase of rent and limitation on enhancement of rent"
+   ],
+   "tag": "Property Law",
+   "title": "Rent increase by landlord"
+  }
+ },
+ {
+  "id": "T10",
+  "question": "How can a landlord get his shop vacated in Islamabad?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "ICT",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "landlord evict tenant from commercial shop in Islamabad procedure",
+    "Islamabad Rent Restriction Act grounds for eviction of tenant from premises",
+    "Grounds for eviction of tenant"
+   ],
+   "tag": "Property Law",
+   "title": "Landlord evicting shop tenant"
+  }
+ },
+ {
+  "id": "T11",
+  "question": "Mera landlord bagair notice ke makaan khali karwana chahta hai, kya yeh jaiz hai?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "ur-roman",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "landlord wants to evict tenant without notice legality",
+    "Punjab Rented Premises Act grounds and procedure for eviction of tenant",
+    "Grounds for eviction of tenant without notice"
+   ],
+   "tag": "Property Law",
+   "title": "Landlord eviction without notice"
+  }
+ },
+ {
+  "id": "T12",
+  "question": "Do I have to pay pagri or a big advance to get a shop on rent?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "landlord demands pagri and large advance to rent out shop legality",
+    "Punjab Rented Premises Act 2009 advance rent premium pagri prohibited",
+    "Rent in advance and other charges prohibited under rent law"
+   ],
+   "tag": "Property Law",
+   "title": "Shop rent pagri advance"
+  }
+ },
+ {
+  "id": "F01",
+  "question": "How can a wife get a divorce from court if her husband doesn't support her?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "wife seeking divorce from court where husband fails to maintain her",
+    "Muslim Family Laws Ordinance 1961 wife suit for dissolution of marriage grounds",
+    "Dissolution of marriage by wife on ground of failure to maintain"
+   ],
+   "tag": "Family Law",
+   "title": "Wife divorce without support"
+  }
+ },
+ {
+  "id": "F02",
+  "question": "What is khula and how does a woman get it?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "how a woman obtains khula dissolution of marriage by court",
+    "Muslim Family Laws Ordinance khula right of wife to dissolve marriage",
+    "Dissolution of marriage by wife khula decree grounds"
+   ],
+   "tag": "Family Law",
+   "title": "Khula for women"
+  }
+ },
+ {
+  "id": "F03",
+  "question": "My husband said talaq three times. What is the legal procedure?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "procedure after husband pronounces talaq three times divorce registration and iddat",
+    "Muslim Family Laws Ordinance 1961 talaq notice to union council arbitration reconciliation",
+    "Muslim Family Laws Ordinance section 7 talaq notice to Chairman Union Council"
+   ],
+   "tag": "Family Law",
+   "title": "Triple talaq procedure"
+  }
+ },
+ {
+  "id": "F04",
+  "question": "Can my husband marry a second time without my permission?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "can a husband take a second wife without first wife permission in Pakistan",
+    "Muslim Family Laws Ordinance 1961 second marriage permission of arbitration council",
+    "Muslim Family Laws Ordinance section 6 permission for second marriage"
+   ],
+   "tag": "Family Law",
+   "title": "Husband second marriage permission"
+  }
+ },
+ {
+  "id": "F05",
+  "question": "Is it compulsory to register a nikah?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "is registration of marriage compulsory under Muslim family law in Pakistan",
+    "Muslim Family Laws Ordinance 1961 registration of marriage nikah obligation penalty",
+    "Muslim Family Laws Ordinance section 5 registration of marriages"
+   ],
+   "tag": "Family Law",
+   "title": "Nikah registration requirement"
+  }
+ },
+ {
+  "id": "F06",
+  "question": "Who gets custody of the children after divorce?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "who gets custody of children after divorce mother father rights",
+    "Guardians and Wards Act custody of minor welfare of the child",
+    "Custody of children after divorce welfare of minor"
+   ],
+   "tag": "Family Law",
+   "title": "Child custody after divorce"
+  }
+ },
+ {
+  "id": "F07",
+  "question": "How do I claim monthly maintenance for my children?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "how to claim monthly maintenance for children from father in Pakistan",
+    "Muslim Family Laws Ordinance maintenance of children application to family court",
+    "Maintenance of children and wife by father family court jurisdiction"
+   ],
+   "tag": "Family Law",
+   "title": "Child maintenance claim"
+  }
+ },
+ {
+  "id": "F08",
+  "question": "My husband did not pay my haq mehr. Where can I recover it?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "wife recover unpaid dower haq mehr from husband",
+    "Muslim Family Laws Ordinance dower recovery suit family court",
+    "Suit for recovery of dower by wife against husband"
+   ],
+   "tag": "Family Law",
+   "title": "Recovery of unpaid haq mehr"
+  }
+ },
+ {
+  "id": "F09",
+  "question": "Do daughters get a share in their father's property?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "right of daughter to inherit share in father's property under Muslim law",
+    "Muslim Family Laws Ordinance succession inheritance share of female heirs",
+    "Succession to property of deceased Muslim female heirs entitled to share"
+   ],
+   "tag": "Family Law",
+   "title": "Daughters share in inheritance"
+  }
+ },
+ {
+  "id": "F10",
+  "question": "My brothers are not giving me my share of our father's land.",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "brothers refusing to give sister her share in father's inherited agricultural land",
+    "Punjab Land Revenue Act partition of joint land inheritance shares among legal heirs",
+    "Partition of immovable property among co-owners legal heirs suit for partition"
+   ],
+   "tag": "Property Law",
+   "title": "Brothers denying inheritance share"
+  }
+ },
+ {
+  "id": "F11",
+  "question": "What is the legal age of marriage in Punjab?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "minimum legal age for marriage in Punjab Pakistan",
+    "Punjab Child Marriage Restraint Act minimum age of marriage",
+    "Punishment for solemnizing marriage of a child"
+   ],
+   "tag": "Family Law",
+   "title": "Legal age of marriage"
+  }
+ },
+ {
+  "id": "F12",
+  "question": "My husband beats me. What can I do legally?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": true,
+   "needs_clarification": false,
+   "search_queries": [
+    "husband beats wife domestic violence legal remedies protection",
+    "Punjab Protection of Women against Violence Act 2016 remedies for aggrieved person",
+    "Protection orders and residence orders for victim of domestic violence"
+   ],
+   "tag": "Family Law",
+   "title": "Domestic violence by husband"
+  }
+ },
+ {
+  "id": "F13",
+  "question": "Who can be appointed guardian of a minor's property?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "who can be appointed guardian of property of a minor",
+    "Guardians and Wards Act appointment of guardian of minor property",
+    "Guardians and Wards Act section 12 guardian of person and property of minor"
+   ],
+   "tag": "Family Law",
+   "title": "Guardian of minor's property"
+  }
+ },
+ {
+  "id": "F14",
+  "question": "Meri biwi khula ka case kar rahi hai, kya main usay rok sakta hoon?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "ur-roman",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "husband cannot stop wife from seeking khula dissolution of marriage",
+    "Muslim Family Laws Ordinance 1961 khula right of wife to dissolve marriage",
+    "Dissolution of marriage by wife khula grounds and procedure"
+   ],
+   "tag": "Family Law",
+   "title": "Wife seeking khula"
+  }
+ },
+ {
+  "id": "C01",
+  "question": "Someone stole my mobile phone. What law applies?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "law on theft of mobile phone and how to report to police",
+    "Pakistan Penal Code punishment for theft and criminal misappropriation of movable property",
+    "Punishment for theft"
+   ],
+   "tag": "Criminal Law",
+   "title": "Stolen mobile phone law"
+  }
+ },
+ {
+  "id": "C02",
+  "question": "The police are refusing to register my FIR.",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "police refuse to register first information report remedy for complainant",
+    "Code of Criminal Procedure duty of police officer to record information of cognizable offence",
+    "Code of Criminal Procedure section 154 information in cognizable cases"
+   ],
+   "tag": "Criminal Law",
+   "title": "Police refusing FIR"
+  }
+ },
+ {
+  "id": "C03",
+  "question": "How do I get bail after being arrested?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "how to apply for bail after arrest in Pakistan",
+    "Code of Criminal Procedure grant of bail in bailable and non-bailable offences",
+    "Code of Criminal Procedure section 497 when person accused of non-bailable offence may be released on bail"
+   ],
+   "tag": "Criminal Law",
+   "title": "Getting bail after arrest"
+  }
+ },
+ {
+  "id": "C04",
+  "question": "A customer's cheque I deposited bounced. What can I do?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "cheque dishonoured due to insufficient funds remedy for payee",
+    "Negotiable Instruments Act dishonour of cheque punishment notice",
+    "Dishonour of cheque for insufficiency of funds punishment"
+   ],
+   "tag": "Criminal Law",
+   "title": "Bounced cheque remedy"
+  }
+ },
+ {
+  "id": "C05",
+  "question": "Someone is spreading lies about me on social media.",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "false statements about a person on social media defamation remedy in Pakistan",
+    "Pakistan Penal Code defamation punishment for imputation harming reputation",
+    "Punishment for defamation"
+   ],
+   "tag": "Cyber Law",
+   "title": "Defamation on social media"
+  }
+ },
+ {
+  "id": "C06",
+  "question": "A man keeps messaging and following me online. Is it a crime?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "man repeatedly messaging and following woman online is it a crime",
+    "Prevention of Electronic Crimes Act harassment stalking online messages",
+    "PECA section 24 cyber stalking punishment"
+   ],
+   "tag": "Cyber Law",
+   "title": "Online harassment stalking"
+  }
+ },
+ {
+  "id": "C07",
+  "question": "Someone hacked my Facebook account.",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "someone hacked my social media account how to report to police and FIA",
+    "Prevention of Electronic Crimes Act unauthorised access to information system offence",
+    "Punishment for unauthorised access to information system or data"
+   ],
+   "tag": "Cyber Law",
+   "title": "Facebook account hacked"
+  }
+ },
+ {
+  "id": "C08",
+  "question": "Someone made a fake profile with my photos.",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "someone created fake social media profile using my photos what legal remedy",
+    "Prevention of Electronic Crimes Act 2016 impersonation and unauthorized use of identity information",
+    "Punishment for impersonation and use of identity information"
+   ],
+   "tag": "Cyber Law",
+   "title": "Fake profile with my photos"
+  }
+ },
+ {
+  "id": "C09",
+  "question": "A neighbour threatened to kill me.",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": true,
+   "needs_clarification": false,
+   "search_queries": [
+    "neighbour threatened to kill me what criminal action and complaint can I take",
+    "Pakistan Penal Code punishment for criminal intimidation and threat to cause death",
+    "Pakistan Penal Code section 506 punishment for criminal intimidation"
+   ],
+   "tag": "Criminal Law",
+   "title": "Neighbour death threat"
+  }
+ },
+ {
+  "id": "C10",
+  "question": "A man took money from me promising a job abroad and disappeared.",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "man took money promising job abroad and disappeared cheating remedy",
+    "Pakistan Penal Code cheating and dishonestly inducing delivery of property punishment",
+    "Punishment for cheating and cheating by personation"
+   ],
+   "tag": "Criminal Law",
+   "title": "Job fraud money taken"
+  }
+ },
+ {
+  "id": "C11",
+  "question": "What are my rights if the police arrest me?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "rights of arrested person in Pakistan police custody",
+    "Code of Criminal Procedure arrest of person rights to be informed of grounds",
+    "Code of Criminal Procedure section 50 person arrested to be informed of grounds of arrest"
+   ],
+   "tag": "Criminal Law",
+   "title": "Rights on police arrest"
+  }
+ },
+ {
+  "id": "C12",
+  "question": "What is the punishment for murder in Pakistan?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Federal",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "punishment for murder qatl-i-amd in Pakistan",
+    "Pakistan Penal Code punishment for qatl-i-amd death or imprisonment",
+    "Pakistan Penal Code section 302 punishment for qatl-i-amd"
+   ],
+   "tag": "Criminal Law",
+   "title": "Punishment for murder"
+  }
+ },
+ {
+  "id": "C13",
+  "question": "What is the punishment for rape?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "punishment for rape in Pakistan under criminal law",
+    "Pakistan Penal Code offence of rape punishment imprisonment",
+    "Pakistan Penal Code section 376 punishment for rape"
+   ],
+   "tag": "Criminal Law",
+   "title": "Punishment for rape"
+  }
+ },
+ {
+  "id": "C14",
+  "question": "Someone kidnapped my brother.",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": true,
+   "needs_clarification": false,
+   "search_queries": [
+    "brother kidnapped how to report to police and recover him",
+    "Pakistan Penal Code punishment for kidnapping and abduction",
+    "Code of Criminal Procedure section 154 information in cognizable cases"
+   ],
+   "tag": "Criminal Law",
+   "title": "Brother kidnapped"
+  }
+ },
+ {
+  "id": "C15",
+  "question": "What can I do if the police arrest someone without showing a warrant?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "police arrest person without warrant what are his rights and remedies",
+    "Code of Criminal Procedure arrest without warrant how made and rights of arrested person",
+    "Code of Criminal Procedure section 54 when police may arrest without warrant"
+   ],
+   "tag": "Criminal Law",
+   "title": "Arrest without warrant"
+  }
+ },
+ {
+  "id": "C16",
+  "question": "Someone threw acid on my sister.",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": true,
+   "needs_clarification": false,
+   "search_queries": [
+    "acid attack victim rights to report police and medical treatment",
+    "Control of Narcotic Substances Act acid throwing offence punishment",
+    "Punishment for hurt by corrosive substance acid throwing"
+   ],
+   "tag": "Criminal Law",
+   "title": "Acid attack on sister"
+  }
+ },
+ {
+  "id": "C17",
+  "question": "Someone called pretending to be from my bank and took money from my account.",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "money taken from bank account by fraud phone call what remedy",
+    "Prevention of Electronic Crimes Act 2016 unauthorised access to bank account fraud",
+    "Punishment for unauthorised access to information system and identity theft"
+   ],
+   "tag": "Cyber Law",
+   "title": "Bank fraud call money taken"
+  }
+ },
+ {
+  "id": "C18",
+  "question": "What is the punishment for possessing drugs?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "punishment for possession of narcotic drugs in Pakistan",
+    "Control of Narcotic Substances Act 1997 punishment for possession of narcotics",
+    "Control of Narcotic Substances Act section 9 punishment for contravention of possession"
+   ],
+   "tag": "Criminal Law",
+   "title": "Drug possession punishment"
+  }
+ },
+ {
+  "id": "C19",
+  "question": "Mera cheque bounce ho gaya hai, kya FIR ho sakti hai?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "ur-roman",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "cheque dishonoured due to insufficient funds can criminal case be filed",
+    "Negotiable Instruments Act Pakistan dishonour of cheque offence punishment",
+    "Dishonour of cheque for insufficiency of funds in account"
+   ],
+   "tag": "Criminal Law",
+   "title": "Cheque bounce FIR"
+  }
+ },
+ {
+  "id": "C20",
+  "question": "Someone filed a false case against me. Can I get bail before I am arrested?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "how to get bail before arrest when falsely implicated in a criminal case",
+    "Code of Criminal Procedure anticipatory bail protection from arrest in false case",
+    "Code of Criminal Procedure section 498 admission to bail and anticipatory bail"
+   ],
+   "tag": "Criminal Law",
+   "title": "Bail before arrest"
+  }
+ },
+ {
+  "id": "L01",
+  "question": "My company fired me without notice. Can I challenge it?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "employee dismissed without notice or notice pay rights to challenge termination",
+    "Punjab Industrial Relations Act unfair labour practice dismissal without notice grievance",
+    "Notice of termination and grounds for challenging dismissal from service"
+   ],
+   "tag": "Labour & Employment",
+   "title": "Termination without notice"
+  }
+ },
+ {
+  "id": "L02",
+  "question": "My employer hasn't paid my salary for two months.",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "employer has not paid salary for two months remedy for employee",
+    "Punjab Payment of Wages Act recovery of unpaid wages complaint labour court",
+    "Recovery of wages unpaid by employer time limit for claim"
+   ],
+   "tag": "Labour & Employment",
+   "title": "Unpaid salary two months"
+  }
+ },
+ {
+  "id": "L03",
+  "question": "What is the minimum wage in Punjab?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "minimum wage rate for workers in Punjab",
+    "Punjab Minimum Wages Act fixation of minimum rates of wages",
+    "Minimum rates of wages for unskilled and skilled workers notification"
+   ],
+   "tag": "Labour & Employment",
+   "title": "Punjab minimum wage"
+  }
+ },
+ {
+  "id": "L04",
+  "question": "How many days of maternity leave am I entitled to?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "number of days maternity leave entitled for female worker in Punjab",
+    "Punjab Maternity Benefit Act maternity leave duration for women employees",
+    "Maternity benefit entitlement of female worker days of leave"
+   ],
+   "tag": "Labour & Employment",
+   "title": "Maternity leave entitlement"
+  }
+ },
+ {
+  "id": "L05",
+  "question": "My boss is harassing me at work. What can I do?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "employer harassing employee at workplace what legal remedy available",
+    "Protection against Harassment of Women at the Workplace Act complaint procedure",
+    "Complaint of harassment to Inquiry Committee procedure and penalties"
+   ],
+   "tag": "Labour & Employment",
+   "title": "Workplace harassment by boss"
+  }
+ },
+ {
+  "id": "L06",
+  "question": "Can a 12 year old child work in a workshop?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "minimum age for employment of children in workshops and hazardous work",
+    "Punjab Restriction of Employment of Children Act prohibition of child labour",
+    "Prohibition of employment of children below age fourteen years"
+   ],
+   "tag": "Labour & Employment",
+   "title": "Child labour in workshop"
+  }
+ },
+ {
+  "id": "L07",
+  "question": "I work as a maid. Do I have any legal rights?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "legal rights of domestic workers employed in private homes minimum wage working hours",
+    "Punjab Domestic Workers Act 2021 rights and obligations of employers",
+    "Punjab Domestic Workers Act registration of domestic worker and complaint of unpaid wages"
+   ],
+   "tag": "Labour & Employment",
+   "title": "Rights of domestic workers"
+  }
+ },
+ {
+  "id": "L08",
+  "question": "Is my employer allowed to make me work 12 hours a day?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "employer requiring 12 hours work per day maximum working hours limit",
+    "Punjab Factories Act daily working hours and rest intervals for workers",
+    "Punjab Factories Act section 34 weekly hours and rest intervals"
+   ],
+   "tag": "Labour & Employment",
+   "title": "12-hour workday legality"
+  }
+ },
+ {
+  "id": "L09",
+  "question": "How can workers form a trade union?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "how workers can form and register a trade union in Pakistan",
+    "Industrial Relations Act 2012 registration of trade union requirements",
+    "Registration of trade unions application and conditions"
+   ],
+   "tag": "Labour & Employment",
+   "title": "Forming a trade union"
+  }
+ },
+ {
+  "id": "L10",
+  "question": "I was injured at work. Who pays compensation?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "employer liability to pay compensation for worker injured in accident at work",
+    "Workmen Compensation Act employer duty to pay compensation for injury",
+    "Employer's liability to pay compensation for injury caused by accident"
+   ],
+   "tag": "Labour & Employment",
+   "title": "Workplace injury compensation"
+  }
+ },
+ {
+  "id": "L11",
+  "question": "Do I get a pension when I retire from a private job?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "pension entitlement for private sector employees on retirement",
+    "Employees Old-Age Benefits Act old-age pension eligibility contribution conditions",
+    "Employees Old-Age Benefits Act section 22 old-age pension"
+   ],
+   "tag": "Labour & Employment",
+   "title": "Private job pension"
+  }
+ },
+ {
+  "id": "L12",
+  "question": "My factory owner is keeping me as a bonded labourer to repay a loan.",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": true,
+   "needs_clarification": false,
+   "search_queries": [
+    "employer forcing worker to work to repay loan bonded labour",
+    "Bonded Labour System (Abolition) Act 1992 Punjab prohibition of bonded labour",
+    "Punishment for enforcing bonded labour and freeing bonded labourer from debt"
+   ],
+   "tag": "Labour & Employment",
+   "title": "Bonded labour loan repayment"
+  }
+ },
+ {
+  "id": "L13",
+  "question": "Meri company ne mujhe achanak nikaal diya, mujhe kya karna chahiye?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "ur-roman",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "employee suddenly terminated without notice rights to challenge dismissal",
+    "Punjab Industrial Relations Act unfair labour practice termination without notice",
+    "Remedy against wrongful dismissal from employment"
+   ],
+   "tag": "Labour & Employment",
+   "title": "Sudden termination from company"
+  }
+ },
+ {
+  "id": "B01",
+  "question": "Is a verbal agreement legally binding?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "is an oral verbal agreement legally enforceable in Pakistan",
+    "Contract Act 1872 oral agreement validity free consent consideration",
+    "What agreements are contracts"
+   ],
+   "tag": "Contract Law",
+   "title": "Verbal agreement enforceability"
+  }
+ },
+ {
+  "id": "B02",
+  "question": "The other party broke our contract. What compensation can I claim?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "compensation for breach of contract what damages can be claimed",
+    "Contract Act 1872 compensation for loss caused by breach of contract",
+    "Contract Act section 73 compensation for loss or damage caused by breach of contract"
+   ],
+   "tag": "Contract Law",
+   "title": "Compensation for breach of contract"
+  }
+ },
+ {
+  "id": "B03",
+  "question": "Is a contract void if no money or value was exchanged?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "is a contract valid without consideration or payment of money",
+    "Contract Act 1872 agreement without consideration when void",
+    "Agreements without consideration when valid"
+   ],
+   "tag": "Contract Law",
+   "title": "Contract without consideration"
+  }
+ },
+ {
+  "id": "B04",
+  "question": "My 16 year old son signed an agreement. Is it valid?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "is an agreement signed by a minor valid and enforceable",
+    "Contract Act 1872 capacity to contract age of majority minor agreement void",
+    "Agreements by a minor are void ab initio capacity to contract"
+   ],
+   "tag": "Contract Law",
+   "title": "Minor's agreement validity"
+  }
+ },
+ {
+  "id": "B05",
+  "question": "I signed a contract because I was forced. Can I cancel it?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "contract signed under coercion or force can it be cancelled",
+    "Contract Act 1872 consent not free when caused by coercion",
+    "What agreements are contracts free consent coercion effect"
+   ],
+   "tag": "Contract Law",
+   "title": "Contract signed under coercion"
+  }
+ },
+ {
+  "id": "B06",
+  "question": "The contract says I must pay 10 lakh penalty if I leave. Is that enforceable?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "is a penalty clause in a contract enforceable in Pakistan",
+    "Contract Act 1872 agreement to pay penalty on breach compensation",
+    "Contract Act section 74 compensation for breach where penalty stipulated"
+   ],
+   "tag": "Contract Law",
+   "title": "Penalty for leaving contract"
+  }
+ },
+ {
+  "id": "B07",
+  "question": "How can a business partnership be dissolved?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "how to dissolve a business partnership between partners",
+    "Partnership Act 1932 dissolution of partnership firm grounds",
+    "Dissolution of partnership firm by notice of partner"
+   ],
+   "tag": "Contract Law",
+   "title": "Dissolving a partnership"
+  }
+ },
+ {
+  "id": "B08",
+  "question": "I bought a defective product from a shop. Can I get a refund?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "right to refund or replacement when shop sells defective product",
+    "Punjab Consumer Protection Act defective goods remedy refund replacement",
+    "Punjab Consumer Protection Act section defective goods right to redress"
+   ],
+   "tag": "Consumer Rights",
+   "title": "Refund for defective product"
+  }
+ },
+ {
+  "id": "B09",
+  "question": "Do I have to pay stamp duty on a rent or sale agreement?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "stamp duty payable on rent agreement and sale agreement in Punjab",
+    "Punjab Stamp Act instrument of lease and conveyance duty rates",
+    "Stamp duty on lease and sale deed instruments chargeable with duty"
+   ],
+   "tag": "Property Law",
+   "title": "Stamp duty on agreements"
+  }
+ },
+ {
+  "id": "B10",
+  "question": "Our contract has an arbitration clause. How does arbitration work?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "how does arbitration work under an arbitration clause in a contract",
+    "Arbitration Act 1940 arbitration agreement reference to arbitration award",
+    "Arbitration agreement and reference of dispute to arbitrator"
+   ],
+   "tag": "Contract Law",
+   "title": "How arbitration works"
+  }
+ },
+ {
+  "id": "B11",
+  "question": "I stood guarantor for a friend's loan. Am I liable if he doesn't pay?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "liability of guarantor when borrower fails to repay loan",
+    "Contract Act 1872 guarantee surety liability of surety on default of principal debtor",
+    "Contract Act section 128 surety's liability on default of principal debtor"
+   ],
+   "tag": "Contract Law",
+   "title": "Guarantor liability for loan"
+  }
+ },
+ {
+  "id": "B12",
+  "question": "A cheque I received was returned unpaid. What are my rights as holder?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "rights of holder of dishonoured cheque returned unpaid",
+    "Negotiable Instruments Act holder of cheque dishonoured remedy notice",
+    "Notice of dishonour and liability of drawer on dishonoured cheque"
+   ],
+   "tag": "Other",
+   "title": "Cheque returned unpaid"
+  }
+ },
+ {
+  "id": "B13",
+  "question": "How do I register a company in Pakistan?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "how to register a company in Pakistan procedure with SECP",
+    "Companies Act 2017 incorporation of company registration requirements",
+    "Incorporation of company memorandum and articles of association registration"
+   ],
+   "tag": "Other",
+   "title": "Company registration Pakistan"
+  }
+ },
+ {
+  "id": "B14",
+  "question": "I want to file a consumer complaint against an online seller.",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "how to file consumer complaint against online seller for defective goods",
+    "Punjab Consumer Protection Act complaint before Consumer Court procedure and limitation",
+    "Complaint to Consumer Court against seller for defective goods or deficient service"
+   ],
+   "tag": "Consumer Rights",
+   "title": "Consumer complaint online seller"
+  }
+ },
+ {
+  "id": "B15",
+  "question": "Is charging interest on a personal loan allowed in Punjab?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "is charging interest on a personal loan between individuals lawful in Pakistan",
+    "Contract Act consideration lawful object agreement opposed to public policy interest",
+    "Agreements void if consideration or object unlawful"
+   ],
+   "tag": "Contract Law",
+   "title": "Interest on personal loan"
+  }
+ },
+ {
+  "id": "B16",
+  "question": "A moneylender is harassing me for a loan.",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "moneylender harassing borrower for loan repayment remedies",
+    "Punjab Money Lenders Act illegal money lending and recovery practices",
+    "Punishment for criminal intimidation and extortion in loan recovery"
+   ],
+   "tag": "Other",
+   "title": "Moneylender harassment over loan"
+  }
+ },
+ {
+  "id": "P01",
+  "question": "Do I have to register the sale deed when buying a house?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "is registration of sale deed compulsory when buying a house",
+    "Registration Act 1908 compulsory registration of documents transfer of immovable property",
+    "Registration Act section 17 documents of which registration is compulsory"
+   ],
+   "tag": "Property Law",
+   "title": "Sale deed registration"
+  }
+ },
+ {
+  "id": "P02",
+  "question": "How can I legally gift my house to my son?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "how to legally transfer house to son by gift deed in Pakistan",
+    "Transfer of Property Act gift of immovable property registration requirements",
+    "Gift of immovable property how effected and registered"
+   ],
+   "tag": "Property Law",
+   "title": "Gifting house to son"
+  }
+ },
+ {
+  "id": "P03",
+  "question": "Can I get my mortgaged house back after repaying the loan?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "right to redeem mortgaged property after repayment of loan",
+    "Transfer of Property Act mortgage redemption of property on payment of mortgage money",
+    "Transfer of Property Act section 60 right of mortgagor to redeem"
+   ],
+   "tag": "Property Law",
+   "title": "Redeem mortgaged house after loan"
+  }
+ },
+ {
+  "id": "P04",
+  "question": "Does a lease of more than one year need to be registered?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "whether a lease of immovable property for more than one year requires registration",
+    "Registration Act 1908 leases of immovable property requiring compulsory registration",
+    "Leases of immovable property from year to year or exceeding one year to be registered"
+   ],
+   "tag": "Property Law",
+   "title": "Lease registration requirement"
+  }
+ },
+ {
+  "id": "P05",
+  "question": "My neighbour sold his house. Do I have a first right to buy it?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "right of pre-emption for neighbour when adjacent house sold",
+    "Punjab Pre-emption Act 1991 right of shafi-i-jar neighbour",
+    "Who may claim right of pre-emption"
+   ],
+   "tag": "Property Law",
+   "title": "Neighbour's house pre-emption right"
+  }
+ },
+ {
+  "id": "P06",
+  "question": "Someone has illegally occupied my plot. What can I do?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "remedy for person illegally dispossessed of immovable property plot",
+    "Specific Relief Act suit for recovery of possession of immovable property",
+    "Suit by person dispossessed of immovable property"
+   ],
+   "tag": "Property Law",
+   "title": "Illegal occupation of plot"
+  }
+ },
+ {
+  "id": "P07",
+  "question": "The seller refuses to complete the sale after taking an advance. Can I force him?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "seller took advance payment and refuses to complete sale of property remedy",
+    "Specific Relief Act suit for specific performance of contract of sale of immovable property",
+    "When specific performance of contract may be enforced"
+   ],
+   "tag": "Contract Law",
+   "title": "Seller refuses after advance"
+  }
+ },
+ {
+  "id": "P08",
+  "question": "I was forcibly thrown out of my property. Can I get possession back quickly?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "owner forcibly thrown out of property how to recover possession quickly",
+    "Specific Relief Act suit by person dispossessed of immovable property without consent",
+    "Specific Relief Act section 9 suit by person dispossessed of immovable property"
+   ],
+   "tag": "Property Law",
+   "title": "Forcibly dispossessed of property"
+  }
+ },
+ {
+  "id": "P09",
+  "question": "What is mutation and how do I get my land record updated?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "what is mutation of land record and how to get it updated in Punjab",
+    "Punjab Land Revenue Act 1967 mutation of revenue records procedure",
+    "Punjab Land Revenue Act section 42 mutation of land records"
+   ],
+   "tag": "Property Law",
+   "title": "Mutation and land records"
+  }
+ },
+ {
+  "id": "P10",
+  "question": "My house is in a katchi abadi. Can I get ownership rights?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "how to get ownership rights of house in katchi abadi in Punjab",
+    "Punjab Katchi Abadis Act regularization grant of proprietary rights to occupants",
+    "Grant of proprietary rights to occupier of katchi abadi land"
+   ],
+   "tag": "Property Law",
+   "title": "Katchi abadi ownership rights"
+  }
+ },
+ {
+  "id": "P11",
+  "question": "How many years do I have to sue to recover money I lent?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "time limit to file suit to recover money lent by a friend",
+    "Limitation Act 1908 suit for money lent period of limitation",
+    "Limitation Act 1908 Article 62 suit for money lent"
+   ],
+   "tag": "Civil Procedure",
+   "title": "Limitation for money lent"
+  }
+ },
+ {
+  "id": "P12",
+  "question": "How much compensation will I get if the government acquires my land?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "compensation payable when government acquires private land for public purpose",
+    "Land Acquisition Act 1894 compensation market value acquisition of land",
+    "Land Acquisition Act 1894 section 23 matters to be considered in determining compensation"
+   ],
+   "tag": "Property Law",
+   "title": "Compensation for land acquisition"
+  }
+ },
+ {
+  "id": "P13",
+  "question": "Who can make a valid will and how must it be signed?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "who can make a valid will and how it must be signed and attested",
+    "Succession Act 1925 testamentary capacity execution of unprivileged will",
+    "Execution of unprivileged will signature of testator and attestation by witnesses"
+   ],
+   "tag": "Family Law",
+   "title": "Making a valid will"
+  }
+ },
+ {
+  "id": "R01",
+  "question": "When can a court reject my plaint?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "when can a court reject a plaint in a civil suit",
+    "Code of Civil Procedure 1908 Order VII Rule 11 rejection of plaint grounds",
+    "Order VII Rule 11 rejection of plaint"
+   ],
+   "tag": "Civil Procedure",
+   "title": "Rejection of plaint"
+  }
+ },
+ {
+  "id": "R02",
+  "question": "How much court fee do I pay to file a civil suit for money?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "court fee payable on a civil suit for recovery of money",
+    "Court Fees Act 1870 ad valorem fee on plaint for money suit",
+    "Fee on plaint in suit for money Court Fees Act"
+   ],
+   "tag": "Civil Procedure",
+   "title": "Court fee for money suit"
+  }
+ },
+ {
+  "id": "R03",
+  "question": "What is the time limit to file an appeal against a decree?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "time limit to file appeal against a decree in civil suit",
+    "Limitation Act 1908 period of limitation for appeal from decree",
+    "Limitation Act Article 152 appeal from decree or order of civil court"
+   ],
+   "tag": "Civil Procedure",
+   "title": "Appeal filing time limit"
+  }
+ },
+ {
+  "id": "R04",
+  "question": "Is there a quick court for small money claims?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "small claims court for recovery of small amounts of money in Pakistan",
+    "suits for recovery of money small value summary procedure Code of Civil Procedure",
+    "Suits relating to recovery of money summary procedure Order XXXVII"
+   ],
+   "tag": "Civil Procedure",
+   "title": "Small money claims court"
+  }
+ },
+ {
+  "id": "R05",
+  "question": "Can we settle our dispute through mediation instead of court?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "settle civil dispute through mediation instead of going to court",
+    "Punjab Alternate Dispute Resolution Act mediation of civil disputes",
+    "Reference of disputes to mediation and conciliation"
+   ],
+   "tag": "Civil Procedure",
+   "title": "Mediation instead of court"
+  }
+ },
+ {
+  "id": "R06",
+  "question": "I cannot afford a lawyer. Is there free legal help?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "free legal aid for poor persons who cannot afford a lawyer",
+    "Punjab Legal Aid and Justice Authority Act free legal assistance eligibility",
+    "Right to free legal aid and entitlement of indigent persons"
+   ],
+   "tag": "Constitutional Rights",
+   "title": "Free legal aid"
+  }
+ },
+ {
+  "id": "R07",
+  "question": "Is an email or WhatsApp message accepted as evidence in court?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "whether email or WhatsApp messages are admissible as evidence in court",
+    "Qanun-e-Shahadat Order electronic documents admissibility of electronic evidence",
+    "Electronic Transactions Ordinance electronic record admissibility in evidence"
+   ],
+   "tag": "Civil Procedure",
+   "title": "Electronic evidence admissibility"
+  }
+ },
+ {
+  "id": "R08",
+  "question": "Is a digital signature legally valid?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Federal",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "legal validity of electronic and digital signatures in Pakistan",
+    "Electronic Transactions Ordinance 2002 recognition of electronic signatures",
+    "Electronic Transactions Ordinance 2002 section 3 legal recognition of electronic documents and signatures"
+   ],
+   "tag": "Cyber Law",
+   "title": "Validity of digital signatures"
+  }
+ },
+ {
+  "id": "R09",
+  "question": "Can someone be kept in police custody for more than 24 hours?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "how long can police keep a person in custody before producing before magistrate",
+    "Code of Criminal Procedure arrest detention twenty four hours production before magistrate",
+    "Code of Criminal Procedure section 61 limit of detention by police officer"
+   ],
+   "tag": "Criminal Law",
+   "title": "Police custody beyond 24 hours"
+  }
+ },
+ {
+  "id": "R10",
+  "question": "Which court decides a family dispute like divorce or custody?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "which court has jurisdiction to decide divorce and child custody cases",
+    "Family Courts Act 1964 jurisdiction of family court over dissolution of marriage and custody",
+    "Jurisdiction of Family Court in suits for dissolution of marriage and custody of children"
+   ],
+   "tag": "Family Law",
+   "title": "Court for family disputes"
+  }
+ },
+ {
+  "id": "G01",
+  "question": "Is freedom of speech protected in Pakistan?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Federal",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "freedom of speech and expression protection in Pakistan constitution",
+    "Constitution of Pakistan fundamental right freedom of speech and expression reasonable restrictions",
+    "Article 19 freedom of speech and expression"
+   ],
+   "tag": "Constitutional Rights",
+   "title": "Freedom of speech Pakistan"
+  }
+ },
+ {
+  "id": "G02",
+  "question": "Do I have a right to a fair trial?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "right to fair trial guaranteed under Constitution of Pakistan",
+    "Constitution of Pakistan fundamental right fair trial due process Article 10A",
+    "Right to fair trial"
+   ],
+   "tag": "Constitutional Rights",
+   "title": "Right to fair trial"
+  }
+ },
+ {
+  "id": "G03",
+  "question": "Is it legal for an employer to discriminate between men and women?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "employer treating men and women differently at workplace discrimination legality",
+    "Constitution of Pakistan equality of citizens and non-discrimination on basis of sex in employment",
+    "Protection against discrimination on the basis of sex in employment and occupation"
+   ],
+   "tag": "Labour & Employment",
+   "title": "Gender discrimination at work"
+  }
+ },
+ {
+  "id": "G04",
+  "question": "Is education a legal right for my child?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "is education a fundamental right of every child in Pakistan",
+    "Constitution of Pakistan right to free and compulsory education Article 25A",
+    "Right to free and compulsory education for children of age five to sixteen years"
+   ],
+   "tag": "Constitutional Rights",
+   "title": "Right to education"
+  }
+ },
+ {
+  "id": "G05",
+  "question": "Can the government take my property without compensation?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "government acquiring private property without paying compensation to owner",
+    "Land Acquisition Act acquisition of land compensation to persons interested",
+    "Constitutional protection right to property no deprivation except by authority of law"
+   ],
+   "tag": "Property Law",
+   "title": "Property acquisition without compensation"
+  }
+ },
+ {
+  "id": "G06",
+  "question": "How can I get information from a government office?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "how to request information from a government office in Pakistan",
+    "Punjab Transparency and Right to Information Act request for information from public body",
+    "Right of access to information held by public bodies"
+   ],
+   "tag": "Constitutional Rights",
+   "title": "Access to government information"
+  }
+ },
+ {
+  "id": "G07",
+  "question": "My relative was detained illegally. Can the court order his release?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": true,
+   "needs_clarification": false,
+   "search_queries": [
+    "person detained illegally without lawful authority how to get release from court",
+    "Constitution of Pakistan Article 199 jurisdiction of High Court to issue writ of habeas corpus",
+    "Power of High Court to issue directions for release of person illegally detained"
+   ],
+   "tag": "Constitutional Rights",
+   "title": "Illegal detention release"
+  }
+ },
+ {
+  "id": "G08",
+  "question": "What happens if a driver kills someone in an accident? Can the family claim compensation?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "driver kills someone in road accident criminal liability and compensation for family",
+    "Pakistan Penal Code rash negligent driving causing death section 320 punishment",
+    "Compensation to family of person killed by rash and negligent driving"
+   ],
+   "tag": "Criminal Law",
+   "title": "Fatal accident driver liability"
+  }
+ },
+ {
+  "id": "G09",
+  "question": "How can I get my CNIC corrected?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Federal",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "how to correct name date of birth or particulars on national identity card NADRA",
+    "National Database and Registration Authority Ordinance correction of registration record",
+    "Correction of particulars in identity card application to NADRA"
+   ],
+   "tag": "Other",
+   "title": "CNIC correction procedure"
+  }
+ },
+ {
+  "id": "G10",
+  "question": "What law protects women from violence in Punjab?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Punjab",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "law protecting women from domestic violence in Punjab",
+    "Punjab Protection of Women against Violence Act 2016 remedies and offences",
+    "Protection of Women against Violence Act 2016 definitions of violence and relief"
+   ],
+   "tag": "Criminal Law",
+   "title": "Protection of women from violence"
+  }
+ },
+ {
+  "id": "N01",
+  "question": "What is the income tax rate for salaried people this year?",
+  "analysis": {
+   "intent": "out_of_scope",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "income tax rates for salaried individuals Pakistan",
+    "Income Tax Ordinance 2001 rates of tax for salaried persons",
+    "Tax on income of salaried individuals"
+   ],
+   "tag": "Other",
+   "title": "Income tax rate query"
+  }
+ },
+ {
+  "id": "N02",
+  "question": "How do I get a US visa?",
+  "analysis": {
+   "intent": "out_of_scope",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "How do I get a US visa?"
+   ],
+   "tag": "Other",
+   "title": "US visa question"
+  }
+ },
+ {
+  "id": "N03",
+  "question": "Who will win the cricket world cup?",
+  "analysis": {
+   "intent": "out_of_scope",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "Who will win the cricket world cup?"
+   ],
+   "tag": "Other",
+   "title": "Cricket question"
+  }
+ },
+ {
+  "id": "N04",
+  "question": "What is the capital gains tax on shares?",
+  "analysis": {
+   "intent": "out_of_scope",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "capital gains tax on shares in Pakistan",
+    "Income Tax Ordinance 2001 capital gains on disposal of securities",
+    "Tax on capital gains from sale of listed shares"
+   ],
+   "tag": "Other",
+   "title": "Capital gains tax on shares"
+  }
+ },
+ {
+  "id": "N05",
+  "question": "Can you write me a poem about justice?",
+  "analysis": {
+   "intent": "out_of_scope",
+   "language": "en",
+   "jurisdiction": null,
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "definition of justice under Pakistani law",
+    "Constitution of Pakistan fundamental rights right to justice",
+    "Right to fair trial and due process"
+   ],
+   "tag": "Other",
+   "title": "Poem about justice"
+  }
+ },
+ {
+  "id": "N06",
+  "question": "What are the rules for importing a car into Pakistan?",
+  "analysis": {
+   "intent": "legal_question",
+   "language": "en",
+   "jurisdiction": "Federal",
+   "emergency": false,
+   "needs_clarification": false,
+   "search_queries": [
+    "rules for importing a car into Pakistan customs duty and eligibility",
+    "Customs Act 1969 import of motor vehicles baggage and transfer of residence",
+    "Import of vehicles conditions and restrictions under Customs Act"
+   ],
+   "tag": "Other",
+   "title": "Car import rules"
+  }
+ }
+]

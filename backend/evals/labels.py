@@ -28,7 +28,7 @@ class Labeler:
         self.chunks = chunks
         self.act = [norm(c["act_title"]) for c in chunks]
         self.head = [norm(c["heading"] + " " + c["section_label"]) for c in chunks]
-        self.skip = [c["unit_type"] == "preamble" for c in chunks]
+        self.skip = [c["unit_type"] in ("preamble", "toc") for c in chunks]
         self.text = [norm(c["text"]) for c in chunks]
 
     def match(self, spec: dict) -> set[int]:

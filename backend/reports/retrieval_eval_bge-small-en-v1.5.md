@@ -10,9 +10,9 @@ Hit rate (%) = share of questions with a relevant law section in the top k resul
 |---|---|---|---|---|---|---|
 | keyword only (BM25) |  55.6 |  73.1 |  81.5 |  89.8 |  96.3 | 0.667 |
 | vector only, with bge query prefix |  50.9 |  72.2 |  82.4 |  89.8 |  91.7 | 0.646 |
-| vector only, no prefix |  48.1 |  71.3 |  76.9 |  84.3 |  88.9 | 0.613 |
+| vector only, no prefix |  48.1 |  71.3 |  76.9 |  84.3 |  89.8 | 0.613 |
 | hybrid 1:1 |  62.0 |  78.7 |  86.1 |  94.4 |  97.2 | 0.724 |
-| hybrid vector 2 : keyword 1 |  62.0 |  79.6 |  87.0 |  93.5 |  96.3 | 0.726 |
+| hybrid vector 2 : keyword 1 |  62.0 |  78.7 |  87.0 |  93.5 |  96.3 | 0.725 |
 | hybrid vector 1 : keyword 2 |  63.0 |  78.7 |  84.3 |  94.4 |  99.1 | 0.734 |
 | hybrid 1:1, no jurisdiction handling |  55.6 |  73.1 |  81.5 |  93.5 |  97.2 | 0.676 |
 | hybrid 1:1, no de-duplication |  62.0 |  78.7 |  86.1 |  94.4 |  97.2 | 0.724 |
@@ -22,10 +22,10 @@ Hit rate (%) = share of questions with a relevant law section in the top k resul
 | w_vec | w_lex | rrf_k | hit@1 | hit@5 | hit@10 | MRR |
 |---|---|---|---|---|---|---|
 | 1 | 1 | 60 | 62.0 | 86.1 | 94.4 | 0.724 |
-| 1 | 1 | 20 | 60.2 | 86.1 | 95.4 | 0.717 |
-| 1 | 1 | 10 | 55.6 | 85.2 | 94.4 | 0.693 |
+| 1 | 1 | 20 | 60.2 | 85.2 | 95.4 | 0.717 |
+| 1 | 1 | 10 | 55.6 | 85.2 | 95.4 | 0.693 |
 | 3 | 1 | 60 | 63.0 | 87.0 | 93.5 | 0.727 |
-| 1 | 0.5 | 60 | 62.0 | 87.0 | 93.5 | 0.726 |
+| 1 | 0.5 | 60 | 62.0 | 87.0 | 93.5 | 0.725 |
 | 1 | 0.25 | 60 | 61.1 | 87.0 | 92.6 | 0.718 |
 | 1 | 1.5 | 60 | 63.0 | 84.3 | 93.5 | 0.734 |
 | 1 | 3 | 60 | 62.0 | 83.3 | 93.5 | 0.727 |
@@ -62,7 +62,7 @@ Top-1 signals for real legal questions vs out-of-scope questions (higher = more 
 | signal | real questions: min / p10 / median | out-of-scope: max / median | gap (p10 real - max out-of-scope) |
 |---|---|---|---|
 | best cosine similarity | 0.623 / 0.705 / 0.768 | 0.739 / 0.661 | -0.034 |
-| best keyword score | 14.293 / 21.116 / 29.422 | 22.475 / 16.423 | -1.358 |
+| best keyword score | 14.299 / 20.907 / 29.528 | 22.467 / 16.420 | -1.560 |
 | fused score | 0.019 / 0.019 / 0.020 | 0.020 / 0.019 | -0.000 |
 
 ## Questions without a relevant result in the top 5 (13 of 108)

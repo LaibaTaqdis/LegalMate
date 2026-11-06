@@ -115,7 +115,8 @@ class HybridSearcher:
         self.chunks = chunks
         self.emb = np.load(DATA_DIR / "index" / slug(model) / "embeddings.npy", mmap_mode="r")
         assert self.emb.shape[0] == len(chunks), "embeddings and chunks are out of sync"
-        self.lex = LexicalIndex([(i, c["header"], c["text"]) for i, c in enumerate(chunks)])
+        self.is_toc = [c["unit_type"] == "toc" for c in chunks]
+        self.lex = LexicalIndex([(i, c["header"], c["text"]) for i, c in enumerate(chunks) if c["unit_type"] != "toc"])
         self.embedder = embedder or QueryEmbedder(model)
         self.applies = [set(c["applies_to"]) | {c["jurisdiction"]} for c in chunks]
         self.hashes = [c["chunk_hash"] for c in chunks]
@@ -125,7 +126,7 @@ class HybridSearcher:
         sims = np.asarray(self.emb) @ qvec
         top = np.argpartition(-sims, depth)[:depth]
         top = top[np.argsort(-sims[top])]
-        return [(int(i), float(sims[i])) for i in top]
+        return [(int(i), float(sims[i])) for i in top if not self.is_toc[int(i)]]
 
     def search(self, query: str, jur: str | None = None, k: int = 20, p: Params | None = None,
                qvec: np.ndarray | None = None) -> list[Hit]:
