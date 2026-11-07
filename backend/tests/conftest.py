@@ -35,11 +35,84 @@ def pg_url():
         shutil.rmtree(d, ignore_errors=True)
 
 
+def _row(act, jur, label, heading, body, nums=None, unit="section", status="unverified", amended=()):
+    return {"act_title": act, "jurisdiction": jur, "section_label": label, "heading": heading, "body": body, "section_nums": nums or [label.split()[-1]],
+            "unit_type": unit, "legal_status": status, "status_scope": None, "amended_by_titles": list(amended), "source_urls": [f"https://example.test/{act[:4]}.pdf"]}
+
+
+# a few real sections (headings as stored in the law library), enough to exercise the resolver
+LAW = {
+    ("Contract act, 1872", "74"): _row("Contract act, 1872", "Federal", "Section 74", "Compensation for breach of contract where penalty stipulated for",
+                                       "74. Compensation for breach of contract where penalty stipulated for. When a contract has been broken, if a sum is named in the contract "
+                                       "as the amount to be paid in case of such breach, the party complaining is entitled to receive reasonable compensation not exceeding the amount so named."),
+    ("Contract act, 1872", "10"): _row("Contract act, 1872", "Federal", "Section 10", "What agreements are contracts",
+                                       "10. What agreements are contracts. All agreements are contracts if they are made by the free consent of parties competent to contract."),
+    ("Contract act, 1872", "27"): _row("Contract act, 1872", "Federal", "Section 26 to 27", "Agreement in restraint of marriage void; Agreement in restraint of trade void",
+                                       "26. Agreement in restraint of marriage void. Every agreement in restraint of the marriage of any person is void.\n27. Agreement in restraint of trade void. "
+                                       "Every agreement by which any one is restrained from exercising a lawful profession, trade or business of any kind, is to that extent void.",
+                                       nums=["26", "27"]),
+    ("Punjab Rented Premises Act, 2009", "15"): _row("Punjab Rented Premises Act, 2009", "Punjab", "Section 15", "Grounds for eviction",
+                                                     "15. Grounds for eviction.– A landlord may seek eviction of the tenant only on the grounds of default in payment of rent, subletting, or personal need.",
+                                                     amended=["Punjab Rented Premises (Amendment) Act, 2025"]),
+    ("Islamabad Rent Restriction Ordinance, 2001", "17"): _row("Islamabad Rent Restriction Ordinance, 2001", "ICT", "Section 17", "Eviction of tenant",
+                                                                "17. Eviction of tenant.– A tenant shall not be evicted except in accordance with this section."),
+    ("Transfer of Property Act, 1882", "106"): _row("Transfer of Property Act, 1882", "Federal", "Section 106", "Duration of certain leases in absence of written contract or local usage",
+                                                    "106. Duration of certain leases in absence of written contract or local usage. In the absence of a contract or local law or usage to the contrary, "
+                                                    "a lease of immovable property for agricultural or manufacturing purposes shall be deemed to be a lease from year to year."),
+    ("Transfer of Property Act, 1882", "111"): _row("Transfer of Property Act, 1882", "Federal", "Section 111", "Determination of lease", "111. Determination of lease. A lease of immovable property determines by efflux of the time limited thereby.", status="repealed"),
+    ("Transfer of Property Act, 1882", "105"): _row("Transfer of Property Act, 1882", "Federal", "Section 105", "Lease defined", "105. Lease defined. A lease of immovable property is a transfer of a right to enjoy such property."),
+}
+
+
+class FakeKB:
+    """get_section like the real KnowledgeBase: exact title, first preferred jurisdiction that has it, None if absent."""
+
+    def __init__(self, fail=False):
+        self.fail, self.asked = fail, []
+
+    def get_section(self, act, section, jurisdictions):
+        self.asked.append((act, section, tuple(jurisdictions)))
+        if self.fail:
+            raise ConnectionError("law library unreachable")
+        row = LAW.get((act, section))
+        return dict(row) if row and row["jurisdiction"] in jurisdictions else None
+
+
+class FakeLLM:
+    """Stands in for DeepSeek in document analysis. It quotes the document it is given, and cheats on purpose when told to."""
+
+    def __init__(self):
+        self.calls: list[list[dict]] = []
+
+    def complete(self, messages, *, tag, max_tokens=800, temperature=0.1, **kw):
+        import re
+        from chat.llm import BudgetExceeded
+        self.calls.append(messages)
+        doc = re.search(r"<document>\n(.*?)\n</document>", messages[-1]["content"], re.S).group(1)
+        if "TRIGGER_BUDGET" in doc:
+            raise BudgetExceeded("cap")
+        if "TRIGGER_BADJSON" in doc:
+            return type("R", (), {"text": "not json at all"})()
+        lines = [l for l in re.split(r"(?<=[.!])\s+|\n", doc) if len(l.strip()) > 25 and not l.startswith("[Page")]
+        out = {"documentType": "Tenancy Agreement", "category": "tenancy", "jurisdiction": "Punjab" if "Lahore" in doc else "Unknown", "overallRisk": {"level": "Low", "note": ""},
+               "summary": "A twelve month rental agreement.",
+               "clauses": [{"title": "Rent", "reference": "Clause 3", "risk": "Low", "summary": "Rent is due monthly.", "detail": "You pay every month.", "quote": lines[0].strip(), "topics": ["rent_payment", "not_a_real_topic"]},
+                           {"title": "Termination", "reference": "Clause 6", "risk": "High", "summary": "The landlord may end it quickly.",
+                            "detail": "Notice of 99999 days is not what the text says.", "quote": "the landlord may throw you out whenever he likes", "topics": ["eviction", "penalty_clause"]}],
+               "risks": [{"title": "Short notice", "description": "Little time to move.", "level": "High", "quote": lines[-1].strip()}],
+               "obligations": ["Pay rent on time."], "importantDates": ["1 January 2026 - start"], "missingInformation": ["Inventory list"],
+               "recommendedActions": ["Ask to extend the notice period."]}
+        import json
+        return type("R", (), {"text": json.dumps(out)})()
+
+
 class FakeEngine:
     """Same interface as chat.engine.ChatEngine.respond; behaviour chosen by words in the question."""
 
     def __init__(self):
         self.calls: list[dict] = []
+        self.llm = FakeLLM()
+        self.kb = FakeKB()
 
     def respond(self, text, *, history=None, profile=None, language="en", attachment_text=None, on_status=None):
         self.calls.append({"text": text, "history": history or [], "profile": profile, "language": language, "attachment_text": attachment_text})

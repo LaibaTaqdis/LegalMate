@@ -583,9 +583,7 @@ export default function Chat() {
               <button aria-label="More" onClick={() => toast('More options coming soon', 'info')}><MoreHorizontal size={20} /></button>
             </div>
           </header>
-          {banner && (
-            <div className="chat-banner"><Info size={20} /><span>LegalMate provides general legal information based on Pakistani laws and reliable sources. This is not formal legal advice.</span><button onClick={() => setBanner(false)} aria-label="Dismiss"><X size={18} /></button></div>
-          )}
+          
           <div className="chat-empty">
             <div className="chat-empty-center">
               <img src="/assets/img/robot.png" alt="LegalMate assistant" className="chat-robot" />

@@ -17,6 +17,7 @@ import pytest
 from PIL import Image, ImageDraw, ImageFont
 
 from app import extract as ex
+from app.analysis import _norm, _sentences, check_quote, figures
 from app.config import DocSettings
 from app.urdu import arabic_fraction, fold_presentation_forms, garbled_fraction, looks_urdu, normalize_for_match, to_ascii_digits, urduize
 from chat.pii import scrub
@@ -101,6 +102,17 @@ def test_text_helpers():
 def test_identity_numbers_in_urdu_digits_are_scrubbed():
     out, found = scrub("شناختی کارڈ ۳۵۲۰۲-۱۲۳۴۵۶۷-۱ اور فون ۰۳۰۰ ۱۲۳۴۵۶۷")
     assert "35202" not in out and "۳۵۲۰۲" not in out and found == {"CNIC": 1, "PHONE": 1}
+
+
+def test_quote_and_figure_checks_understand_urdu():
+    doc = "کرایہ داری کا معاہدہ\nماہانہ کرایہ ۴۵٫۰۰۰ روپے ہے جو ہر مہینے کی پانچ تاریخ تک ادا کیا جائے گا۔ مالک مکان تیس دن کے نوٹس پر یہ معاہدہ ختم کر سکتا ہے۔"
+    dn, ss = _norm(doc), _sentences(doc)
+    assert len(ss) == 3                                                                            # the Urdu full stop ends a sentence
+    assert check_quote("مالک مکان تیس دن کے نوٹس پر یہ معاہدہ ختم کر سکتا ہے", doc, dn, ss)[1] is True
+    assert check_quote("مالك مكان تيس دن كے نوٹس پر یہ معاہدہ ختم کر سکتا ہے", doc, dn, ss)[1] is True    # same words with Arabic letter forms
+    quote, ok = check_quote("مالک مکان کسی بھی وقت نکال سکتا ہے", doc, dn, ss)
+    assert ok is False                                                                             # an invented quote is not accepted
+    assert figures("رقم ۴۵,۰۰۰ اور 90000") == {"45000", "90000"}
 
 
 # ---------------------------------------------------------------------------------------------- OCR (real pixels)

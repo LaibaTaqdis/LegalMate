@@ -316,8 +316,8 @@ function Viewer({ doc, setDoc }) {
                   </ul>
                 )}
                 {doc.analysisId
-                  ? <Link to={`/documents/analysis/${doc.analysisId}`} className="btn btn-soft btn-block">Open full analysis <ArrowRight size={16} /></Link>
-                  : <Link to="/documents/upload" className="btn btn-soft btn-block">Analyse this document <ArrowRight size={16} /></Link>}
+                  ? <Link to={`/analysis/${doc.analysisId}`} className="btn btn-soft btn-block">Open full analysis <ArrowRight size={16} /></Link>
+                  : <Link to="/analysis/new" className="btn btn-soft btn-block">Analyse this document <ArrowRight size={16} /></Link>}
               </section>
             )}
             {tab === 'Notes' && (

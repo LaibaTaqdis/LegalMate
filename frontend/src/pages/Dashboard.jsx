@@ -15,7 +15,7 @@ import { formatBytes, formatDate, formatTime } from '../utils/format'
 
 const QUICK = [
   { icon: MessageSquareText, tone: 'blue', title: 'Ask LegalMate', text: 'Get clear, source-backed answers to your legal questions.', cta: 'Start Chatting', to: '/chat' },
-  { icon: FilePlus2, tone: 'green', title: 'Upload Document', text: 'Analyse agreements, notices and legal letters with AI.', cta: 'Upload Now', to: '/documents/upload' },
+  { icon: FilePlus2, tone: 'green', title: 'Upload Document', text: 'Analyse agreements, notices and legal letters with AI.', cta: 'Upload Now', to: '/analysis/new' },
   { icon: FileText, tone: 'purple', title: 'Create Case Brief', text: 'Generate concise case briefs from documents or chats.', cta: 'Create Brief', to: '/case-briefs/new' },
   { icon: Calculator, tone: 'orange', title: 'Open Legal Calculator', text: 'Calculate fines, limitation periods and other legal timelines.', cta: 'Open Calculator', to: '/calculator' },
 ]

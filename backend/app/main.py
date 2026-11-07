@@ -43,13 +43,15 @@ def create_app(settings: AppSettings | None = None, *, engine=None, db: Database
         purge_expired(database, s.docs)
         holder = EngineHolder(engine=engine, enabled=s.enable_engine, factory=lambda: build_engine(s.docs.chat_doc_chars))
         app.state.ctx = AppState(settings=s, db=database, limiter=RateLimiter(), engine=holder,
-                                 executor=ThreadPoolExecutor(max_workers=s.engine_concurrency, thread_name_prefix="chat"))
+                                 executor=ThreadPoolExecutor(max_workers=s.engine_concurrency, thread_name_prefix="chat"),
+                                 analysis_executor=ThreadPoolExecutor(max_workers=s.docs.analysis_concurrency, thread_name_prefix="analysis"))
         if s.enable_engine and s.warm_engine and engine is None:
             holder.warm_in_background()
         try:
             yield
         finally:
             app.state.ctx.executor.shutdown(wait=False, cancel_futures=True)
+            app.state.ctx.analysis_executor.shutdown(wait=False, cancel_futures=True)
             if db is None:
                 database.close()
 

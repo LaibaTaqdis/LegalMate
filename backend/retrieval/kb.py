@@ -156,5 +156,20 @@ class KnowledgeBase:
         names = [d.name for d in cur.description]
         return [dict(zip(names, r)) for r in cur.fetchall()]
 
+    def get_section(self, act_title: str, section: str, jurisdictions: list[str]) -> dict | None:
+        """The stored text of one section of one Act, by EXACT title (not a search). `jurisdictions` is the order of preference, for example
+        ["Punjab", "Federal"]: an Act that exists in both copies returns the first jurisdiction that has it. None if the Act or section is not
+        in the database. Includes the document facts the UI warns about (repealed, amended later, source link)."""
+        cols = ", ".join("c." + c.strip() for c in ROW_COLS.split(","))
+        cur = self._run(
+            f"select {cols}, d.is_amendment, d.source_urls, "
+            "coalesce((select array_agg(x.title order by x.year) from law_documents x where x.doc_id = any (d.amended_by)), '{}') as amended_by_titles "
+            "from law_chunks c join law_documents d on d.doc_id = c.doc_id "
+            "where c.act_title = %s and c.section_nums @> array[%s] and c.unit_type <> 'toc' and c.jurisdiction = any(%s) "
+            "order by array_position(%s::text[], c.jurisdiction), c.ordinal limit 1",
+            [act_title, section, jurisdictions, jurisdictions])
+        row = cur.fetchone()
+        return dict(zip([d.name for d in cur.description], row)) if row else None
+
     def close(self) -> None:
         self.conn.close()

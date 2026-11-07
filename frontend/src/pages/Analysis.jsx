@@ -32,14 +32,21 @@ export default function Analysis() {
   )
 }
 
+function Preview({ doc, title }) {
+  return doc.thumbnailUrl ? <img src={doc.thumbnailUrl} alt="" /> : <>
+    <b>{title.toUpperCase()}</b>
+    {Array.from({ length: 16 }).map((_, i) => <i key={i} style={{ width: `${60 + ((i * 37) % 40)}%` }} />)}
+  </>
+}
+
 function AnalysisProgress({ a }) {
   return (
     <div className="analysis">
-      <Breadcrumb items={[{ label: 'Home', to: '/dashboard' }, { label: 'Documents', to: '/documents' }, { label: 'Analysis' }]} />
+      <Breadcrumb items={[{ label: 'Home', to: '/dashboard' }, { label: 'Analysis', to: '/analysis' }, { label: 'Details' }]} />
       <div className="card state-box">
         <span className="icon-tile tile-blue tile-lg"><Sparkles /></span>
         <b>Analysing {a.document?.name || 'your document'}…</b>
-        <p>LegalMate is reading the document and identifying clauses, risks and deadlines. This usually takes 1-5 minutes.</p>
+        <p>LegalMate is reading the document and identifying clauses, risks and deadlines. This usually takes under a minute.</p>
         <div className="progress" style={{ width: 320 }}><span style={{ width: `${a.progress || 10}%`, background: '#1d5fd6' }} /></div>
         <span className="muted small"><Loader2 size={14} className="spin" style={{ display: 'inline', verticalAlign: -2 }} /> {a.progress || 0}% complete</span>
       </div>
@@ -55,11 +62,16 @@ function AnalysisResult({ a }) {
   const [openRisks, setOpenRisks] = useState(true)
   const [allRisks, setAllRisks] = useState(false)
   const [expanded, setExpanded] = useState(null)
+  const [openLaw, setOpenLaw] = useState(null)
   const [sections, setSections] = useState({})
   const [busy, setBusy] = useState(null)
 
+  const showLaw = id => {
+    setOpenLaw(id)
+    setTimeout(() => document.getElementById(`law-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 60)
+  }
   const doc = a.document
-  const docLink = `/vault/document/${doc.vaultDocumentId || doc.id}`
+  const docLink = doc.vaultDocumentId ? `/vault/document/${doc.vaultDocumentId}` : null     // the Legal Vault keeps originals; without it there is no page to open
   const title = doc.name.replace(/\.[a-z]+$/i, '')
   const clauses = allClauses ? a.clauses : a.clauses.slice(0, 5)
   const risks = allRisks ? a.risks : a.risks.slice(0, 3)
@@ -81,7 +93,7 @@ function AnalysisResult({ a }) {
 
   return (
     <div className="analysis">
-      <Breadcrumb items={[{ label: 'Home', to: '/dashboard' }, { label: 'Documents', to: '/documents' }, { label: title, to: docLink }, { label: 'Analysis' }]} />
+      <Breadcrumb items={[{ label: 'Home', to: '/dashboard' }, { label: 'Analysis', to: '/analysis' }, { label: title, ...(docLink ? { to: docLink } : {}) }]} />
       <div className="an-head">
         <span className="an-file"><FileIcon type={doc.fileType} size={30} /></span>
         <div className="an-title">
@@ -97,6 +109,13 @@ function AnalysisResult({ a }) {
         </div>
       </div>
 
+      {a.notes?.length > 0 && (
+        <div className="an-notes" role="note">
+          <AlertTriangle size={18} />
+          <ul>{a.notes.map(n => <li key={n}>{n}</li>)}</ul>
+        </div>
+      )}
+
       <div className="an-stats">
         <div className="card an-stat"><span className={`icon-tile tile-${RISK_TONE[a.overallRisk.level]} tile-lg`}><ShieldAlert /></span><div><span>Overall Risk</span><b className={`t-${RISK_TONE[a.overallRisk.level]}`}>{a.overallRisk.level}</b><small>{a.overallRisk.note}</small></div></div>
         <div className="card an-stat"><span className="icon-tile tile-blue tile-lg"><FileText /></span><div><span>Important Clauses</span><b>{a.counts.clauses}</b><small>Key clauses identified</small></div></div>
@@ -111,7 +130,7 @@ function AnalysisResult({ a }) {
               <h2><span className="icon-tile tile-blue tile-sm"><FileText /></span> Plain-Language Summary</h2>
               <Link to={`/chat?q=${encodeURIComponent(`Explain the key risks in my ${doc.name}`)}`} className="btn btn-soft btn-sm"><MessageCircleMore size={17} /> Ask About This</Link>
             </div>
-            <p className="an-summary">{a.summary}</p>
+            <p className="an-summary" dir="auto">{a.summary}</p>
           </section>
 
           <section className="card an-card an-flush">
@@ -128,13 +147,26 @@ function AnalysisResult({ a }) {
                   <div key={c.id} className={`clause ${expanded === i ? 'open' : ''}`}>
                     <button className="clause-row" onClick={() => setExpanded(expanded === i ? null : i)}>
                       <span className={`icon-tile tile-${RISK_TONE[c.risk] === 'green' ? 'blue' : RISK_TONE[c.risk]} tile-sm clause-ic`}><FileText /></span>
-                      <b>{i + 1}. {c.title}</b>
+                      <b>{i + 1}. <bdi>{c.title}</bdi></b>
                       <span className="clause-no">{c.reference}</span>
                       <span className={`pill pill-${RISK_TONE[c.risk]}`}>{c.risk} Risk</span>
                       <span className="clause-d">{c.summary}</span>
                       <ChevronDown size={18} className="clause-chev" />
                     </button>
-                    {expanded === i && <p className="clause-more">{c.detail}</p>}
+                    {expanded === i && (
+                      <div className="clause-more">
+                        <p dir="auto">{c.detail}</p>
+                        {c.lawRefs?.length > 0 && (
+                          <p className="clause-laws"><span>Related laws:</span>
+                            {c.lawRefs.map(id => {
+                              const l = (a.citations || []).find(x => x.id === id)
+                              return l && <button key={id} type="button" className="law-chip" onClick={() => showLaw(id)}>{l.title.replace(/,\s*\d{4}$/, '')} · {l.reference.split(' - ')[0]}</button>
+                            })}
+                          </p>
+                        )}
+                        {c.quote && <blockquote className="clause-quote" dir="auto">“{c.quote}”{c.quoteVerified === false && <small>Closest text from your document; the exact wording could not be matched.</small>}</blockquote>}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -176,12 +208,9 @@ function AnalysisResult({ a }) {
           <section className="card an-card">
             <h3 className="an-side-title"><FileText size={19} /> Document Preview</h3>
             <div className="an-preview">
-              <Link to={docLink} className="mini-page" aria-label="Open document">
-                {doc.thumbnailUrl ? <img src={doc.thumbnailUrl} alt="" /> : <>
-                  <b>{title.toUpperCase()}</b>
-                  {Array.from({ length: 16 }).map((_, i) => <i key={i} style={{ width: `${60 + ((i * 37) % 40)}%` }} />)}
-                </>}
-              </Link>
+              {docLink
+                ? <Link to={docLink} className="mini-page" aria-label="Open document"><Preview doc={doc} title={title} /></Link>
+                : <div className="mini-page"><Preview doc={doc} title={title} /></div>}
               <div className="an-meta">
                 <b>{doc.name}</b>
                 <dl>
@@ -190,7 +219,7 @@ function AnalysisResult({ a }) {
                   <dt>Pages</dt><dd>{doc.pages}</dd>
                   <dt>Uploaded</dt><dd>{formatDateTime(doc.uploadedAt)}</dd>
                 </dl>
-                <Link to={docLink} className="btn btn-soft btn-block">View Document <ExternalLink size={16} /></Link>
+                {docLink && <Link to={docLink} className="btn btn-soft btn-block">View Document <ExternalLink size={16} /></Link>}
               </div>
             </div>
           </section>
@@ -209,24 +238,38 @@ function AnalysisResult({ a }) {
             </div>
           </section>
 
-          <section className="card an-card">
+          {a.citations?.length > 0 && <section className="card an-card">
             <div className="an-card-head an-card-head-tight">
-              <h3 className="an-side-title"><FileText size={19} /> Related Laws and Citations</h3>
-              <Link to="/chat/tenant-rights?panel=sources" className="link small">View All <ArrowRight size={14} /></Link>
+              <h3 className="an-side-title"><Landmark size={19} /> Related Laws</h3>
             </div>
+            {a.citationsNote && <p className="laws-note">{a.citationsNote}</p>}
             <ul className="laws">
-              {a.citations.map(l => (
-                <li key={l.id}>
-                  <span className="icon-tile tile-gray tile-sm"><Landmark /></span>
-                  <div><b>{l.title}</b><span>{l.reference}</span></div>
-                  <span className={`pill ${l.type === 'Judgment' ? 'pill-purple' : 'pill-blue'}`}>{l.type}</span>
-                  {l.url
-                    ? <a className="icon-btn-plain law-ext" href={l.url} target="_blank" rel="noreferrer" aria-label="Open"><ExternalLink size={17} /></a>
-                    : <button className="icon-btn-plain law-ext" onClick={() => toast(`Opening ${l.title}`, 'info')} aria-label="Open"><ExternalLink size={17} /></button>}
-                </li>
-              ))}
+              {a.citations.map(l => {
+                const open = openLaw === l.id
+                return (
+                  <li key={l.id} id={`law-${l.id}`} className={open ? 'open' : ''}>
+                    <button type="button" className="law-row" aria-expanded={open} onClick={() => setOpenLaw(open ? null : l.id)}>
+                      <span className="icon-tile tile-gray tile-sm"><Landmark /></span>
+                      <span className="law-main"><b>{l.title}</b><span>{l.reference}</span></span>
+                      {l.jurisdiction && <span className="pill pill-gray">{l.jurisdiction}</span>}
+                      <ChevronDown size={16} className="law-chev" />
+                    </button>
+                    {open && (
+                      <div className="law-more">
+                        {l.topics?.length > 0 && <p className="law-topics">Relates to: {l.topics.join(', ')}</p>}
+                        {l.quote && <blockquote>{l.quote}</blockquote>}
+                        {l.note && <p className="source-flag"><AlertTriangle size={14} /> {l.note}</p>}
+                        <p className="law-links">
+                          {l.url && <a className="link small" href={l.url} target="_blank" rel="noreferrer">View full law <ExternalLink size={14} /></a>}
+                          <Link className="link small" to={`/chat?q=${encodeURIComponent(`Explain ${l.reference.split(' - ')[0]} of the ${l.title} in simple words and how it relates to my ${doc.documentType || 'document'}`)}`}>Ask LegalMate about this <ArrowRight size={14} /></Link>
+                        </p>
+                      </div>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
-          </section>
+          </section>}
 
           <section className="card an-card">
             <h3 className="an-side-title"><ListChecks size={19} /> Recommended Actions</h3>

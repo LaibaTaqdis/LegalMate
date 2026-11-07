@@ -341,6 +341,10 @@ def test_feedback_reports_and_not_yet_available_features(client):
     assert client.post(f"{A}/chat/sources/report", json={"messageId": mid, "sourceId": 1}, headers=h).status_code == 204
     assert client.post(f"{A}/chat/sources/report", json={"messageId": mid, "sourceId": 1}, headers=other).status_code == 404
     assert client.post(f"{A}/chat/messages/{mid}/save", headers=h).status_code == 501
+    for call in (lambda: client.get(f"{A}/analyses/{mid}/report", headers=h), lambda: client.post(f"{A}/analyses/{mid}/save", headers=h),
+                 lambda: client.post(f"{A}/analyses/{mid}/share", headers=h)):
+        r = call()
+        assert r.status_code == 501 and r.json()["error"]["code"] == "NOT_IMPLEMENTED"
 
 
 def test_deleting_a_user_removes_their_conversations(client):

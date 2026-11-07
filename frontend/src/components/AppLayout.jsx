@@ -16,7 +16,7 @@ import { useOnline } from '../hooks/useOnline'
 const NAV_CLIENT = [
   { to: '/dashboard', label: 'Dashboard', icon: House },
   { to: '/chat', label: 'Legal Chat', icon: MessagesSquare },
-  { to: '/documents', label: 'Documents', icon: FileText },
+  { to: '/analysis', label: 'Analysis', icon: FileText },
   { to: '/vault', label: 'Legal Vault', icon: Folder },
   { to: '/case-briefs', label: 'Case Briefs', icon: NotebookText },
   { to: '/calculator', label: 'Legal Calculator', icon: Calculator },

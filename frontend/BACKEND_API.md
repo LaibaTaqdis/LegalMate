@@ -19,7 +19,8 @@ The frontend switches services to the real backend one by one (`VITE_REAL_SERVIC
 | Onboarding profile: `GET/PUT /users/me/profile` | **Done** (new, see section 13). It gives the chatbot context about the user. |
 | Chat: conversations, streaming messages, feedback, source reports | **Done** (section 5). |
 | Chat: `POST /chat/messages/:id/save` (Legal Vault) | Answers `501 NOT_IMPLEMENTED`. |
-| Documents: `POST /documents`, `POST /analyses`, chat attachments | Answer `501 NOT_IMPLEMENTED` until the document phase. |
+| Documents: `POST/DELETE /documents`, `POST /analyses`, `GET /analyses/:id`, chat attachments | **Done** (section 6). Text is extracted and stored, the original file is not kept. |
+| Analysis: `/analyses/:id/report`, `/save`, `/share` | Answer `501 NOT_IMPLEMENTED` (PDF report, Legal Vault and share links are later). |
 | Settings: security, sessions, preferences, avatar, export, delete account, integrations | Not built (mock). |
 | Dashboard, vault, briefs, calculators, legal aid, lawyers, bookings, admin, community, emergency, offline, WhatsApp | Not built (mock). |
 
@@ -433,20 +434,37 @@ Saves the answer as a document in the Legal Vault → `{ "documentId": "doc_9" }
 Fields: `file`, `purpose` (`analysis` | `chat`), `saveToVault` (`true|false`)
 ```json
 // 201
-{ "id": "doc_1", "name": "Rental_Agreement.pdf", "sizeBytes": 2516582, "fileType": "pdf", "pages": 12 }
+{ "id": "uuid", "name": "Rental_Agreement.pdf", "sizeBytes": 2516582, "fileType": "pdf", "pages": 12,
+  "ocrUsed": false, "urdu": false, "truncated": false, "charCount": 18234, "warnings": [], "expiresAt": "2026-12-07T10:00:00+00:00" }
 ```
-Virus-scan files and reject password-protected or unreadable ones with a clear `message`.
+The type is decided from the file's bytes (PDF, Word `.docx`, JPG, PNG), not its name. Text is extracted at once; scans and photos are read with OCR in English and Urdu (`urdu: true` when Urdu was read; Urdu from an image carries a warning); **the original file is not kept**. `warnings` are plain sentences to show the user (for example "Part of this document was read from an image. Please double-check amounts, dates and names."). Errors: `415 UNSUPPORTED_TYPE`, `413 FILE_TOO_LARGE`, `422` with `code` `TOO_MANY_PAGES`, `PASSWORD_PROTECTED`, `UNREADABLE`, `NO_TEXT`, `TOO_LARGE_IMAGE`, `QUOTA_EXCEEDED`, `429 RATE_LIMITED`. Limits (size, pages, quota, retention) come from environment variables on the server. Not virus-scanned yet. `saveToVault` is accepted but ignored (a warning says so).
+
+In chat, send the returned `id`s as `attachmentIds` of `POST /chat/conversations/:id/messages` (at most `ATTACHMENTS_PER_MESSAGE`, default 3). User messages come back with `attachments: [{ "id", "name" }]`.
 
 ### DELETE `/documents/:id`
 Discards an uploaded, not-yet-analysed file → `204`.
+
+### GET `/analyses` (analysis history)
+Query: `q` (name search, max 80), `risk` (`all|High|Medium|Low`), `status` (`all|completed|running|failed`), `days` (0 = any time, otherwise only the last N days), `sort` (`newest|oldest|name|risk`), `page`, `pageSize` (default `ANALYSIS_PAGE_SIZE`, max 50). Only the signed-in user's analyses.
+```json
+{ "items": [ { "id": "uuid", "status": "completed|processing|failed", "progress": 100, "error": null, "name": "Rental Agreement.pdf", "fileType": "pdf",
+               "documentType": "Tenancy Agreement", "risk": "High", "counts": { "clauses": 8, "deadlines": 2, "missing": 3 },
+               "createdAt": "...", "finishedAt": "...", "expiresAt": "..." } ],
+  "total": 12, "page": 1, "pageSize": 10,
+  "counts": { "all": 12, "completed": 10, "running": 1, "failed": 1, "High": 3, "Medium": 3, "Low": 4 } }
+```
+`counts` are over everything the user has (they feed the filter chips), not just the current filter. `risk` is `null` until the analysis completes.
+
+### DELETE `/analyses/:id` → `204`
+Removes the analysis and the stored text of the document(s) it was made from (unless another analysis still uses them). `404` if it is not the user's.
 
 ### POST `/analyses`
 ```json
 { "documentIds": ["doc_1"], "language": "auto|en|ur", "depth": "quick|detailed", "saveToVault": true }
 // 202
-{ "id": "ana_1", "status": "queued" }
+{ "id": "uuid", "status": "queued" }
 ```
-Run the analysis as a background job (quick takes about 1-2 min, detailed about 3-5 min). Notify the user when it finishes (notification `type: "analysis"`).
+Runs as a background job: one model call, about 20-60 s. Up to `ANALYSIS_MAX_DOCS` (default 3) documents are analysed together. `429` while the user already has `ANALYSIS_PER_USER_RUNNING` jobs running. No notification is sent yet.
 
 ### GET `/analyses/:id`
 The frontend polls every 3 s while `status` is `queued` or `processing`.
@@ -468,12 +486,24 @@ The frontend polls every 3 s while `status` is `queued` or `processing`.
   "missingInformation": ["Inventory list of furniture and fixtures."],
   "citations": [ { "id": "l1", "title": "The Rent Act, 2009", "reference": "Section 4 - Tenancy Agreement",
                    "type": "Act|Judgment|Rule", "url": null } ],
-  "recommendedActions": ["Consider negotiating the termination clause."]
+  "recommendedActions": ["Consider negotiating the termination clause."],
+  "notes": ["Plain sentences about anything that could not be verified: quotes that did not match word for word, figures not found in the document, scans that were hard to read, text that was cut for length."]
 }
 ```
+Extra fields: each clause and risk carries `quote` (the document's exact words, or the closest real sentence) and `quoteVerified`. `counts`, `riskDistribution` and `overallRisk` are computed from the findings. `citations` are the laws that deal with the kinds of terms found (see below); the page hides the box when there are none.
+
+**Related laws.** The model only classifies: `category` (tenancy, employment, property, loan, business, contract, notice, court, other), `jurisdictionHint` (`Punjab` or `ICT` when the document names a place there) and, per clause, `topics` (0 to 2 keys from a fixed list). Code then looks up the REAL text of the sections that a reviewed table (`backend/app/law_refs.py`) assigns to those topics. Province-specific laws are used only when the province is known (from the document, else the user's profile: `jurisdiction` in the result); otherwise a `notes` entry says so. A topic with no governing section (for example security deposits) shows no law.
+```json
+{ "citations": [ { "id": "l1", "title": "Punjab Rented Premises Act, 2009", "reference": "Section 15 - Grounds for eviction", "type": "Act|Rule",
+                   "jurisdiction": "Punjab", "url": "https://... or null", "quote": "the law's own wording, cut at a sentence end",
+                   "note": "Amended later by ... / Marked as repealed ... or null", "topics": ["Eviction and ending a tenancy"], "clauseIds": ["c2"] } ],
+  "citationsNote": "These laws deal with the kind of terms in your document... they do not say whether your document follows them.",
+  "clauses": [ { "id": "c2", "topics": ["eviction"], "lawRefs": ["l1"] } ], "category": "tenancy", "jurisdiction": "Punjab" }
+```
+A clause that has a matching law always keeps its main law in the list, even when the box limit would cut it. While running, `GET` returns `{ id, status, progress, error, document: { name } }`; on failure `status: "failed"` and `error` is a plain sentence.
 
 ### GET `/analyses/:id/report`
-PDF report download.
+PDF report download. **Not built yet: answers `501 NOT_IMPLEMENTED`.**
 ### POST `/analyses/:id/save`
 → `{ "vaultDocumentId": "..." }`
 ### POST `/analyses/:id/share`

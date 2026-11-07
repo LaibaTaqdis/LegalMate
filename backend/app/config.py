@@ -40,10 +40,20 @@ def load_doc_settings() -> "DocSettings":
         ocr_script_min=min(1.0, max(0.0, _float("OCR_SCRIPT_MIN", d.ocr_script_min))),
         ocr_min_confidence=_float("OCR_MIN_CONFIDENCE", d.ocr_min_confidence), max_image_pixels=max(1_000_000, _int("MAX_IMAGE_PIXELS", d.max_image_pixels)),
         docs_per_user=_int("DOCS_PER_USER", d.docs_per_user), uploads_per_hour=_int("UPLOADS_PER_HOUR", d.uploads_per_hour),
-        doc_retention_days=_int("DOC_RETENTION_DAYS", d.doc_retention_days),
+        doc_retention_days=_int("DOC_RETENTION_DAYS", d.doc_retention_days), analysis_retention_days=_int("ANALYSIS_RETENTION_DAYS", d.analysis_retention_days),
         attachments_per_message=max(1, min(5, _int("ATTACHMENTS_PER_MESSAGE", d.attachments_per_message))),
         chat_doc_chars=max(500, _int("CHAT_DOC_CHARS", d.chat_doc_chars)),
+        analysis_quick_chars=max(1000, _int("ANALYSIS_QUICK_CHARS", d.analysis_quick_chars)),
+        analysis_detailed_chars=max(1000, _int("ANALYSIS_DETAILED_CHARS", d.analysis_detailed_chars)),
+        analysis_quick_tokens=max(300, _int("ANALYSIS_QUICK_TOKENS", d.analysis_quick_tokens)),
+        analysis_detailed_tokens=max(300, _int("ANALYSIS_DETAILED_TOKENS", d.analysis_detailed_tokens)),
+        analysis_max_docs=max(1, _int("ANALYSIS_MAX_DOCS", d.analysis_max_docs)), analysis_concurrency=max(1, _int("ANALYSIS_CONCURRENCY", d.analysis_concurrency)),
+        analysis_per_user_running=max(1, _int("ANALYSIS_PER_USER_RUNNING", d.analysis_per_user_running)), analysis_per_day=_int("ANALYSIS_PER_DAY", d.analysis_per_day),
         analysis_stale_minutes=max(1, _int("ANALYSIS_STALE_MINUTES", d.analysis_stale_minutes)),
+        analysis_page_size=min(50, max(1, _int("ANALYSIS_PAGE_SIZE", d.analysis_page_size))),
+        law_refs_enabled=_bool("LAW_REFS_ENABLED", d.law_refs_enabled), law_refs_max=min(20, max(1, _int("LAW_REFS_MAX", d.law_refs_max))),
+        law_refs_per_clause=min(4, max(1, _int("LAW_REFS_PER_CLAUSE", d.law_refs_per_clause))),
+        law_refs_quote_chars=min(1200, max(80, _int("LAW_REFS_QUOTE_CHARS", d.law_refs_quote_chars))),
     )
 
 
@@ -68,9 +78,23 @@ class DocSettings:
     docs_per_user: int = 25               # DOCS_PER_USER      stored documents per user (0 = no limit)
     uploads_per_hour: int = 30            # UPLOADS_PER_HOUR   per user (0 = no limit)
     doc_retention_days: int = 30          # DOC_RETENTION_DAYS extracted text is deleted after this many days (0 = keep until the user deletes it)
+    analysis_retention_days: int = 90     # ANALYSIS_RETENTION_DAYS (0 = keep)
     attachments_per_message: int = 3      # ATTACHMENTS_PER_MESSAGE  files attached to one chat question
     chat_doc_chars: int = 6000            # CHAT_DOC_CHARS     characters of a document shown to the assistant for one chat question
+    analysis_quick_chars: int = 15_000    # ANALYSIS_QUICK_CHARS     document text read by a quick analysis
+    analysis_detailed_chars: int = 40_000 # ANALYSIS_DETAILED_CHARS  document text read by a detailed analysis
+    analysis_quick_tokens: int = 2800     # ANALYSIS_QUICK_TOKENS    longest answer the model may write (quick). Measured: 1,700-2,300 used; 1,800 cut an answer off
+    analysis_detailed_tokens: int = 4800  # ANALYSIS_DETAILED_TOKENS (detailed)
+    analysis_max_docs: int = 3            # ANALYSIS_MAX_DOCS        documents analysed together
+    analysis_concurrency: int = 2         # ANALYSIS_CONCURRENCY     analyses running at once
+    analysis_per_user_running: int = 2    # ANALYSIS_PER_USER_RUNNING
+    analysis_per_day: int = 0             # ANALYSIS_PER_DAY         per user (0 = no limit)
     analysis_stale_minutes: int = 15      # ANALYSIS_STALE_MINUTES   a job still "running" after this long (server restarted) is marked failed
+    analysis_page_size: int = 10          # ANALYSIS_PAGE_SIZE       rows per page in the analysis history (the browser may ask for fewer, never more than 50)
+    law_refs_enabled: bool = True         # LAW_REFS_ENABLED         show "Related laws" (reviewed table, real text from the law library) on an analysis
+    law_refs_max: int = 8                 # LAW_REFS_MAX            laws shown in the box at most
+    law_refs_per_clause: int = 2          # LAW_REFS_PER_CLAUSE     laws linked from one clause (the table may allow a few more candidates)
+    law_refs_quote_chars: int = 260       # LAW_REFS_QUOTE_CHARS    characters of the law's own wording shown for each
 
     @property
     def max_upload_bytes(self) -> int:

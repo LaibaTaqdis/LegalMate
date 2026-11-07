@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
 import AppLayout from './components/AppLayout'
 import { RequireRole } from './context/AuthContext'
 import Landing from './pages/Landing'
@@ -7,6 +7,7 @@ import Onboarding from './pages/Onboarding'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import ProfileSetup from './pages/ProfileSetup'
+import AnalysisHistory from './pages/AnalysisHistory'
 import Dashboard from './pages/Dashboard'
 import Chat from './pages/Chat'
 import Upload from './pages/Upload'
@@ -44,6 +45,8 @@ function ScrollToTop() {
   return null
 }
 
+const OldAnalysisLink = () => <Navigate to={`/analysis/${useParams().id}`} replace />
+
 export default function App() {
   return (
     <>
@@ -60,10 +63,14 @@ export default function App() {
           <Route path="/profile-setup" element={<ProfileSetup />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/chat/:id" element={<Chat />} />
-          <Route path="/documents" element={<Navigate to="/documents/upload" replace />} />
-          <Route path="/documents/upload" element={<Upload />} />
-          <Route path="/documents/analysis" element={<Navigate to="/documents/analysis/tenancy" replace />} />
-          <Route path="/documents/analysis/:id" element={<Analysis />} />
+          <Route path="/analysis" element={<AnalysisHistory />} />
+          <Route path="/analysis/new" element={<Upload />} />
+          <Route path="/analysis/:id" element={<Analysis />} />
+          {/* old addresses keep working */}
+          <Route path="/documents" element={<Navigate to="/analysis" replace />} />
+          <Route path="/documents/upload" element={<Navigate to="/analysis/new" replace />} />
+          <Route path="/documents/analysis" element={<Navigate to="/analysis" replace />} />
+          <Route path="/documents/analysis/:id" element={<OldAnalysisLink />} />
           <Route path="/vault" element={<Vault />} />
           <Route path="/vault/document/:id" element={<DocumentView />} />
           <Route path="/case-briefs" element={<Navigate to="/case-briefs/new" replace />} />

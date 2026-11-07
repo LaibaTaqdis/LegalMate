@@ -44,3 +44,12 @@ export const MOCK_UPLOAD_QUEUE = [
   { key: 'demo1', name: 'Rental_Agreement.pdf', sizeBytes: 2.4 * 1024 * 1024, type: 'pdf', progress: 100, status: 'done', documentId: 'tenancy' },
   { key: 'demo2', name: 'Employment_Notice.docx', sizeBytes: 1.1 * 1024 * 1024, type: 'docx', progress: 65, status: 'uploading', documentId: null },
 ]
+
+// History list shown in mock mode (shape of GET /analyses).
+const ago = d => new Date(Date.now() - d * 86400000).toISOString()
+export const MOCK_ANALYSIS_HISTORY = [
+  { id: 'tenancy', status: 'completed', progress: 100, error: null, name: 'Tenancy Agreement.pdf', fileType: 'pdf', documentType: 'Tenancy Agreement', risk: 'Medium', counts: { clauses: 8, deadlines: 2, missing: 3 }, createdAt: ago(1) },
+  { id: 'emp', status: 'completed', progress: 100, error: null, name: 'Employment Contract.docx', fileType: 'docx', documentType: 'Employment Contract', risk: 'High', counts: { clauses: 9, deadlines: 3, missing: 4 }, createdAt: ago(6) },
+  { id: 'notice', status: 'completed', progress: 100, error: null, name: 'Legal Notice.jpg', fileType: 'jpg', documentType: 'Legal Notice', risk: 'Low', counts: { clauses: 4, deadlines: 1, missing: 1 }, createdAt: ago(20) },
+  { id: 'busy', status: 'processing', progress: 55, error: null, name: 'Sale Deed.pdf', fileType: 'pdf', documentType: null, risk: null, counts: null, createdAt: ago(0) },
+]

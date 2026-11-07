@@ -265,3 +265,73 @@
   .doc-float { left: 8px; }
   .an-preview { flex-direction: column; }
 }
+
+/* ---------------- Analysis history (all inline: no pop-ups) ---------------- */
+.ah { width: 100%; }      /* fills the content area like the other pages (no fixed width cap) */
+.ah-tools { display: flex; flex-direction: column; gap: 14px; padding: 16px 18px; margin-bottom: 16px; }
+.ah-search { max-width: 420px; }
+.ah-groups { display: flex; flex-wrap: wrap; gap: 12px 28px; }
+.ah-group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.ah-label { font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+.ah-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border: 1px solid #d9e0ea; border-radius: 999px; background: #fff; font-size: 13px; color: var(--ink-2); transition: .15s; }
+.ah-chip:hover { border-color: #9db8ea; }
+.ah-chip.on { border-color: #2c5d99; background: #eef4fc; color: var(--ink); font-weight: 600; }
+.ah-chip i { font-style: normal; font-size: 11.5px; padding: 1px 6px; border-radius: 999px; background: #e7edf6; color: #476085; }
+.ah-chip.on i { background: #2c5d99; color: #fff; }
+.ah-clear { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; }
+.ah-list-card { padding: 0; overflow: hidden; }
+.ah-list { list-style: none; margin: 0; padding: 0; }
+.ah-row { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--line-2); }
+.ah-row:last-child { border-bottom: 0; }
+.ah-link { flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; padding: 14px 8px 14px 18px; color: inherit; text-decoration: none; }
+a.ah-link:hover { background: #f6f9fe; }
+.ah-file { flex: none; display: grid; place-items: center; width: 38px; }
+.ah-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ah-main b { font-size: 15px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ah-meta { font-size: 12.5px; color: var(--muted); }
+.ah-progress { display: block; width: 220px; max-width: 100%; height: 6px; border-radius: 99px; background: #e7edf6; overflow: hidden; margin-top: 4px; }
+.ah-progress i { display: block; height: 100%; background: #1d5fd6; border-radius: 99px; transition: width .4s; }
+.ah-error { display: flex; align-items: center; gap: 5px; font-size: 12.5px; color: #b42318; }
+.ah-status { flex: none; }
+.ah-go { flex: none; color: #94a3b8; }
+.ah-actions { flex: none; display: flex; align-items: center; gap: 8px; padding-right: 14px; }
+.ah-del { color: #94a3b8; }
+.ah-del:hover { color: #dc2626; }
+.ah-ask { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; max-width: 380px; font-size: 12.5px; color: #7a271a; padding: 8px 10px; border-radius: 10px; background: #fff3f1; }
+.ah-danger { background: #dc2626; color: #fff; border-color: #dc2626; }
+.ah-danger:hover { background: #b91c1c; }
+.ah-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 18px; border-top: 1px solid var(--line-2); font-size: 13px; color: var(--muted); }
+.ah-foot > span:first-child { display: inline-flex; align-items: center; gap: 6px; }
+.ah-pager { display: inline-flex; align-items: center; gap: 10px; color: var(--ink-2); }
+@media (max-width: 720px) {
+  .ah-row { flex-wrap: wrap; }
+  .ah-actions { width: 100%; justify-content: flex-end; padding: 0 14px 12px; }
+  .ah-status { display: none; }
+}
+
+/* Urdu is written right to left: blocks that may hold it follow the direction of their own text */
+.an-summary, .clause-more, .clause-d, .answer p, .answer li, .an-notes li, .rec-actions li { unicode-bidi: plaintext; text-align: start; }
+
+/* ---- related laws (inline details, no pop-ups) ---- */
+.laws-note { margin: 0 0 10px; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+.laws li { display: block; padding: 0; gap: 0; list-style: none; border-bottom: 1px solid var(--line-2); }      /* rows stack: the header button, then the opened details */
+.laws li + li { border-top: 0; }
+.laws li:last-child { border-bottom: 0; }
+.laws li > div.law-more { display: flex; flex: none; }
+.law-row .law-main b { font-size: 13.5px; font-weight: 600; }
+.law-row .law-main span { font-size: 12px; color: var(--muted); }
+.law-row { width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px 2px; background: none; border: 0; text-align: left; cursor: pointer; }
+.law-row:hover { background: #f6f9fe; }
+.law-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.law-main b { font-size: 13.5px; color: var(--ink); }
+.law-main span { font-size: 12px; color: var(--muted); }
+.law-chev { flex: none; color: #94a3b8; transition: transform .15s; }
+.laws li.open .law-chev { transform: rotate(180deg); }
+.law-more { padding: 2px 4px 12px 38px; display: flex; flex-direction: column; gap: 8px; }
+.law-more blockquote { margin: 0; padding: 8px 12px; border-left: 3px solid #b7c9e6; background: #f4f7fc; font-size: 12.5px; line-height: 1.5; color: var(--ink-2); }
+.law-topics { margin: 0; font-size: 12px; color: var(--muted); }
+.law-links { display: flex; flex-wrap: wrap; gap: 14px; margin: 0; }
+.law-links .link { display: inline-flex; align-items: center; gap: 4px; }
+.clause-laws { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px 0 0 !important; font-size: 12px; color: var(--muted); }
+.law-chip { padding: 3px 10px; border: 1px solid #cfdcf0; border-radius: 999px; background: #f6f9fe; font-size: 12px; color: #1f3f6e; cursor: pointer; }
+.law-chip:hover { background: #eaf1fc; border-color: #9db8ea; }

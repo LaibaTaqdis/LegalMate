@@ -85,7 +85,7 @@ export default function Upload() {
     setStarting(true)
     try {
       const job = await documentService.startAnalysis({ documentIds: ready.map(f => f.documentId), language: lang, depth, saveToVault: save })
-      navigate(`/documents/analysis/${job.id}`)
+      navigate(`/analysis/${job.id}`)
     } catch (e) {
       toast(e.message || 'Could not start the analysis', 'info')
       setStarting(false)
@@ -96,7 +96,7 @@ export default function Upload() {
     <div className="upload">
       <div className="page-head">
         <div>
-          <Breadcrumb items={[{ label: 'Home', to: '/dashboard' }, { label: 'Documents', to: '/documents' }, { label: 'Upload' }]} />
+          <Breadcrumb items={[{ label: 'Home', to: '/dashboard' }, { label: 'Analysis', to: '/analysis' }, { label: 'New analysis' }]} />
           <h1 className="page-title">Upload a Legal Document</h1>
           <p className="page-sub">Upload a document to identify important clauses, obligations, risks and deadlines.</p>
         </div>

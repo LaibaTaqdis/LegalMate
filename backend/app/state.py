@@ -91,5 +91,6 @@ class AppState:
     limiter: RateLimiter
     engine: EngineHolder
     executor: ThreadPoolExecutor
+    analysis_executor: ThreadPoolExecutor
     inflight: set = field(default_factory=set)               # user ids with an answer being computed
     inflight_lock: threading.Lock = field(default_factory=threading.Lock)

@@ -208,6 +208,53 @@ Frontend (`frontend/.env.local`, copy of `.env.example`): `VITE_REAL_SERVICES=au
 
 **Before deploying:** set `TRUST_PROXY=1` only when running behind a proxy you control (Cloudflare tunnel, Render); otherwise every user looks like one address to the rate limiter. Set `APP_ENV=production` (hides `/docs`) and `CORS_ORIGINS` to the real frontend address. The in-memory rate limiter and the DeepSeek ledger live on the server's disk: a host with an ephemeral disk resets them on restart (the per-user daily limit survives, it is counted in the database).
 
+## Phase 5: documents (`backend/app/extract.py`, `analysis.py`, `docs_service.py`, `routers/documents.py`)
+
+```powershell
+pip install -r requirements.txt                    # adds pymupdf, python-docx, rapidocr-onnxruntime, pillow
+python -m pytest tests -q                          # 53 tests (28 API + 15 documents + 10 engine); zero DeepSeek calls
+```
+
+**Flow**
+
+| Step | Who | What happens |
+|---|---|---|
+| 1. Upload | browser -> `POST /documents` | File type is decided from the file's bytes (not its name), size is capped while reading, the text is extracted at once and stored; **the original file is not kept** |
+| 2. Extract | backend | PDF and Word: text read directly (Word tables too). Scanned pages and photos: OCR (RapidOCR, CPU). Password-protected, damaged, too many pages, zip bombs, huge images, blank images: a plain message |
+| 3a. Ask in chat | browser -> `POST .../messages` with `attachmentIds` | The pieces of each document that best match the question (a short document goes in whole) are shown to the assistant as untrusted data, after identity numbers are masked |
+| 3b. Analyse | browser -> `POST /analyses`, then polls `GET /analyses/:id` | A background job makes ONE DeepSeek call: summary, key clauses, risks, obligations, dates, what is missing, suggested actions |
+| 4. Check | backend (code) | Every quoted clause must be the document's exact words (else replaced by the closest real sentence and flagged); figures in the explanation must exist in the text; counts, risk distribution and overall risk are computed, not trusted from the model |
+| 5. Show | browser | Analysis page with notes about anything that could not be verified; attachments appear as file chips in the conversation |
+
+**Database** (`app.documents`, `app.analyses`, migrations `002` and `003`, RLS on, no policies): the document row holds the extracted text, page count, OCR facts and an expiry; the analysis row holds status, progress, the job input and the result. Deleting a document keeps a finished analysis. Expired documents and analyses are deleted, and jobs left "running" by a restart are marked failed, at start-up and on each upload.
+
+**Every tunable is an environment variable** (full list with defaults in `backend/.env.example`): `MAX_UPLOAD_MB`, `MAX_PAGES`, `MAX_TEXT_CHARS`, `OCR_ENABLED`, `OCR_DPI`, `OCR_CONCURRENCY`, `OCR_MIN_CONFIDENCE`, `DOCS_PER_USER`, `UPLOADS_PER_HOUR`, `DOC_RETENTION_DAYS`, `ANALYSIS_RETENTION_DAYS`, `ATTACHMENTS_PER_MESSAGE`, `CHAT_DOC_CHARS`, `ANALYSIS_QUICK_CHARS` / `_DETAILED_CHARS`, `ANALYSIS_QUICK_TOKENS` / `_DETAILED_TOKENS`, `ANALYSIS_MAX_DOCS`, `ANALYSIS_CONCURRENCY`, `ANALYSIS_PER_USER_RUNNING`, `ANALYSIS_PER_DAY`. Frontend: `VITE_REAL_SERVICES` now includes `documents`, and `VITE_MAX_UPLOAD_MB` (keep equal to `MAX_UPLOAD_MB`).
+
+**Analysis history** (`GET /analyses`, `DELETE /analyses/:id`; page `frontend/src/pages/AnalysisHistory.jsx`): the sidebar item is now **Analysis** and opens the user's history (search, risk, status, period and sort filters kept in the address bar, paging, in-progress rows that update themselves, failed rows with the reason and "Try again", delete confirmed inline). **New Analysis** opens the upload page. Everything is inline: no pop-up windows and no native dropdowns. New addresses: `/analysis`, `/analysis/new`, `/analysis/:id`; the old `/documents/...` addresses redirect. Deleting an analysis also deletes the stored text of its document.
+
+**Speed fix found while testing this page (affects every endpoint):** measured against Supabase, one round trip is ~96 ms but every pooled query cost ~353 ms (a transaction commit and a health-check ping on top of the query), so the history list took 1.5 s. Single statements now run in autocommit (one round trip), the pool health check is skipped for a connection used in the last 20 s, and the list's three queries go in one pipelined trip. Now: list ~0.25 s, `/auth/me` 558 -> 124 ms. `Database.tx()` still gives a real transaction where work must succeed or fail together (refresh tokens, saving an answer, deleting an analysis).
+
+**Urdu** (`app/urdu.py`, `app/extract.py`): two OCR readers share one picture. The English reader always runs; the Urdu reader (PaddleOCR Arabic-script model through `rapidocr`) runs only when the English reader left more than 20% of the page's ink unread, so English pages cost nothing extra. Each line is kept from the reader right for its script, symbol-soup the English reader invents from Urdu is dropped, and lines are put back in reading order (top to bottom; right to left for Urdu). Digital Urdu PDFs are folded from old "presentation form" letters to normal Urdu, and broken text layers (private-use characters, runs of odd symbols, as in old InPage files) fall back to OCR. Quote and figure checks understand Urdu (Arabic or Urdu letter forms, Urdu full stop, Urdu digits); a CNIC or phone written in Urdu digits is scrubbed before anything leaves. Answers and quotes display right to left. `python -m app.ocr_warmup` pre-downloads the model (about 10 MB); `OCR_LANGS=en` switches Urdu off.
+**Measured** on rendered Urdu text in three fonts: English reader alone 0%; Urdu reader 85-94% of each line correct, mean about 90% through the real extractor, 7-10 s per image. Digital Urdu PDF: 99%. Mixed English and Urdu page: both kept in order. **Not tested and expected to be worse: Nastaliq print (the usual Pakistani style; no such font was available to test), handwriting, photos at an angle.** Known weakness: the model often reads ہ as ب. The user is always told that Urdu read from an image can contain mistakes.
+
+**Related laws on an analysis** (`app/law_refs.py`): searching the law library from a loosely worded clause is not reliable enough to show people, so the model only CLASSIFIES (category, jurisdiction, 0-2 topics per clause from a fixed list) and a reviewed table maps each topic to exact Acts and sections (58 entries, for example penalty clause -> Contract Act s.74, non-compete -> s.27, loan interest -> the Punjab and Islamabad Prohibition of Interest on Private Loans Acts, eviction -> Punjab Rented Premises Act s.15 or Islamabad Rent Restriction Ordinance s.17). Code fetches the REAL section text from the law library (`KnowledgeBase.get_section`, exact title), cuts out the right section of a combined chunk, and shows it with the province and any "amended later" or "repealed" warning. Province-specific laws are used only when the document or the user's profile says where it applies. Topics with no governing section show nothing (the Punjab tenancy Act has no rent-increase or deposit section; blank-cheque clauses have no entry). Nothing shown is written by the model, and the box never says whether the document complies. `python -m app.law_refs --check` resolves every entry against the real library; `LEGALMATE_LIVE_TESTS=1 pytest -k real_library` does the same as a test.
+**Measured** on four live analyses (employment, plot sale, loan, Urdu tenancy): classification and jurisdiction were right in all four, every clause that had a law in the table got it, clauses without one got none. One clause (non-compete) was first cut by the box limit; now a clause's main law is always kept.
+
+**Not built / limits (the UI says so)**
+- **No virus scan.** Mitigation: the file is parsed in-process, never executed (no macros or scripts), size/page/pixel/zip limits apply before heavy work, and the file is discarded. A scanner (ClamAV) is a deployment task for Phase 6.
+- **OCR can misread digits** (seen: "45,000" read as "45,0o0"), so any document read from an image carries a warning to double-check amounts. Urdu OCR: see above (Nastaliq and handwriting untested).
+- **No PDF report, no Legal Vault save, no share link** (they answer 501 with a plain message). The related-laws table covers 26 topics for tenancy, employment, property, loans, business and contracts; court documents and notices get none yet.
+- Analysis takes 10-60 s (one long structured answer, 1,700-2,300 tokens; the default cap is now 2,800 because 1,800 cut answers off). If an answer is still cut off, the parts that arrived are kept and a note says so. DeepSeek returned 503 twice during testing, which the app reports plainly.
+
+**Found and fixed while building**
+
+| Issue | Fix |
+|---|---|
+| OCR silently dropped a whole line that sat near the picture's edge (found by a failing test) | white margin around every image before reading; verified on 4 sizes |
+| I edited migration 002 after it had been applied to Supabase, so the live table lacked a column and the first analysis failed | never edit an applied migration: new migration `003` adds the column (a no-op on fresh databases) |
+| Test engine and test client both wanted port 8000/5173, already used by your running servers | tested on other ports; your servers were not touched |
+| A quote the model invented ("throw you out whenever he likes") | replaced by the closest real sentence and flagged (test) |
+
 ## Known data issues (also in the QA report)
 
 - **Mislabelled files**: three `Pakistan Ordnance Factories Board Ordinance 1961.pdf (n)` files are really the Companies Act 2017, the ICT Senior Citizens Act 2021 and the Anand Marriage Act 1909; `THE PUNJAB CRIMINAL PROSECUTION SERVICE Act 2025.pdf` is actually the Punjab Agriculture, Food and Drug Authority (Amendment) Act 2025. Titles are taken from content.

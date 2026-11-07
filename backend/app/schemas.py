@@ -198,6 +198,13 @@ class MessageIn(Body):
     language: Literal["en", "ur"] | None = None
 
 
+class AnalysisIn(Body):
+    documentIds: list[str] = Field(min_length=1, max_length=10)
+    language: Literal["auto", "en", "ur"] = "auto"
+    depth: Literal["quick", "detailed"] = "quick"
+    saveToVault: bool = False
+
+
 class FeedbackIn(Body):
     vote: Literal["up", "down"]
     comment: str | None = Field(default=None, max_length=500)

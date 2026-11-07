@@ -1,16 +1,20 @@
-"""Document upload: the text is extracted at once (PDF, Word, English and Urdu OCR); the original file is not kept."""
+"""Document upload (text is extracted at once; the original file is not kept) and document analysis (a background job the browser polls)."""
 from __future__ import annotations
 
 import re
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, Response, UploadFile
+from typing import Literal
+
+from fastapi import APIRouter, Depends, File, Form, Query, Response, UploadFile
+from psycopg.types.json import Jsonb
 
 from .. import docs_service
 from ..deps import current_user, get_state
 from ..errors import ApiError, not_found
 from ..extract import ExtractError, extract
+from ..schemas import AnalysisIn
 from ..state import AppState
 from ..users_repo import iso
 
@@ -68,7 +72,134 @@ def delete_document(doc_id: UUID, user: dict = Depends(current_user), state: App
     return Response(status_code=204)
 
 
-# ---------------------------------------------------------------------------------------------- analyses (later)
-@router.post("/analyses")
-def create_analysis(_: dict = Depends(current_user)):
-    raise ApiError(501, "NOT_IMPLEMENTED", "Document analysis is not available yet.")
+# ---------------------------------------------------------------------------------------------- analyses
+@router.post("/analyses", status_code=202)
+def create_analysis(body: AnalysisIn, user: dict = Depends(current_user), state: AppState = Depends(get_state)):
+    from ..analysis import run_analysis
+
+    cfg, uid = state.settings.docs, str(user["id"])
+    ids = docs_service.parse_ids(body.documentIds)
+    if len(ids) > cfg.analysis_max_docs:
+        raise ApiError(422, "UNPROCESSABLE", f"You can analyse up to {cfg.analysis_max_docs} documents at once.")
+    owned = docs_service.load_owned(state.db, uid, ids, with_text=False)               # 404 for anything missing or not theirs
+    label = owned[0]["name"] + (f" (+{len(owned) - 1} more)" if len(owned) > 1 else "")
+    if not state.engine.enabled:
+        raise ApiError(503, "UNAVAILABLE", "Document analysis is switched off on this server.")
+    running = state.db.one("select count(*) as n from app.analyses where user_id = %s and status in ('queued', 'processing') "
+                           "and created_at > now() - make_interval(mins => %s)", [uid, cfg.analysis_stale_minutes])["n"]
+    if running >= cfg.analysis_per_user_running:
+        raise ApiError(429, "RATE_LIMITED", "Your earlier analysis is still running. Please wait for it to finish.")
+    if cfg.analysis_per_day > 0:
+        today = state.db.one("select count(*) as n from app.analyses where user_id = %s and created_at > now() - interval '24 hours'", [uid])["n"]
+        if today >= cfg.analysis_per_day:
+            raise ApiError(429, "RATE_LIMITED", f"You have reached today's limit of {cfg.analysis_per_day} analyses. Please come back tomorrow.")
+    row = state.db.one("insert into app.analyses (user_id, document_id, language, depth, input) values (%s, %s, %s, %s, %s) returning id",
+                       [uid, ids[0], body.language, body.depth, Jsonb({"documentIds": ids, "name": label})])
+    aid = str(row["id"])
+    try:
+        state.analysis_executor.submit(run_analysis, state, aid)
+    except Exception:
+        state.db.run("update app.analyses set status = 'failed', error = 'The server is busy. Please try again.' where id = %s", [aid])
+        raise ApiError(503, "UNAVAILABLE", "LegalMate is busy right now. Please try again in a moment.")
+    return {"id": aid, "status": "queued"}
+
+
+_NAME = "coalesce(a.result->'document'->>'name', a.input->>'name', d.name, 'Document')"
+_RISK = "a.result->'overallRisk'->>'level'"
+_SORTS = {"newest": "a.created_at desc", "oldest": "a.created_at asc", "name": f"lower({_NAME}) asc, a.created_at desc",
+          "risk": f"case {_RISK} when 'High' then 3 when 'Medium' then 2 when 'Low' then 1 else 0 end desc, a.created_at desc"}
+
+
+@router.get("/analyses")
+def list_analyses(q: str = Query("", max_length=80), risk: Literal["all", "High", "Medium", "Low"] = "all",
+                  status: Literal["all", "completed", "running", "failed"] = "all", days: int = Query(0, ge=0, le=3650),
+                  sort: Literal["newest", "oldest", "name", "risk"] = "newest", page: int = Query(1, ge=1, le=10_000),
+                  pageSize: int | None = Query(None, ge=1, le=50), user: dict = Depends(current_user), state: AppState = Depends(get_state)):
+    """The user's analysis history, newest first by default. Filters: name search, overall risk, status, age in days. Also returns the
+    counts the filter chips show (over everything the user has, not just the current filter)."""
+    size = pageSize or state.settings.docs.analysis_page_size
+    where, params = ["a.user_id = %s"], [user["id"]]
+    if q.strip():
+        where.append(f"{_NAME} ilike %s")
+        params.append("%" + q.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%")
+    if risk != "all":
+        where.append(f"{_RISK} = %s")
+        params.append(risk)
+    if status == "running":
+        where.append("a.status in ('queued', 'processing')")
+    elif status != "all":
+        where.append("a.status = %s")
+        params.append(status)
+    if days:
+        where.append("a.created_at > now() - make_interval(days => %s)")
+        params.append(days)
+    cond = " and ".join(where)
+    frm = "from app.analyses a left join app.documents d on d.id = a.document_id"
+    rows_sql = (
+        f"select a.id, a.status, a.progress, a.error, a.created_at, a.finished_at, a.expires_at, {_NAME} as name, {_RISK} as risk, "
+        f"a.result->'document'->>'documentType' as doc_type, a.result->'document'->>'fileType' as file_type, a.result->'counts' as counts, "
+        f"coalesce(d.file_type, a.result->'document'->>'fileType') as ftype {frm} where {cond} order by {_SORTS[sort]} limit %s offset %s")
+    counts_sql = (
+        "select count(*) as every, count(*) filter (where status = 'completed') as completed, "
+        "count(*) filter (where status in ('queued', 'processing')) as running, count(*) filter (where status = 'failed') as failed, "
+        "count(*) filter (where result->'overallRisk'->>'level' = 'High') as high, count(*) filter (where result->'overallRisk'->>'level' = 'Medium') as medium, "
+        "count(*) filter (where result->'overallRisk'->>'level' = 'Low') as low from app.analyses where user_id = %s")
+    rows, (c,), (t,) = state.db.batch([(rows_sql, [*params, size, (page - 1) * size]), (counts_sql, [user["id"]]),
+                                       (f"select count(*) as n {frm} where {cond}", params)])        # one network round trip for all three
+    total = t["n"]
+    items = [{"id": str(r["id"]), "status": "processing" if r["status"] in ("queued", "processing") else r["status"], "progress": r["progress"],
+              "error": r["error"], "name": r["name"], "fileType": r["ftype"], "documentType": r["doc_type"], "risk": r["risk"],
+              "counts": r["counts"], "createdAt": iso(r["created_at"]), "finishedAt": iso(r["finished_at"]), "expiresAt": iso(r["expires_at"])} for r in rows]
+    return {"items": items, "total": total, "page": page, "pageSize": size,
+            "counts": {"all": c["every"], "completed": c["completed"], "running": c["running"], "failed": c["failed"],
+                       "High": c["high"], "Medium": c["medium"], "Low": c["low"]}}
+
+
+@router.delete("/analyses/{analysis_id}", status_code=204)
+def delete_analysis(analysis_id: UUID, user: dict = Depends(current_user), state: AppState = Depends(get_state)):
+    """Removes the analysis AND the stored text of the document(s) it was made from (nothing of it is kept afterwards)."""
+    row = state.db.one("select input from app.analyses where id = %s and user_id = %s", [str(analysis_id), user["id"]])
+    if row is None:
+        raise not_found("That analysis")
+    with state.db.tx() as c:
+        ids = [i for i in ((row["input"] or {}).get("documentIds") or []) if isinstance(i, str)]
+        c.execute("delete from app.analyses where id = %s and user_id = %s", [str(analysis_id), user["id"]])
+        if ids:
+            c.execute("delete from app.documents where user_id = %s and purpose = 'analysis' and id = any(%s::uuid[]) "
+                      "and not exists (select 1 from app.analyses x where x.document_id = app.documents.id)", [user["id"], ids])
+    return Response(status_code=204)
+
+
+@router.get("/analyses/{analysis_id}")
+def get_analysis(analysis_id: UUID, user: dict = Depends(current_user), state: AppState = Depends(get_state)):
+    r = state.db.one("select id, status, progress, error, result, input from app.analyses where id = %s and user_id = %s", [str(analysis_id), user["id"]])
+    if r is None:
+        raise not_found("That analysis")
+    base = {"id": str(r["id"]), "status": r["status"], "progress": r["progress"], "error": r["error"]}
+    if r["status"] == "completed" and r["result"]:
+        return {**base, **r["result"]}
+    ids = (r["input"] or {}).get("documentIds", [])
+    name = None
+    if ids:
+        d = state.db.one("select name from app.documents where id = %s", [ids[0]])
+        name = d["name"] if d else None
+    return {**base, "document": {"name": name or "your document"}}
+
+
+def _later() -> ApiError:
+    return ApiError(501, "NOT_IMPLEMENTED", "This is not available yet.")
+
+
+@router.get("/analyses/{analysis_id}/report")
+def analysis_report(analysis_id: UUID, _: dict = Depends(current_user)):
+    raise ApiError(501, "NOT_IMPLEMENTED", "Downloading the report as a PDF is not available yet.")
+
+
+@router.post("/analyses/{analysis_id}/save")
+def analysis_save(analysis_id: UUID, _: dict = Depends(current_user)):
+    raise ApiError(501, "NOT_IMPLEMENTED", "The Legal Vault is not available yet, so the analysis cannot be saved there.")
+
+
+@router.post("/analyses/{analysis_id}/share")
+def analysis_share(analysis_id: UUID, _: dict = Depends(current_user)):
+    raise ApiError(501, "NOT_IMPLEMENTED", "Sharing an analysis is not available yet.")
