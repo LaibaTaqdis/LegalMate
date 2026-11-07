@@ -300,7 +300,7 @@ function Answer({ m, onCite, onPanel, panel, onAsk }) {
         )}
         <div className="answer-actions">
           <button className={`chip-btn chip-sources ${panel === 'sources' ? 'on' : ''}`} onClick={() => onPanel('sources')}><NotebookText size={16} /> Sources: {m.sources?.length || 0} <ChevronDown size={15} /></button>
-          {m.confidence && <button className={`chip-btn chip-conf ${panel === 'confidence' ? 'on' : ''}`} onClick={() => onPanel('confidence')}><CheckCircle2 size={16} /> {m.confidence.score}% Confidence</button>}
+          {m.confidence && m.sources?.length > 0 && <button className={`chip-btn chip-conf ${m.confidence.score < 60 ? 'low' : ''} ${panel === 'confidence' ? 'on' : ''}`} onClick={() => onPanel('confidence')}><CheckCircle2 size={16} /> {m.confidence.score}% Confidence</button>}
           <button className="chip-btn" onClick={save} disabled={saving}>{saving ? <Loader2 size={16} className="spin" /> : <Bookmark size={16} />} Save to Vault</button>
           <button className="chip-btn" onClick={() => navigate(`/case-briefs/new?fromMessage=${encodeURIComponent(m.id)}`)}><FileText size={16} /> Create Case Brief</button>
         </div>
@@ -400,7 +400,7 @@ function SourcesPanel({ message, onClose, highlight }) {
               <span className={`pill ${s.type === 'Rule' ? 'pill-purple' : s.type === 'Judgment' ? 'pill-purple' : 'pill-blue'}`}>{s.type}</span>
             </div>
             <blockquote>{s.quote}</blockquote>
-            {s.quoteVerified === false && <p className="source-flag"><AlertTriangle size={14} /> We could not match this quote word for word. Please check the original text.</p>}
+            {s.quoteVerified === false && <p className="source-flag"><AlertTriangle size={14} /> The assistant's own wording of this quote did not match, so the closest sentence from the law is shown. Please read the original.</p>}
             {s.note && <p className="source-flag"><AlertTriangle size={14} /> {s.note}</p>}
             {s.pages && <span className="source-pages">{s.pages}{s.jurisdiction ? ` · ${s.jurisdiction}` : ''}</span>}
             {s.url
@@ -499,7 +499,7 @@ export default function Chat() {
     seen.current.len = messages.length
   }, [id, messages.length, typing])
 
-  const STAGES = { thinking: 'Reading your question…', searching_sources: 'Searching Pakistani laws…', writing_answer: 'Writing and checking the answer…' }
+  const STAGES = { thinking: 'Reading your question…', searching_sources: 'Searching Pakistani laws…', searching_deeper: 'Looking more closely…', writing_answer: 'Writing and checking the answer…' }
   const reply = async (convId, text, opts = {}) => {
     setTyping(true)
     setStage(STAGES.thinking)

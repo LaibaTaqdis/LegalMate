@@ -54,7 +54,7 @@ def get_settings() -> Settings:
         deepseek_model=model,
         thinking=os.environ.get("DEEPSEEK_THINKING", "off").lower() == "on",
         max_calls_per_run=int(os.environ.get("LLM_MAX_CALLS_PER_RUN", "30")),
-        daily_call_cap=int(os.environ.get("LLM_DAILY_CALL_CAP", "200")),
+        daily_call_cap=int(os.environ.get("LLM_DAILY_CALL_CAP", "2000")),   # 0 = no ceiling
         mode=os.environ.get("LLM_MODE", "live").lower(),
         cache_dir=data / "llm_cache",
         ledger_path=data / "llm_ledger.jsonl",

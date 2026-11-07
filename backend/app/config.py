@@ -30,8 +30,8 @@ class AppSettings:
     trust_proxy: bool = False             # only behind a proxy you control (Cloudflare tunnel, Render): then X-Forwarded-For is trusted
     enable_engine: bool = True            # False: auth/profile/conversations only (no knowledge base, no DeepSeek)
     warm_engine: bool = True              # load the knowledge base in the background at start-up
-    max_msgs_per_hour: int = 30           # per user
-    max_msgs_per_day: int = 100           # per user
+    max_msgs_per_hour: int = 0            # per user; 0 = no limit
+    max_msgs_per_day: int = 0             # per user; 0 = no limit
     engine_concurrency: int = 4           # answers computed at the same time (CPU + DeepSeek)
     history_messages: int = 6             # earlier messages shown to the model
     db_pool_max: int = 5
@@ -55,8 +55,8 @@ def get_app_settings() -> AppSettings:
         trust_proxy=_bool("TRUST_PROXY", False),
         enable_engine=_bool("ENABLE_ENGINE", True),
         warm_engine=_bool("WARM_ENGINE", True),
-        max_msgs_per_hour=_int("CHAT_MSGS_PER_HOUR", 30),
-        max_msgs_per_day=_int("CHAT_MSGS_PER_DAY", 100),
+        max_msgs_per_hour=_int("CHAT_MSGS_PER_HOUR", 0),
+        max_msgs_per_day=_int("CHAT_MSGS_PER_DAY", 0),
         engine_concurrency=_int("ENGINE_CONCURRENCY", 4),
         db_pool_max=_int("DB_POOL_MAX", 5),
     )

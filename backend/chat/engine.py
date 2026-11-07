@@ -19,10 +19,11 @@ from . import prompts
 from .confidence import score as confidence_score
 from .llm import BudgetExceeded, CacheMiss, DeepSeek, LLMError, parse_json
 from .pii import scrub
+from .plainspeak import plain, plain_answer
 from .richtext import cited_ids, strip_markup, to_segments
 from .verify import verify
 
-DISCLAIMER = "This is general legal information based on the texts in our database, not legal advice. Laws change: please verify with a qualified lawyer."
+DISCLAIMER = "This is general legal information based on the Pakistani laws available to LegalMate, not legal advice. Laws change: please verify with a qualified lawyer."
 EMERGENCY = ("If you or someone else is in immediate danger, call Police on 15 or Rescue on 1122 now. "
              "(Numbers shown for Pakistan; confirm local helplines in the Emergency section.)")
 GREETING = re.compile(r"^\s*(hi|hello|hey|salam|salaam|assalam[\w\s\-']*|aoa|good\s(morning|afternoon|evening)|thanks?(\s+you)?|thank\s*you|shukriya|jazak\w*)\W*$", re.I)
@@ -92,11 +93,11 @@ def _now() -> str:
 
 
 class ChatEngine:
-    def __init__(self, kb, llm: DeepSeek, *, n_passages: int = 8, per_doc_cap: int = 3, per_section_cap: int = 2, max_clarify_rounds: int = 1,
-                 route_acts: bool = False):   # measured: no gain on the gold set (see reports/analyser_eval.md notes), kept as an option
+    def __init__(self, kb, llm: DeepSeek, *, n_passages: int = 10, per_doc_cap: int = 4, per_section_cap: int = 1, max_clarify_rounds: int = 1,
+                 route_acts: bool = False, rescue: bool = False):   # rescue: measured 0 of 2 on hard cases, +8 s: off until proven   # measured: no gain on the gold set (see reports/analyser_eval.md notes), kept as an option
         self.kb, self.llm = kb, llm
         self.n_passages, self.per_doc_cap, self.per_section_cap, self.max_clarify_rounds = n_passages, per_doc_cap, per_section_cap, max_clarify_rounds
-        self.route_acts, self._router = route_acts, None
+        self.route_acts, self._router, self.rescue_enabled = route_acts, None, rescue
 
     # ------------------------------------------------------------------ step 1
     def analyse(self, message: str, history: list[dict], profile: dict | None, ui_language: str, has_document: bool) -> dict:
@@ -143,10 +144,11 @@ class ChatEngine:
         ranked = sorted(merged.values(), key=lambda r: -r["rrf"])
         out, per_doc, per_section = [], {}, {}
         for r in ranked:
-            sec = (r["doc_id"], r["section_label"])
-            if per_doc.get(r["doc_id"], 0) >= self.per_doc_cap or per_section.get(sec, 0) >= self.per_section_cap:
+            act = r["act_title"].lower()          # by Act title, so a Federal and a Punjab copy (or two parts) of one section count once
+            sec = (act, r["section_label"])
+            if per_doc.get(act, 0) >= self.per_doc_cap or per_section.get(sec, 0) >= self.per_section_cap:
                 continue
-            per_doc[r["doc_id"]] = per_doc.get(r["doc_id"], 0) + 1
+            per_doc[act] = per_doc.get(act, 0) + 1
             per_section[sec] = per_section.get(sec, 0) + 1
             out.append(r)
             if len(out) >= self.n_passages:
@@ -180,7 +182,7 @@ class ChatEngine:
         emergency = EMERGENCY if analysis["emergency"] else None
 
         if analysis["intent"] in ("greeting", "out_of_scope", "unclear"):
-            reply = analysis.get("reply") or "I can only help with questions about Pakistani law. Could you tell me about your legal question?"
+            reply = plain(analysis.get("reply") or "") or "I can only help with questions about Pakistani law. Could you tell me about your legal question?"
             return self._done(self._info(analysis["intent"], reply, emergency), meta, t0, conv)
         if analysis["needs_clarification"]:
             return self._done(self._clarify(analysis["questions"]), meta, t0, conv)
@@ -192,8 +194,8 @@ class ChatEngine:
         passages = self.retrieve(analysis["search_queries"], jur)
         meta["retrieval_seconds"] = round(time.time() - t1, 3)
         if not passages:
-            return self._done(self._info("no_source", "I could not find a law in my database that matches this question. "
-                                                      "Please rephrase it, or consult a qualified lawyer."), meta, t0, conv)
+            return self._done(self._info("no_source", "I could not find a specific law that matches this question. "
+                                                      "Please try rephrasing it, or ask a qualified lawyer."), meta, t0, conv)
         answer_lang = "ur" if (language == "ur" or analysis.get("language") == "ur") else "en"
         doc_note = (attachment_text or "")[:3000]
         msgs = prompts.answer_messages(clean, history=hist, profile_line=profile_line(profile), answer_language=answer_lang,
@@ -204,11 +206,37 @@ class ChatEngine:
         except (BudgetExceeded, CacheMiss, LLMError, ValueError) as e:
             reason, text = _failure_text(e, "I could not prepare an answer just now. Please try again.")
             return self._done(self._info(reason, text), meta, t0, conv, error=f"{type(e).__name__}: {e}")
+        if self.rescue_enabled and not bool(ans.get("sufficient", True)):
+            ans, passages = self._second_look(clean, ans, passages, analysis, hist, profile, answer_lang, jur, doc_note, status, meta)
         message = self._build_answer(ans, passages, answer_lang, emergency, meta)
         return self._done(message, meta, t0, conv)
 
+    def _second_look(self, question, ans, passages, analysis, hist, profile, answer_lang, jur, doc_note, status, meta):
+        """The first answer said the law was not found. Ask the model which Act really governs the step described, search again with
+        that and answer again. Two more model calls, only on this failure path; falls back to the first answer if it does not help."""
+        status("searching_deeper")
+        try:
+            found = [f"{p['act_title']} {p['section_label']}" for p in passages]
+            r = parse_json(self.llm.complete(prompts.rescue_messages(question, tried=analysis["search_queries"], found=found,
+                                                                    profile_line=profile_line(profile)), tag="rescue", max_tokens=250).text)
+            qs = [q for q in (r.get("search_queries") or []) if isinstance(q, str) and q.strip()][:3] if isinstance(r, dict) else []
+            if not qs:
+                return ans, passages
+            p2 = self.retrieve(qs, jur)
+            if not p2:
+                return ans, passages
+            status("writing_answer")
+            ans2 = parse_json(self.llm.complete(prompts.answer_messages(question, history=hist, profile_line=profile_line(profile),
+                                                                       answer_language=answer_lang, passages=p2, document_note=doc_note),
+                                                tag="answer", max_tokens=1400).text)
+        except (BudgetExceeded, CacheMiss, LLMError, ValueError):
+            return ans, passages
+        meta["second_look"] = {"queries": qs, "helped": bool(ans2.get("sufficient", True))}
+        return (ans2, p2) if ans2.get("sufficient", True) else (ans, passages)
+
     # ------------------------------------------------------------------ message builders
     def _build_answer(self, ans: dict, passages: list[dict], lang: str, emergency: str | None, meta: dict) -> dict:
+        ans = plain_answer(ans)                  # no talk about databases, passages or 'the text available to me'
         rep = verify(ans, passages)
         meta["verify"] = {"issues": rep.issues, "cited_fraction": round(rep.cited_fraction, 2), "quote_rate": round(rep.quote_rate, 2),
                           "unverified_sections": rep.unverified_sections, "unverified_numbers": rep.unverified_numbers}
@@ -231,9 +259,9 @@ class ChatEngine:
             q = rep.quotes.get(old, {"quote": "", "verified": False})
             note = None
             if p.get("legal_status") == "repealed":
-                note = f"Marked repealed in {p.get('status_scope') or 'some jurisdictions'} in our database. Verify before relying on it."
+                note = f"Marked as repealed in {p.get('status_scope') or 'some jurisdictions'}. Check the current law before relying on it."
             elif p.get("amended_by_titles"):
-                note = "Amended later by " + "; ".join(p["amended_by_titles"][:3]) + ". Amendments are not merged into this text."
+                note = "Amended later by " + "; ".join(p["amended_by_titles"][:3]) + ". The wording below may have changed: check the current law."
             sources.append({
                 "id": remap[old], "title": p["act_title"],
                 "section": (p["section_label"] + (f" - {p['heading']}" if p.get("heading") else ""))[:110],

@@ -84,7 +84,7 @@ class DeepSeek:
     def _check_budget(self) -> None:
         if self.live_calls >= self.s.max_calls_per_run:
             raise BudgetExceeded(f"live call cap for this run reached ({self.s.max_calls_per_run}); raise LLM_MAX_CALLS_PER_RUN on purpose to continue")
-        if self._calls_today() >= self.s.daily_call_cap:
+        if self.s.daily_call_cap > 0 and self._calls_today() >= self.s.daily_call_cap:
             raise BudgetExceeded(f"daily live call cap reached ({self.s.daily_call_cap}); see data/llm_ledger.jsonl")
 
     # ------------------------------------------------------------------ the call

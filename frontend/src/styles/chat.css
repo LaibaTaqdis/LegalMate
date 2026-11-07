@@ -212,3 +212,6 @@
 .source-flag { display: flex; align-items: flex-start; gap: 6px; margin: 8px 0 0; font-size: 12.5px; line-height: 1.4; color: #8a5a00; }
 .source-flag svg { flex: none; margin-top: 2px; }
 .source-pages { display: block; margin-top: 8px; font-size: 12px; color: var(--muted); }
+
+.chip-conf.low { border-color: #f1d9a8; background: #fff7e6; color: #8a5a00; }
+.chip-conf.low svg { fill: #e0a21a; }

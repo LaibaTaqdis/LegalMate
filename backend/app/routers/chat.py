@@ -81,10 +81,12 @@ def send_message(conv_id: UUID, body: MessageIn, request: Request, user: dict = 
 
     # ---- limits (cheapest first). Per-day is counted from the database, so it survives restarts.
     state.limiter.check(f"chat:burst:{uid}", 6, 60, "You are sending messages very quickly. Please wait a moment.")
-    state.limiter.check(f"chat:hour:{uid}", s.max_msgs_per_hour, 3600, f"You have reached the limit of {s.max_msgs_per_hour} questions per hour. Please try again later.")
-    today = state.db.one("select count(*) as n from app.messages where user_id = %s and role = 'user' and created_at > now() - interval '24 hours'", [uid])["n"]
-    if today >= s.max_msgs_per_day:
-        raise ApiError(429, "RATE_LIMITED", f"You have reached today's limit of {s.max_msgs_per_day} questions. Please come back tomorrow.")
+    if s.max_msgs_per_hour > 0:                                                     # per-user limits are optional (0 = off)
+        state.limiter.check(f"chat:hour:{uid}", s.max_msgs_per_hour, 3600, f"You have reached the limit of {s.max_msgs_per_hour} questions per hour. Please try again later.")
+    if s.max_msgs_per_day > 0:
+        today = state.db.one("select count(*) as n from app.messages where user_id = %s and role = 'user' and created_at > now() - interval '24 hours'", [uid])["n"]
+        if today >= s.max_msgs_per_day:
+            raise ApiError(429, "RATE_LIMITED", f"You have reached today's limit of {s.max_msgs_per_day} questions. Please come back tomorrow.")
     with state.inflight_lock:
         if uid in state.inflight:
             raise ApiError(429, "RATE_LIMITED", "LegalMate is still answering your previous question. Please wait for it to finish.")

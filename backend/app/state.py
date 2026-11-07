@@ -31,7 +31,7 @@ def build_engine():
         # The disk cache would keep users' (scrubbed) questions on the server forever; off unless LLM_CACHE is set on purpose.
         cache_enabled=os.environ.get("LLM_CACHE", "off").lower() != "off",
         # A server runs for days: the per-run cap meant for scripts would stop it. The per-day cap (from the ledger) is the real guard.
-        max_calls_per_run=s.max_calls_per_run if "LLM_MAX_CALLS_PER_RUN" in os.environ else s.daily_call_cap,
+        max_calls_per_run=s.max_calls_per_run if "LLM_MAX_CALLS_PER_RUN" in os.environ else (s.daily_call_cap or 10**9),
     )
     t0 = time.time()
     kb = KnowledgeBase(s.database_url)

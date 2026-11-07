@@ -14,7 +14,7 @@ import httpx
 from chat import llm as llm_mod
 from chat.confidence import score
 from chat.engine import ChatEngine, norm_jurisdiction
-from chat.llm import BudgetExceeded, CacheMiss, DeepSeek, parse_json
+from chat.llm import BudgetExceeded, CacheMiss, DeepSeek, LLMError, parse_json
 from chat.pii import scrub
 from chat.richtext import cited_ids, strip_markup, to_segments
 from chat.settings import Settings
@@ -142,13 +142,17 @@ def test_llm_cache_ledger_budget_replay(monkeypatch_httpx=None):
 class ScriptedLLM:
     """Stands in for DeepSeek: returns scripted JSON per tag and counts 'live' calls."""
 
-    def __init__(self, analyse, answer=None):
-        self.script = {"analyse": analyse, "answer": answer}
+    def __init__(self, analyse, answer=None, rescue=None):
+        self.script = {"analyse": analyse, "answer": answer, "rescue": rescue}
         self.live_calls = 0
 
     def complete(self, messages, *, tag, **kw):
         self.live_calls += 1
         v = self.script[tag]
+        if isinstance(v, list):                      # several answers in a row (first look, second look)
+            v = v.pop(0)
+        if v is None:
+            raise LLMError(f"no scripted response for {tag}")
         if isinstance(v, Exception):
             raise v
         return type("R", (), {"text": json.dumps(v)})()
@@ -235,6 +239,57 @@ def test_profile_never_leaks_identity():
 def test_jurisdiction_mapping():
     assert norm_jurisdiction("Islamabad Capital Territory") == "ICT" and norm_jurisdiction("Lahore") == "Punjab"
     assert norm_jurisdiction("Sindh") is None and norm_jurisdiction(None) is None
+
+
+def test_second_look_when_the_first_search_misses():
+    insufficient = {**ANSWER, "sufficient": False, "intro": "I could not find a specific law that directly answers this.", "law": "", "steps": ["Ask a lawyer."],
+                    "used": [], "follow_ups": []}
+    rescue = {"search_queries": ["Code of Criminal Procedure refusal to give name and residence", "Refusal to give name and residence", "Constitution Article 4"]}
+    # first answer insufficient -> rescue queries -> better answer: 4 calls, the second answer is used
+    kb = FakeKB([passage(1)])
+    llm = ScriptedLLM(ANALYSIS, [insufficient, ANSWER], rescue)
+    seen: list[str] = []
+    out = ChatEngine(kb, llm, rescue=True).respond("police asked for my card", on_status=seen.append)
+    assert llm.live_calls == 4 and out["message"]["sufficient"] is True and out["message"]["sources"], out["message"]
+    assert out["meta"]["second_look"]["helped"] is True and seen[-2:] == ["searching_deeper", "writing_answer"], seen
+    assert any("refusal to give name" in q.lower() for q, _ in kb.queries)                  # the rescue queries really were searched
+    # second look does not help: the first answer is kept (still 4 calls)
+    llm = ScriptedLLM(ANALYSIS, [insufficient, insufficient], rescue)
+    out = ChatEngine(FakeKB([passage(1)]), llm, rescue=True).respond("police asked for my card")
+    assert llm.live_calls == 4 and out["message"]["sufficient"] is False and out["meta"]["second_look"]["helped"] is False
+    # the budget runs out during the second look: the user still gets the first answer
+    llm = ScriptedLLM(ANALYSIS, insufficient, BudgetExceeded("cap"))
+    out = ChatEngine(FakeKB([passage(1)]), llm, rescue=True).respond("police asked for my card")
+    assert out["message"]["kind"] == "answer" and out["message"]["sufficient"] is False
+    # a sufficient first answer never triggers it (2 calls), and it can be switched off
+    llm = ScriptedLLM(ANALYSIS, ANSWER, rescue)
+    ChatEngine(FakeKB([passage(1)]), llm).respond("tenant question")
+    assert llm.live_calls == 2
+    llm = ScriptedLLM(ANALYSIS, insufficient, rescue)
+    ChatEngine(FakeKB([passage(1)]), llm).respond("tenant question")        # off by default
+    assert llm.live_calls == 2
+
+
+def test_nothing_the_user_sees_talks_about_the_machinery():
+    from chat import engine as eng_mod, prompts
+    banned = ("database", "passage", "retriev", "text available to me", "my data")
+    user_facing = [eng_mod.DISCLAIMER, eng_mod.BUSY_TEXT, eng_mod.EMERGENCY]
+    out = ChatEngine(FakeKB([]), ScriptedLLM(ANALYSIS, ANSWER)).respond("obscure question")             # the "no source" reply
+    user_facing.append(out["message"]["text"])
+    for text in user_facing:
+        assert not any(b in text.lower() for b in banned), text
+    assert "NEVER describe how you work" in prompts.ANSWER_SYSTEM and "in the database" not in prompts.ANSWER_SYSTEM
+
+
+def test_plain_speech_filter_removes_machinery_talk():
+    leaky = {**ANSWER, "intro": "I could not find a law in the database that answers this [[1]].",
+             "law": "The passages I have say a landlord may **seek eviction** [[1]]. In the text available to me, there is no other rule.",
+             "important": "The law text available to me is partly outdated.", "steps": ["Check the passages provided to me again [[1]]."]}
+    out = ChatEngine(FakeKB([passage(1)]), ScriptedLLM(ANALYSIS, leaky)).respond("tenant question")["message"]
+    flat = json.dumps([out["intro"], out["law"], out["steps"], out["important"]]).lower()
+    for bad in ("database", "passage", "text available", "text i have"):
+        assert bad not in flat, (bad, flat)
+    assert "as far as i could find" in flat and {"b": "seek eviction"} in out["law"] and {"cite": 1} in out["intro"]     # bold and citations survive
 
 
 def test_act_router_and_toc_detection():
