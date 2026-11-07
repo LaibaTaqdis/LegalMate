@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, Request, Response
 from fastapi.responses import StreamingResponse
 
 from .. import chat_service as cs
+from .. import docs_service
 from ..deps import current_user, get_state
 from ..errors import ApiError, not_found
 from ..schemas import ConversationCreate, ConversationPatch, FeedbackIn, MessageIn, PinIn, SourceReportIn
@@ -41,7 +42,8 @@ def get_conversation(conv_id: UUID, user: dict = Depends(current_user), state: A
     conv = cs.get_conversation(state, str(user["id"]), str(conv_id))
     rows = state.db.all("select id, role, kind, content, payload, attachment_ids, feedback, created_at from app.messages "
                         "where conversation_id = %s order by seq limit 500", [conv["id"]])
-    return {"conversation": cs.conv_out(conv), "messages": [cs.msg_out(r) for r in rows]}
+    names = cs.attachment_names(state, rows)
+    return {"conversation": cs.conv_out(conv), "messages": [cs.msg_out(r, names) for r in rows]}
 
 
 @router.patch("/conversations/{conv_id}")
@@ -76,8 +78,10 @@ def send_message(conv_id: UUID, body: MessageIn, request: Request, user: dict = 
     text = body.content.strip()
     if not text:
         raise ApiError(400, "VALIDATION_ERROR", "Please type a question.", {"field": "content"})
-    if body.attachmentIds:
-        raise ApiError(422, "UNPROCESSABLE", "Document attachments are not available yet. Please paste the relevant text instead.")
+    attachment_ids = docs_service.parse_ids(body.attachmentIds, "attachment")
+    if len(attachment_ids) > s.docs.attachments_per_message:
+        raise ApiError(422, "UNPROCESSABLE", f"You can attach up to {s.docs.attachments_per_message} files to one question.")
+    docs = docs_service.load_owned(state.db, uid, attachment_ids) if attachment_ids else []      # 404 if missing, expired or not theirs
 
     # ---- limits (cheapest first). Per-day is counted from the database, so it survives restarts.
     state.limiter.check(f"chat:burst:{uid}", 6, 60, "You are sending messages very quickly. Please wait a moment.")
@@ -101,7 +105,7 @@ def send_message(conv_id: UUID, body: MessageIn, request: Request, user: dict = 
 
     def work() -> None:
         try:
-            result = cs.run_turn(state, user, str(conv_id), text, language, status)
+            result = cs.run_turn(state, user, str(conv_id), text, language, status, docs=docs)
             events.put(("conversation", result["conversation"]))
             events.put(("answer", result["message"]))
         except ApiError as e:

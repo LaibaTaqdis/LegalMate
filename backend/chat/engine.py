@@ -94,10 +94,10 @@ def _now() -> str:
 
 class ChatEngine:
     def __init__(self, kb, llm: DeepSeek, *, n_passages: int = 10, per_doc_cap: int = 4, per_section_cap: int = 1, max_clarify_rounds: int = 1,
-                 route_acts: bool = False, rescue: bool = False):   # rescue: measured 0 of 2 on hard cases, +8 s: off until proven   # measured: no gain on the gold set (see reports/analyser_eval.md notes), kept as an option
+                 route_acts: bool = False, rescue: bool = False, doc_chars: int = 6000):   # rescue: measured 0 of 2 on hard cases, +8 s: off until proven   # measured: no gain on the gold set (see reports/analyser_eval.md notes), kept as an option
         self.kb, self.llm = kb, llm
         self.n_passages, self.per_doc_cap, self.per_section_cap, self.max_clarify_rounds = n_passages, per_doc_cap, per_section_cap, max_clarify_rounds
-        self.route_acts, self._router, self.rescue_enabled = route_acts, None, rescue
+        self.route_acts, self._router, self.rescue_enabled, self.doc_chars = route_acts, None, rescue, doc_chars
 
     # ------------------------------------------------------------------ step 1
     def analyse(self, message: str, history: list[dict], profile: dict | None, ui_language: str, has_document: bool) -> dict:
@@ -197,7 +197,7 @@ class ChatEngine:
             return self._done(self._info("no_source", "I could not find a specific law that matches this question. "
                                                       "Please try rephrasing it, or ask a qualified lawyer."), meta, t0, conv)
         answer_lang = "ur" if (language == "ur" or analysis.get("language") == "ur") else "en"
-        doc_note = (attachment_text or "")[:3000]
+        doc_note = scrub(attachment_text or "")[0][: self.doc_chars]          # identity numbers in a document never leave
         msgs = prompts.answer_messages(clean, history=hist, profile_line=profile_line(profile), answer_language=answer_lang,
                                        passages=passages, document_note=doc_note)
         status("writing_answer")

@@ -7,8 +7,8 @@ import {
 import { Breadcrumb, Checkbox, Select } from '../components/common'
 import { FileIcon } from '../components/Icons'
 import { useUI } from '../components/UIContext'
-import { USE_MOCKS } from '../api/config'
-import { ACCEPTED_TYPES, MAX_UPLOAD_BYTES, documentService } from '../api/services/documentService'
+import { isMock } from '../api/config'
+import { ACCEPTED_TYPES, MAX_UPLOAD_BYTES, MAX_UPLOAD_MB, documentService } from '../api/services/documentService'
 import { MOCK_UPLOAD_QUEUE } from '../api/mocks/documents'
 import { formatBytes } from '../utils/format'
 
@@ -22,8 +22,9 @@ const KINDS = [
 
 const extOf = name => {
   const e = name.split('.').pop().toLowerCase()
-  return e === 'doc' ? 'docx' : e === 'jpeg' ? 'jpg' : e
+  return e === 'jpeg' ? 'jpg' : e
 }
+const REAL = !isMock('documents')
 
 export default function Upload() {
   const navigate = useNavigate()
@@ -32,10 +33,10 @@ export default function Upload() {
   const controllers = useRef({})
   const [drag, setDrag] = useState(false)
   // Queue item: { key, name, sizeBytes, type, progress, status: 'uploading'|'done'|'error', documentId, error }
-  const [queue, setQueue] = useState(USE_MOCKS ? MOCK_UPLOAD_QUEUE : [])
+  const [queue, setQueue] = useState(REAL ? [] : MOCK_UPLOAD_QUEUE)
   const [lang, setLang] = useState('auto')
   const [depth, setDepth] = useState('quick')
-  const [save, setSave] = useState(true)
+  const [save, setSave] = useState(!REAL)
   const [starting, setStarting] = useState(false)
 
   const update = (key, patch) => setQueue(q => q.map(f => (f.key === key ? { ...f, ...patch } : f)))
@@ -44,7 +45,7 @@ export default function Upload() {
     const ctrl = new AbortController()
     controllers.current[key] = ctrl
     documentService.upload(file, { onProgress: p => update(key, { progress: p }), signal: ctrl.signal, startAt })
-      .then(doc => update(key, { progress: 100, status: 'done', documentId: doc.id }))
+      .then(doc => update(key, { progress: 100, status: 'done', documentId: doc.id, pages: doc.pages, warnings: doc.warnings || [] }))
       .catch(e => { if (e.name !== 'AbortError') update(key, { status: 'error', error: e.message || 'Upload failed' }) })
       .finally(() => { delete controllers.current[key] })
   }
@@ -62,7 +63,7 @@ export default function Upload() {
     Array.from(files).forEach(f => {
       const type = extOf(f.name)
       if (!ACCEPTED_TYPES.includes(type)) return toast(`${f.name}: unsupported format`, 'info')
-      if (f.size > MAX_UPLOAD_BYTES) return toast(`${f.name} is larger than 10 MB`, 'info')
+      if (f.size > MAX_UPLOAD_BYTES) return toast(`${f.name} is larger than ${MAX_UPLOAD_MB} MB`, 'info')
       const key = `${Date.now()}_${Math.random()}`
       setQueue(q => [...q, { key, name: f.name, sizeBytes: f.size, type, progress: 0, status: 'uploading', documentId: null }])
       startUpload(key, f)
@@ -115,9 +116,9 @@ export default function Upload() {
               <CloudUpload size={64} strokeWidth={1.4} className="dz-icon" />
               <h3>Drag and drop your document here</h3>
               <span className="dz-or">or</span>
-              <input ref={inputRef} type="file" hidden multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={e => { addFiles(e.target.files); e.target.value = '' }} />
+              <input ref={inputRef} type="file" hidden multiple accept=".pdf,.docx,.jpg,.jpeg,.png" onChange={e => { addFiles(e.target.files); e.target.value = '' }} />
               <button className="btn btn-orange btn-lg dz-browse" onClick={() => inputRef.current.click()}><FolderOpen size={20} /> Browse Files</button>
-              <p className="dz-formats">Supported formats: PDF, DOCX, JPG, PNG (Max size: 10 MB)</p>
+              <p className="dz-formats">Supported formats: PDF, DOCX, JPG, PNG (Max size: {MAX_UPLOAD_MB} MB)</p>
               <div className="dz-trust">
                 <div><span><Lock size={18} /></span><p><b>Secure Upload</b>End-to-end encryption</p></div>
                 <div><span><ShieldCheck size={18} /></span><p><b>Your Data Stays Private</b>Only you can access your files</p></div>
@@ -135,7 +136,8 @@ export default function Upload() {
               {queue.map(f => (
                 <div key={f.key} className="queue-row">
                   <FileIcon type={f.type} size={36} />
-                  <div className="queue-name"><b>{f.name}</b><span>{formatBytes(f.sizeBytes)}</span></div>
+                  <div className="queue-name"><b>{f.name}</b><span>{formatBytes(f.sizeBytes)}{f.pages ? ` · ${f.pages} page${f.pages > 1 ? 's' : ''}` : ''}</span>
+                    {f.warnings?.map(w => <em key={w} className="queue-warn">{w}</em>)}</div>
                   <div className="progress queue-bar"><span style={{ width: `${f.progress}%`, background: f.status === 'error' ? '#dc2626' : f.status === 'done' ? '#22a45a' : '#1d5fd6' }} /></div>
                   <span className={`queue-status ${f.status === 'done' ? 'done' : ''} ${f.status === 'error' ? 'failed' : ''}`}>
                     {f.status === 'done' ? <><CheckCircle2 size={16} /> Upload complete</> : f.status === 'error' ? (f.error || 'Upload failed') : `Uploading... ${f.progress}%`}
@@ -148,7 +150,7 @@ export default function Upload() {
             <div className="need-help">
               <Info size={24} fill="#1d4ed8" color="#fff" />
               <div><b>Need help?</b><span>Make sure your document is not password protected and contains readable text.</span></div>
-              <button className="link small" onClick={() => toast('Upload guidelines: PDF/DOCX/JPG/PNG up to 10 MB, unprotected, clearly readable.', 'info')}>View upload guidelines <ArrowRight size={15} /></button>
+              <button className="link small" onClick={() => toast(`Upload guidelines: PDF, DOCX, JPG or PNG up to ${MAX_UPLOAD_MB} MB, not password protected, clearly readable.`, 'info')}>View upload guidelines <ArrowRight size={15} /></button>
             </div>
           </section>
         </div>
@@ -187,10 +189,12 @@ export default function Upload() {
                 </button>
               ))}
             </div>
-            <div className="save-vault">
-              <Checkbox checked={save} onChange={setSave} tone="orange"><b>Save original file to Legal Vault</b></Checkbox>
-              <span>Keep a secure copy of your document in your vault.</span>
-            </div>
+            {!REAL && (
+              <div className="save-vault">
+                <Checkbox checked={save} onChange={setSave} tone="orange"><b>Save original file to Legal Vault</b></Checkbox>
+                <span>Keep a secure copy of your document in your vault.</span>
+              </div>
+            )}
             <button className="btn btn-orange btn-xl btn-block analyse-btn" onClick={analyse} disabled={starting}>
               {starting ? <Loader2 size={20} className="spin" /> : <Sparkles size={20} />} {starting ? 'Starting analysis…' : 'Analyse Document'} {!starting && <ArrowRight size={20} />}
             </button>

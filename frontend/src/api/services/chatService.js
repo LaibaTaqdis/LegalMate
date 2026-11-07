@@ -73,5 +73,5 @@ export const chatService = {
 
   /** Uploads a chat attachment through the documents endpoint -> { id, name } */
   uploadAttachment: (file, onProgress) =>
-    MOCK() ? mock({ id: uid('doc'), name: file.name }, 200) : upload(EP.documents.upload, file, { fields: { purpose: 'chat' }, onProgress }),
+    isMock('documents') ? mock({ id: uid('doc'), name: file.name }, 200) : upload(EP.documents.upload, file, { fields: { purpose: 'chat' }, onProgress }),
 }

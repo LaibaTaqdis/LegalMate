@@ -18,7 +18,7 @@ from .ratelimit import RateLimiter
 log = logging.getLogger("legalmate.engine")
 
 
-def build_engine():
+def build_engine(doc_chars: int = 6000):
     """The real chat engine: DeepSeek client + the Supabase knowledge base. Slow (loads the keyword index and the embedding model)."""
     from chat.engine import ChatEngine
     from chat.llm import DeepSeek
@@ -36,7 +36,7 @@ def build_engine():
     t0 = time.time()
     kb = KnowledgeBase(s.database_url)
     log.info("knowledge base ready in %.1fs (%d chunks)", time.time() - t0, len(kb.lex))
-    return ChatEngine(kb, DeepSeek(s))
+    return ChatEngine(kb, DeepSeek(s), doc_chars=doc_chars)
 
 
 class EngineHolder:

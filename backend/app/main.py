@@ -17,10 +17,11 @@ from fastapi.responses import JSONResponse
 
 from .config import AppSettings, get_app_settings
 from .db import Database, migrate
+from .docs_service import purge_expired
 from .errors import body, install_error_handlers
 from .ratelimit import RateLimiter
 from .routers import auth, chat, documents, users
-from .state import AppState, EngineHolder
+from .state import AppState, EngineHolder, build_engine
 
 API_PREFIX = "/api/v1"
 MAX_JSON_BYTES = 1_000_000          # nothing in this API sends more than a few KB of JSON; uploads (Phase 5) get their own limit
@@ -39,7 +40,8 @@ def create_app(settings: AppSettings | None = None, *, engine=None, db: Database
         applied = migrate(database)
         if applied:
             log.info("database migrated: %s", ", ".join(applied))
-        holder = EngineHolder(engine=engine, enabled=s.enable_engine)
+        purge_expired(database, s.docs)
+        holder = EngineHolder(engine=engine, enabled=s.enable_engine, factory=lambda: build_engine(s.docs.chat_doc_chars))
         app.state.ctx = AppState(settings=s, db=database, limiter=RateLimiter(), engine=holder,
                                  executor=ThreadPoolExecutor(max_workers=s.engine_concurrency, thread_name_prefix="chat"))
         if s.enable_engine and s.warm_engine and engine is None:
@@ -64,8 +66,12 @@ def create_app(settings: AppSettings | None = None, *, engine=None, db: Database
     @app.middleware("http")
     async def guard(request: Request, call_next):
         size = request.headers.get("content-length")
-        if size and size.isdigit() and int(size) > MAX_JSON_BYTES and "multipart/form-data" not in request.headers.get("content-type", ""):
-            return JSONResponse(body("FILE_TOO_LARGE", "That request is too large."), status_code=413)
+        multipart = "multipart/form-data" in request.headers.get("content-type", "")
+        if size and size.isdigit():
+            if not multipart and int(size) > MAX_JSON_BYTES:
+                return JSONResponse(body("FILE_TOO_LARGE", "That request is too large."), status_code=413)
+            if multipart and int(size) > s.docs.max_upload_bytes + 1_000_000:          # refuse an oversized upload before it is read
+                return JSONResponse(body("FILE_TOO_LARGE", f"This file is larger than {s.docs.max_upload_mb} MB."), status_code=413)
         response = await call_next(request)
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("Referrer-Policy", "no-referrer")
