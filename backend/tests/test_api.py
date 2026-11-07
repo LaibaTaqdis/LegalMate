@@ -270,7 +270,7 @@ def test_message_input_rules(client):
     assert ask(client, h, c["id"], "   ")[0].status_code == 400
     assert ask(client, h, c["id"], "x" * 4001)[0].status_code == 400
     r, _ = ask(client, h, c["id"], "see my file", attachmentIds=["3f2c4c1e-0000-4000-8000-000000000000"])
-    assert r.status_code == 422 and "not available" in r.json()["error"]["message"]
+    assert r.status_code == 404 and "not found" in r.json()["error"]["message"]          # an attachment that does not exist (or is not theirs)
     r = client.post(f"{A}/chat/conversations/{c['id']}/messages", content=b"{" + b" " * 2_000_000 + b"}", headers={**h, "Content-Type": "application/json"})
     assert r.status_code == 413
 
@@ -341,8 +341,6 @@ def test_feedback_reports_and_not_yet_available_features(client):
     assert client.post(f"{A}/chat/sources/report", json={"messageId": mid, "sourceId": 1}, headers=h).status_code == 204
     assert client.post(f"{A}/chat/sources/report", json={"messageId": mid, "sourceId": 1}, headers=other).status_code == 404
     assert client.post(f"{A}/chat/messages/{mid}/save", headers=h).status_code == 501
-    r = client.post(f"{A}/documents", headers=h)
-    assert r.status_code == 501 and r.json()["error"]["code"] == "NOT_IMPLEMENTED"
 
 
 def test_deleting_a_user_removes_their_conversations(client):

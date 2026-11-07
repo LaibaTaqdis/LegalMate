@@ -12,6 +12,7 @@ import { useUI } from '../components/UIContext'
 import { useAuth } from '../context/AuthContext'
 import { isMock } from '../api/config'
 import { chatService } from '../api/services/chatService'
+import { ACCEPTED_TYPES, MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from '../api/services/documentService'
 import { TOPIC_CARDS } from '../api/mocks/chat'
 import { formatDate, formatTime } from '../utils/format'
 
@@ -189,6 +190,9 @@ function Composer({ onSend, placeholder, big, disabled }) {
 
   const attach = async list => {
     for (const file of Array.from(list)) {
+      const ext = file.name.split('.').pop().toLowerCase().replace('jpeg', 'jpg')
+      if (!ACCEPTED_TYPES.includes(ext)) { toast(`${file.name}: please attach a PDF, Word (.docx), JPG or PNG file`, 'info'); continue }
+      if (file.size > MAX_UPLOAD_BYTES) { toast(`${file.name} is larger than ${MAX_UPLOAD_MB} MB`, 'info'); continue }
       const temp = { id: `tmp_${file.name}`, name: file.name, uploading: true }
       setFiles(f => [...f, temp])
       try {
@@ -207,6 +211,7 @@ function Composer({ onSend, placeholder, big, disabled }) {
     if (!text.trim() && !files.length) return
     onSend(text.trim() || `Please review the attached file: ${files[0].name}`, {
       attachmentIds: files.map(f => f.id),
+      attachments: files.map(f => ({ id: f.id, name: f.name })),
       language: lang === 'English' ? 'en' : 'ur',
     })
     setText('')
@@ -524,7 +529,7 @@ export default function Chat() {
     try {
       const { conversation } = await chatService.createConversation({ firstMessage: text, topic: opts.topic })
       upsertConv(conversation)
-      store.msgs[conversation.id] = [normMsg({ id: `local_${Date.now()}`, kind: 'user', text, time: now() })]
+      store.msgs[conversation.id] = [normMsg({ id: `local_${Date.now()}`, kind: 'user', text, time: now(), attachments: opts.attachments })]
       store.emit()
       navigate(`/chat/${conversation.id}`)
       reply(conversation.id, text, opts)
@@ -547,7 +552,7 @@ export default function Chat() {
   }
 
   const sendFollowUp = (text, opts) => {
-    store.msgs[id] = [...messages, normMsg({ id: `local_${Date.now()}`, kind: 'user', text, time: now() })]
+    store.msgs[id] = [...messages, normMsg({ id: `local_${Date.now()}`, kind: 'user', text, time: now(), attachments: opts?.attachments })]
     store.emit()
     reply(id, text, opts)
   }
@@ -630,7 +635,11 @@ export default function Chat() {
           {s.errors[id] && !s.msgs[id] && <ErrorState error={s.errors[id]} onRetry={() => loadMessages(id, true)} />}
           {messages.map(m => m.kind === 'user' ? (
             <div key={m.id} className="msg-user">
-              <div className="msg-user-bubble"><p>{m.text}</p><span>{m.time}</span></div>
+              <div className="msg-user-bubble">
+                <p>{m.text}</p>
+                {m.attachments?.length > 0 && <div className="msg-files">{m.attachments.map(f => <span key={f.id} className="pill pill-blue"><Paperclip size={12} />{f.name}</span>)}</div>}
+                <span>{m.time}</span>
+              </div>
               <span className="avatar msg-user-avatar">{user?.initials}</span>
             </div>
           ) : m.kind === 'clarify' ? (

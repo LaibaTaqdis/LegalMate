@@ -1,11 +1,14 @@
 import { api, download, upload } from '../client'
-import { USE_MOCKS } from '../config'
+import { isMock } from '../config'
 import { EP } from '../endpoints'
 import { mock, mockDownload, sleep, uid } from '../mock'
 import { MOCK_ANALYSIS } from '../mocks/documents'
 
+const MOCK = () => isMock('documents')
 export const ACCEPTED_TYPES = ['pdf', 'docx', 'jpg', 'png']
-export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+// Keep VITE_MAX_UPLOAD_MB equal to the backend's MAX_UPLOAD_MB; the server enforces its own limit anyway.
+export const MAX_UPLOAD_MB = Number(import.meta.env.VITE_MAX_UPLOAD_MB || 10)
+export const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
 
 export const documentService = {
   /**
@@ -13,7 +16,7 @@ export const documentService = {
    * `startAt` only affects the mock progress animation.
    */
   upload: async (file, { onProgress, signal, saveToVault = false, startAt = 0 } = {}) => {
-    if (!USE_MOCKS) return upload(EP.documents.upload, file, { fields: { purpose: 'analysis', saveToVault }, onProgress, signal })
+    if (!MOCK()) return upload(EP.documents.upload, file, { fields: { purpose: 'analysis', saveToVault: !!saveToVault }, onProgress, signal })
     for (let p = startAt; p < 100; p = Math.min(100, p + 7)) {
       if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
       onProgress?.(p)
@@ -24,22 +27,22 @@ export const documentService = {
   },
 
   /** Discards an uploaded (not yet analysed) document. */
-  remove: id => (USE_MOCKS ? mock(null, 100) : api.delete(`${EP.documents.upload}/${id}`)),
+  remove: id => (MOCK() ? mock(null, 100) : api.delete(`${EP.documents.upload}/${id}`)),
 
   /**
    * Starts an analysis job. -> { id, status }
    * options: { documentIds, language: 'auto'|'en'|'ur', depth: 'quick'|'detailed', saveToVault }
    */
-  startAnalysis: options => (USE_MOCKS ? mock({ id: 'tenancy', status: 'processing' }) : api.post(EP.documents.analyses, options)),
+  startAnalysis: options => (MOCK() ? mock({ id: 'tenancy', status: 'processing' }) : api.post(EP.documents.analyses, options)),
 
   /** -> Analysis (poll while status is 'queued' or 'processing') */
-  getAnalysis: (id, signal) => (USE_MOCKS ? mock(MOCK_ANALYSIS) : api.get(EP.documents.analysis(id), { signal })),
+  getAnalysis: (id, signal) => (MOCK() ? mock(MOCK_ANALYSIS) : api.get(EP.documents.analysis(id), { signal })),
 
-  downloadReport: (id, name = 'Analysis_Report.pdf') => (USE_MOCKS ? mockDownload() : download(EP.documents.analysisReport(id), name)),
+  downloadReport: (id, name = 'Analysis_Report.pdf') => (MOCK() ? mockDownload() : download(EP.documents.analysisReport(id), name)),
 
   /** Saves the analysed document + report into the Legal Vault. -> { vaultDocumentId } */
-  saveToVault: id => (USE_MOCKS ? mock({ vaultDocumentId: 'tenancy' }) : api.post(`${EP.documents.analysis(id)}/save`)),
+  saveToVault: id => (MOCK() ? mock({ vaultDocumentId: 'tenancy' }) : api.post(`${EP.documents.analysis(id)}/save`)),
 
   /** -> { url } a shareable read-only link */
-  share: id => (USE_MOCKS ? mock({ url: `${window.location.origin}/documents/analysis/${id}` }) : api.post(EP.documents.analysisShare(id))),
+  share: id => (MOCK() ? mock({ url: `${window.location.origin}/documents/analysis/${id}` }) : api.post(EP.documents.analysisShare(id))),
 }

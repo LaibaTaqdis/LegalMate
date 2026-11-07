@@ -215,3 +215,7 @@
 
 .chip-conf.low { border-color: #f1d9a8; background: #fff7e6; color: #8a5a00; }
 .chip-conf.low svg { fill: #e0a21a; }
+
+/* ---- Phase 5: documents ---- */
+.queue-warn { display: block; margin-top: 3px; font-style: normal; font-size: 12px; line-height: 1.35; color: #8a5a00; }
+.msg-files { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }

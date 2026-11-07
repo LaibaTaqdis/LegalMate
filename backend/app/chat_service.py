@@ -31,10 +31,21 @@ def conv_out(r: dict) -> dict:
             "pinned": r["pinned"], "updatedAt": iso(r["updated_at"])}
 
 
-def msg_out(r: dict) -> dict:
+def attachment_names(state: AppState, rows: list[dict]) -> dict[str, str]:
+    """File names for the attachments in these messages (a document that has expired or was deleted has no name any more)."""
+    ids = sorted({str(a) for r in rows for a in (r.get("attachment_ids") or [])})
+    if not ids:
+        return {}
+    return {str(d["id"]): d["name"] for d in state.db.all("select id, name from app.documents where id = any(%s::uuid[])", [ids])}
+
+
+def msg_out(r: dict, names: dict[str, str] | None = None) -> dict:
     if r["role"] == "user":
-        return {"id": str(r["id"]), "role": "user", "kind": "user", "content": r["content"],
-                "attachmentIds": [str(a) for a in r["attachment_ids"]], "createdAt": iso(r["created_at"])}
+        ids = [str(a) for a in (r.get("attachment_ids") or [])]
+        out = {"id": str(r["id"]), "role": "user", "kind": "user", "content": r["content"], "attachmentIds": ids, "createdAt": iso(r["created_at"])}
+        if ids:
+            out["attachments"] = [{"id": i, "name": (names or {}).get(i, "Attached file")} for i in ids]
+        return out
     return {**(r["payload"] or {}), "id": str(r["id"]), "role": "assistant", "kind": r["kind"], "createdAt": iso(r["created_at"]),
             "feedback": r["feedback"]}
 
@@ -67,7 +78,7 @@ def _safe_meta(meta: dict) -> dict:
     return {k: meta[k] for k in keep if k in meta}
 
 
-def run_turn(state: AppState, user: dict, conv_id: str, text: str, language: str, on_status: Callable[[str], None]) -> dict:
+def run_turn(state: AppState, user: dict, conv_id: str, text: str, language: str, on_status: Callable[[str], None], docs: list[dict] | None = None) -> dict:
     """Returns {"conversation": ..., "message": ...} for the browser, or raises ApiError (the router turns it into an `error` event)."""
     uid = str(user["id"])
     user_msg = None
@@ -75,9 +86,14 @@ def run_turn(state: AppState, user: dict, conv_id: str, text: str, language: str
         engine = state.engine.get()
         history = _history(state, conv_id)
         conv = get_conversation(state, uid, conv_id)
-        user_msg = state.db.one("insert into app.messages (conversation_id, user_id, role, kind, content) values (%s, %s, 'user', 'user', %s) returning id",
-                                [conv_id, uid, text])
-        out = engine.respond(text, history=history, profile=engine_profile(user), language=language, on_status=on_status)
+        user_msg = state.db.one("insert into app.messages (conversation_id, user_id, role, kind, content, attachment_ids) "
+                                "values (%s, %s, 'user', 'user', %s, %s::uuid[]) returning id",
+                                [conv_id, uid, text, [str(d["id"]) for d in (docs or [])]])
+        doc_text = None
+        if docs:                                           # the part of each attached document that matters for this question
+            from .docs_service import select_context
+            doc_text = select_context(docs, text, state.settings.docs.chat_doc_chars)
+        out = engine.respond(text, history=history, profile=engine_profile(user), language=language, on_status=on_status, attachment_text=doc_text)
         msg, meta = out["message"], out.get("meta", {})
 
         if msg["kind"] == "info" and msg.get("reason") in ("error", "busy"):      # nothing useful was produced

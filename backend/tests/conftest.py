@@ -42,7 +42,7 @@ class FakeEngine:
         self.calls: list[dict] = []
 
     def respond(self, text, *, history=None, profile=None, language="en", attachment_text=None, on_status=None):
-        self.calls.append({"text": text, "history": history or [], "profile": profile, "language": language})
+        self.calls.append({"text": text, "history": history or [], "profile": profile, "language": language, "attachment_text": attachment_text})
         status = on_status or (lambda s: None)
         status("understanding")
         low = text.lower()

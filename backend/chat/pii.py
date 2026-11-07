@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import re
 
+_DIGITS = {**{0x0660 + i: ord("0") + i for i in range(10)}, **{0x06F0 + i: ord("0") + i for i in range(10)}}
 _PATTERNS: list[tuple[str, re.Pattern]] = [
     ("EMAIL", re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")),
     ("IBAN", re.compile(r"\bPK\d{2}[A-Z]{4}\d{16}\b", re.I)),
@@ -20,7 +21,7 @@ _PATTERNS: list[tuple[str, re.Pattern]] = [
 def scrub(text: str) -> tuple[str, dict[str, int]]:
     """-> (clean text, counts of what was removed). Replaces with [CNIC], [PHONE], [EMAIL], [IBAN], [CARD]."""
     counts: dict[str, int] = {}
-    out = text
+    out = text.translate(_DIGITS)                      # digits written as ١٢٣ or ۱۲۳ are numbers too (a CNIC in Urdu digits must not slip through)
     for label, rx in _PATTERNS:
         out, n = rx.subn(f"[{label}]", out)
         if n:
