@@ -41,4 +41,4 @@ def cited_ids(text: str) -> list[int]:
 def strip_markup(text: str) -> str:
     """Plain text version (no bold markers, no cite markers) for chat history and titles."""
     t = re.sub(r"\s+", " ", _CITE.sub("", (text or "").replace("**", ""))).strip()
-    return re.sub(r"\s+([.,;:!?])", r"\1", t)          # "position [[1]]." must not become "position ."
+    return re.sub(r"\s+([.,;:!?۔،؛؟])", r"\1", t)       # "position [[1]]." must not become "position ." (Urdu full stop, comma, semicolon, question mark too)

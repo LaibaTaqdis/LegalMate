@@ -195,7 +195,7 @@ class PinIn(Body):
 class MessageIn(Body):
     content: str = Field(min_length=1, max_length=4000)
     attachmentIds: list[str] = Field(default_factory=list, max_length=5)
-    language: Literal["en", "ur"] | None = None
+    language: Literal["auto", "en", "ur", "ur-roman"] | None = None      # None / "auto": answer in the language the user wrote in
 
 
 class AnalysisIn(Body):

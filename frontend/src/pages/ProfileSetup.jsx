@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AlertCircle, ArrowRight, Loader2, MapPin, ShieldCheck } from 'lucide-react'
 import { Breadcrumb } from '../components/common'
 import { ErrorState, Skeleton } from '../components/States'
@@ -10,14 +10,14 @@ import { PROFILE_OPTIONS as OPT, profileService } from '../api/services/profileS
 const LANGS = [{ v: 'en', label: 'English' }, { v: 'ur', label: 'اردو (Urdu)' }, { v: 'both', label: 'Both' }]
 
 /** One question with tappable choices. `multi` lets several be selected. */
-function Choice({ title, hint, options, value, onChange, multi = false }) {
+function Choice({ title, hint, options, value, onChange, multi = false, full = false }) {
   const isOn = o => (multi ? value.includes(o.v ?? o) : value === (o.v ?? o))
   const toggle = o => {
     const v = o.v ?? o
     onChange(multi ? (value.includes(v) ? value.filter(x => x !== v) : [...value, v]) : (value === v ? null : v))
   }
   return (
-    <div className="field ps-q">
+    <div className={`field ps-q ${full ? 'ps-full' : ''}`}>
       <span className="field-label">{title}{hint && <i className="su-opt"> {hint}</i>}</span>
       <div className="ps-chips" role={multi ? 'group' : 'radiogroup'} aria-label={title}>
         {options.map(o => (
@@ -31,6 +31,7 @@ function Choice({ title, hint, options, value, onChange, multi = false }) {
 
 export default function ProfileSetup() {
   const navigate = useNavigate()
+  const fromSettings = useSearchParams()[0].get('from') === 'settings'          // opened from Settings: go back there, not to the chat
   const { toast } = useUI()
   const q = useQuery(signal => profileService.get(signal), [])
   const [p, setP] = useState(null)
@@ -46,7 +47,7 @@ export default function ProfileSetup() {
       const { province, city, userType, employmentStatus, roles, ageBand, maritalStatus, language, interests } = p
       await profileService.save({ province, city: city?.trim() || null, userType, employmentStatus, roles, ageBand, maritalStatus, language, interests })
       toast('Saved. Your answers will now be tailored to you.', 'success')
-      navigate('/chat')
+      navigate(fromSettings ? '/settings?tab=personalise' : '/chat')
     } catch (e) {
       setError(e.message || 'Could not save. Please try again.')
     } finally {
@@ -58,7 +59,8 @@ export default function ProfileSetup() {
     <div className="ps">
       <div className="page-head">
         <div>
-          <Breadcrumb items={[{ label: 'Home', to: '/dashboard' }, { label: 'Personalise LegalMate' }]} />
+          <Breadcrumb items={fromSettings ? [{ label: 'Home', to: '/dashboard' }, { label: 'Settings', to: '/settings?tab=personalise' }, { label: 'Personalise my answers' }]
+            : [{ label: 'Home', to: '/dashboard' }, { label: 'Personalise LegalMate' }]} />
           <h1 className="page-title">Tell us about your situation</h1>
           <p className="page-sub">A minute of answers helps LegalMate pick the right laws for where you live and what you do. Everything is optional.</p>
         </div>
@@ -86,19 +88,19 @@ export default function ProfileSetup() {
 
           <Choice title="I am a…" options={OPT.userTypes} value={p.userType} onChange={set('userType')} />
           <Choice title="Work status" options={OPT.employment} value={p.employmentStatus} onChange={set('employmentStatus')} />
-          <Choice title="In my legal matter I am (or may be)…" hint="choose all that apply" multi options={OPT.roles} value={p.roles} onChange={set('roles')} />
+          <Choice full title="In my legal matter I am (or may be)…" hint="choose all that apply" multi options={OPT.roles} value={p.roles} onChange={set('roles')} />
           <div className="ps-row">
             <Choice title="Age" options={OPT.ageBands} value={p.ageBand} onChange={set('ageBand')} />
             <Choice title="Marital status" options={OPT.marital} value={p.maritalStatus} onChange={set('maritalStatus')} />
           </div>
-          <Choice title="Answer me in" options={LANGS} value={p.language} onChange={v => set('language')(v || 'en')} />
-          <Choice title="Topics I care about" hint="choose all that apply" multi options={OPT.interests} value={p.interests} onChange={set('interests')} />
+          <Choice full title="Answer me in" options={LANGS} value={p.language} onChange={v => set('language')(v || 'en')} />
+          <Choice full title="Topics I care about" hint="choose all that apply" multi options={OPT.interests} value={p.interests} onChange={set('interests')} />
 
           {error && <p className="form-error" role="alert"><AlertCircle size={16} /> {error}</p>}
           <div className="ps-actions">
-            <button type="button" className="btn btn-outline btn-lg" onClick={() => navigate('/dashboard')}>Skip for now</button>
+            <button type="button" className="btn btn-outline btn-lg" onClick={() => navigate(fromSettings ? '/settings?tab=personalise' : '/dashboard')}>{fromSettings ? 'Cancel' : 'Skip for now'}</button>
             <button type="button" className="btn btn-orange btn-lg" onClick={save} disabled={busy}>
-              {busy && <Loader2 size={18} className="spin" />} Save and start chatting {!busy && <ArrowRight size={18} />}
+              {busy && <Loader2 size={18} className="spin" />} {fromSettings ? 'Save my answers' : 'Save and start chatting'} {!busy && <ArrowRight size={18} />}
             </button>
           </div>
         </div>

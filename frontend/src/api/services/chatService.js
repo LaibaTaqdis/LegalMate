@@ -39,7 +39,7 @@ export const chatService = {
   /**
    * Sends a user message and resolves with the assistant's message (kind: answer | clarify | info).
    * Real backend: POST .../messages returns text/event-stream:
-   *   `status` {state:'thinking'|'searching_sources'|'writing_answer'} ... `conversation` (renamed/updated) -> `answer` (the Message) | `error`.
+   *   `status` {state:'thinking'|'reading_image'|'searching_sources'|'writing_answer'} ('reading_image' only when a photo is attached: it is read now, not at upload) ... `conversation` (renamed/updated) -> `answer` (the Message) | `error`.
    * `onStatus({state})` drives the progress label; `onConversation(conversation)` receives the auto-generated title and tag.
    */
   sendMessage: async (conversationId, { content, attachmentIds = [], language }, { onStatus, onConversation, signal } = {}) => {

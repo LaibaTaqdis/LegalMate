@@ -32,7 +32,8 @@ def load_doc_settings() -> "DocSettings":
         max_upload_mb=max(1, _int("MAX_UPLOAD_MB", d.max_upload_mb)), max_pages=max(1, _int("MAX_PAGES", d.max_pages)),
         max_text_chars=max(1000, _int("MAX_TEXT_CHARS", d.max_text_chars)),
         docx_max_uncompressed_mb=max(1, _int("DOCX_MAX_UNCOMPRESSED_MB", d.docx_max_uncompressed_mb)),
-        ocr_enabled=_bool("OCR_ENABLED", d.ocr_enabled), ocr_dpi=min(400, max(72, _int("OCR_DPI", d.ocr_dpi))),
+        ocr_enabled=_bool("OCR_ENABLED", d.ocr_enabled), ocr_warm=_bool("OCR_WARM", d.ocr_warm), ocr_defer_chat=_bool("OCR_DEFER_CHAT", d.ocr_defer_chat),
+        pending_hours=max(1, _int("PENDING_DOC_HOURS", d.pending_hours)), ocr_dpi=min(400, max(72, _int("OCR_DPI", d.ocr_dpi))),
         ocr_min_page_chars=_int("OCR_MIN_PAGE_CHARS", d.ocr_min_page_chars), ocr_concurrency=max(1, _int("OCR_CONCURRENCY", d.ocr_concurrency)),
         ocr_langs=tuple(x.strip().lower() for x in os.environ.get("OCR_LANGS", ",".join(d.ocr_langs)).split(",") if x.strip()) or d.ocr_langs,
         ocr_urdu_model=("v4" if os.environ.get("OCR_URDU_MODEL", "").strip().lower() == "v4" else "v5"),
@@ -65,6 +66,9 @@ class DocSettings:
     max_text_chars: int = 200_000         # MAX_TEXT_CHARS     extracted text kept per document (the rest is cut, the user is told)
     docx_max_uncompressed_mb: int = 50    # DOCX_MAX_UNCOMPRESSED_MB  zip-bomb guard for Word files
     ocr_enabled: bool = True              # OCR_ENABLED        read scanned pages and photos (needs rapidocr-onnxruntime)
+    ocr_warm: bool = True                 # OCR_WARM          load and prime the OCR readers when the server starts, so the first photo is not slow
+    ocr_defer_chat: bool = True           # OCR_DEFER_CHAT    a photo attached in chat is accepted at once and read while the answer is prepared (0 = read at upload)
+    pending_hours: int = 24               # PENDING_DOC_HOURS a photo that was attached but never sent with a question is removed after this long
     ocr_dpi: int = 200                    # OCR_DPI            resolution a scanned PDF page is rendered at before reading
     ocr_min_page_chars: int = 40          # OCR_MIN_PAGE_CHARS a PDF page with less text than this is treated as a scan
     ocr_concurrency: int = 1              # OCR_CONCURRENCY    OCR jobs at once (each uses a lot of CPU and memory)

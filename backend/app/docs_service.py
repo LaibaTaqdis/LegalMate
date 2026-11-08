@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import re
+import time
 from uuid import UUID
 
 from .config import DocSettings
@@ -16,6 +17,7 @@ def purge_expired(db: Database, cfg: DocSettings) -> dict:
     """Deletes documents and analyses past their retention, and marks analyses that were running when the server stopped as failed."""
     out = {}
     out["documents"] = db.run("delete from app.documents where expires_at is not null and expires_at < now()")
+    out["unread_photos"] = db.run("delete from app.documents where status = 'pending' and created_at < now() - make_interval(hours => %s)", [cfg.pending_hours])
     out["analyses"] = db.run("delete from app.analyses where expires_at is not null and expires_at < now()")
     out["stale"] = db.run(
         "update app.analyses set status = 'failed', error = 'The analysis was interrupted. Please start it again.', finished_at = now() "
@@ -23,6 +25,20 @@ def purge_expired(db: Database, cfg: DocSettings) -> dict:
     if any(out.values()):
         log.info("clean-up: %s", out)
     return out
+
+
+_last_purge = 0.0
+PURGE_EVERY_SECONDS = 60
+
+
+def purge_if_due(db: Database, cfg: DocSettings) -> None:
+    """`purge_expired`, but at most once a minute per server: it is four database round trips, and an upload should not pay for them every time."""
+    global _last_purge
+    now = time.monotonic()
+    if now - _last_purge < PURGE_EVERY_SECONDS:
+        return
+    _last_purge = now
+    purge_expired(db, cfg)
 
 
 def parse_ids(ids: list[str], what: str = "document") -> list[str]:
@@ -42,7 +58,7 @@ def load_owned(db: Database, user_id: str, ids: list[str], *, with_text: bool = 
     """The user's documents in the order asked for. Anything missing, expired or not theirs is one clear 404 (never revealed which)."""
     if not ids:
         return []
-    cols = "id, name, file_type, size_bytes, pages, purpose, char_count, ocr_pages, ocr_conf, truncated, created_at" + (", text" if with_text else "")
+    cols = "id, name, file_type, size_bytes, pages, purpose, status, char_count, ocr_pages, ocr_conf, truncated, created_at" + (", text" if with_text else "")
     rows = {str(r["id"]): r for r in db.all(f"select {cols} from app.documents where user_id = %s and id = any(%s::uuid[])", [user_id, ids])}
     missing = [i for i in ids if i not in rows]
     if missing:
@@ -50,8 +66,32 @@ def load_owned(db: Database, user_id: str, ids: list[str], *, with_text: bool = 
     return [rows[i] for i in ids]
 
 
+def read_pending(state, user_id: str, d: dict) -> None:
+    """Reads a photo that was attached in chat but not read yet (this is the slow OCR step, done while the answer is prepared).
+    Fills `d` with the text, stores it, and empties the stored picture: the original is not kept. A photo with no readable text is
+    removed and reported in plain words, which also takes the question back (the caller undoes the half-turn)."""
+    from .extract import ExtractError, extract
+
+    row = state.db.one("select raw from app.documents where id = %s and user_id = %s and status = 'pending'", [str(d["id"]), user_id])
+    if row is None or row["raw"] is None:                    # read meanwhile (the same photo sent twice): use what is stored
+        fresh = state.db.one("select text, char_count, pages, ocr_pages, ocr_conf, truncated from app.documents where id = %s and user_id = %s",
+                             [str(d["id"]), user_id])
+        if fresh:
+            d.update(fresh)
+        return
+    try:
+        res = extract(bytes(row["raw"]), state.settings.docs)
+    except ExtractError as e:
+        state.db.run("delete from app.documents where id = %s and user_id = %s", [str(d["id"]), user_id])
+        raise ApiError(e.status, e.code, e.message)
+    state.db.run("update app.documents set text = %s, char_count = %s, pages = %s, ocr_pages = %s, ocr_conf = %s, truncated = %s, "
+                 "status = 'ready', raw = null where id = %s and user_id = %s",
+                 [res.text, len(res.text), res.pages, res.ocr_pages, res.ocr_conf, res.truncated, str(d["id"]), user_id])
+    d.update(text=res.text, char_count=len(res.text), pages=res.pages, ocr_pages=res.ocr_pages, ocr_conf=res.ocr_conf, truncated=res.truncated, status="ready")
+
+
 # ------------------------------------------------------------------------------------------------ what the assistant reads
-_PAGE = re.compile(r"^\[Page \d+\]$", re.M)
+_PAGE =re.compile(r"^\[Page \d+\]$", re.M)
 
 
 def _pieces(text: str, target: int = 700) -> list[str]:

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import os
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 
@@ -47,6 +48,15 @@ def create_app(settings: AppSettings | None = None, *, engine=None, db: Database
                                  analysis_executor=ThreadPoolExecutor(max_workers=s.docs.analysis_concurrency, thread_name_prefix="analysis"))
         if s.enable_engine and s.warm_engine and engine is None:
             holder.warm_in_background()
+        if s.docs.ocr_enabled and s.docs.ocr_warm and s.warm_engine and engine is None:      # photos: models loaded and primed before the first upload
+            def _warm_ocr() -> None:
+                log.info("OCR warming up in the background (photos are read faster once it is ready)")
+                try:
+                    from .extract import warm
+                    log.info("OCR ready in %.1fs", warm(s.docs))
+                except Exception:                                                              # noqa: BLE001 - an upload will report its own error
+                    log.warning("OCR warm-up failed", exc_info=True)
+            threading.Thread(target=_warm_ocr, name="ocr-warmup", daemon=True).start()
         try:
             yield
         finally:

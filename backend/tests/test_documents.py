@@ -311,6 +311,72 @@ def test_long_document_context_keeps_the_opening_and_the_matching_part(pg_url):
     assert short.endswith("tiny text")
 
 
+# ---------------------------------------------------------------------------------------------- photos in chat are read during the answer
+def test_a_chat_photo_is_accepted_at_once_and_read_while_the_answer_is_prepared(client, engine, monkeypatch):
+    import app.extract as ex
+    _, h = signup(client)
+    real, reads = ex.extract, []
+    monkeypatch.setattr(ex, "extract", lambda data, cfg: (reads.append(1), real(data, cfg))[1])
+    db = client.app.state.ctx.db
+
+    up = upload(client, h, text_png(), "photo.png", purpose="chat")
+    assert up.status_code == 201 and up.json()["pending"] is True and up.json()["charCount"] == 0
+    assert reads == []                                                              # no OCR happened during the upload
+    row = db.one("select status, text, raw from app.documents where id = %s", [up.json()["id"]])
+    assert row["status"] == "pending" and row["text"] == "" and len(bytes(row["raw"])) > 1000
+
+    c = new_conv(client, h)
+    r, ev = ask(client, h, c["id"], "What does my photo say about rent?", attachmentIds=[up.json()["id"]])
+    states = [d["state"] for e, d in ev if e == "status"]
+    assert r.status_code == 200 and ev[-1][0] == "answer" and reads == [1]           # read once, now
+    assert states[0] == "thinking" and "reading_image" in states                      # the chat can show "Analyzing the image…"
+    assert "45,000" in engine.calls[-1]["attachment_text"] and "=== Document: photo.png ===" in engine.calls[-1]["attachment_text"]
+    row = db.one("select status, text, raw, ocr_pages from app.documents where id = %s", [up.json()["id"]])
+    assert row["status"] == "ready" and "monthly rent" in row["text"] and row["raw"] is None and row["ocr_pages"] == 1     # original not kept
+
+    r, ev = ask(client, h, c["id"], "And the deposit?", attachmentIds=[up.json()["id"]])                  # already read: no second OCR
+    assert r.status_code == 200 and reads == [1] and "reading_image" not in [d["state"] for e, d in ev if e == "status"]
+
+
+def test_a_chat_photo_with_no_text_is_reported_and_leaves_nothing_behind(client):
+    _, h = signup(client)
+    blank = io.BytesIO()
+    Image.new("RGB", (400, 300), "white").save(blank, "PNG")
+    up = upload(client, h, blank.getvalue(), "blank.png", purpose="chat")
+    assert up.status_code == 201                                                       # accepted now: it is only found unreadable when read
+    c = new_conv(client, h)
+    r, ev = ask(client, h, c["id"], "What is in this picture?", attachmentIds=[up.json()["id"]])
+    assert ev[-1][0] == "error" and ev[-1][1]["code"] == "NO_TEXT" and "readable text" in ev[-1][1]["message"]
+    db = client.app.state.ctx.db
+    assert db.one("select 1 as x from app.documents where id = %s", [up.json()["id"]]) is None                     # the unreadable photo is gone
+    assert client.get(f"{A}/chat/conversations/{c['id']}", headers=h).json()["messages"] == []                    # and so is the unanswered question
+
+
+def test_chat_photo_checks_that_run_at_upload_and_the_switch_to_read_at_upload(pg_url):
+    with TestClient(app_with(pg_url)) as c:
+        _, h = signup(c)
+        assert upload(c, h, b"<html>not a picture</html>", "x.png", purpose="chat").status_code == 415
+        assert upload(c, h, b"\x89PNG\r\n\x1a\n" + b"junk" * 50, "broken.png", purpose="chat").json()["error"]["code"] == "UNREADABLE"
+        assert upload(c, h, text_png(), "a.png", purpose="analysis").json().get("pending") is None                   # the Analysis page still reads at once
+        pid = upload(c, h, text_png(), "b.png", purpose="chat").json()["id"]
+        ar = c.post(f"{A}/analyses", json={"documentIds": [pid]}, headers=h)
+        assert ar.status_code == 422 and "not been read" in ar.json()["error"]["message"]
+    with TestClient(app_with(pg_url, ocr_defer_chat=False)) as c:                                                    # OCR_DEFER_CHAT=0
+        _, h = signup(c)
+        j = upload(c, h, text_png(), "c.png", purpose="chat").json()
+        assert j.get("pending") is None and j["ocrUsed"] is True and j["charCount"] > 20
+
+
+def test_a_photo_that_was_never_sent_is_removed_after_a_day(client):
+    from app.docs_service import purge_expired
+    _, h = signup(client)
+    db = client.app.state.ctx.db
+    old, new = (upload(client, h, text_png(), f"{n}.png", purpose="chat").json()["id"] for n in ("old", "new"))
+    db.run("update app.documents set created_at = now() - interval '2 days' where id = %s", [old])
+    assert purge_expired(db, client.app.state.ctx.settings.docs)["unread_photos"] >= 1
+    assert db.one("select 1 as x from app.documents where id = %s", [old]) is None and db.one("select 1 as x from app.documents where id = %s", [new])
+
+
 # ---------------------------------------------------------------------------------------------- expiry and clean-up
 def test_expired_documents_and_stuck_analyses_are_cleaned_up(client):
     from app.docs_service import purge_expired

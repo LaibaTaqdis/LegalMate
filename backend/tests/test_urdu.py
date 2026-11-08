@@ -132,6 +132,33 @@ def test_english_only_page_never_pays_for_the_urdu_reader(spy):
     assert spy["n"] == 0 and r.urdu is False and "monthly rent" in r.text and "45,000" in r.text
 
 
+def _on_a_desk(content: Image.Image, w=1800, h=1350) -> Image.Image:
+    """The page photographed on a dark desk: shaded paper, tilted, with a long paper edge, like a phone photo."""
+    import numpy as np
+    page = Image.new("RGB", (int(w * 0.85), int(h * 0.9)), (245, 243, 238))
+    c = content.copy()
+    c.thumbnail((page.width - 80, page.height - 80))
+    page.paste(c, (40, 40))
+    arr = np.array(page).astype(np.float32) * np.linspace(0.55, 1.0, page.width)[None, :, None]
+    page = Image.fromarray(arr.astype("uint8")).rotate(2.5, expand=True, fillcolor=(120, 90, 60))
+    desk = Image.new("RGB", (w, h), (120, 90, 60))
+    desk.paste(page, (int(w * 0.05), int(h * 0.02)))
+    return desk
+
+
+@needs_font
+def test_a_shaded_english_photo_does_not_start_the_urdu_reader(spy):
+    """Shadows and the paper's edge are not unread writing: the slow Urdu reader stays off (measured: 5-7 s saved per photo)."""
+    r = ex.extract(png(_on_a_desk(english_image(w=1500, h=330))), DocSettings())
+    assert spy["n"] == 0 and r.urdu is False and "monthly rent" in r.text
+
+
+@needs_font
+def test_a_shaded_urdu_photo_still_starts_the_urdu_reader(spy):
+    r = ex.extract(png(_on_a_desk(urdu_image(width=1000))), DocSettings())
+    assert spy["n"] >= 1 and r.urdu is True
+
+
 @needs_font
 def test_mixed_english_and_urdu_page_keeps_both(spy):
     urdu = urdu_image(LINES[1:4], width=1000)

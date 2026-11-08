@@ -74,7 +74,7 @@ def _history(state: AppState, conv_id: str) -> list[dict]:
 
 def _safe_meta(meta: dict) -> dict:
     """Diagnostics worth keeping (timings, verification results, what was retrieved with). Never the raw user text."""
-    keep = ("analysis", "verify", "retrieval_seconds", "seconds", "llm_calls_this_turn", "pii_removed", "error")
+    keep = ("analysis", "language", "language_mismatch", "verify", "retrieval_seconds", "seconds", "llm_calls_this_turn", "pii_removed", "error")
     return {k: meta[k] for k in keep if k in meta}
 
 
@@ -91,7 +91,12 @@ def run_turn(state: AppState, user: dict, conv_id: str, text: str, language: str
                                 [conv_id, uid, text, [str(d["id"]) for d in (docs or [])]])
         doc_text = None
         if docs:                                           # the part of each attached document that matters for this question
-            from .docs_service import select_context
+            from .docs_service import read_pending, select_context
+            pending = [d for d in docs if d.get("status") == "pending"]
+            if pending:                                    # photos are read now, not at upload: the chat shows "Analyzing the image…"
+                on_status("reading_image")
+                for d in pending:
+                    read_pending(state, uid, d)
             doc_text = select_context(docs, text, state.settings.docs.chat_doc_chars)
         out = engine.respond(text, history=history, profile=engine_profile(user), language=language, on_status=on_status, attachment_text=doc_text)
         msg, meta = out["message"], out.get("meta", {})

@@ -13,7 +13,7 @@ from psycopg.types.json import Jsonb
 from .. import docs_service
 from ..deps import current_user, get_state
 from ..errors import ApiError, not_found
-from ..extract import ExtractError, extract
+from ..extract import ExtractError, check_image, compact_image, extract, sniff
 from ..schemas import AnalysisIn
 from ..state import AppState
 from ..users_repo import iso
@@ -36,7 +36,7 @@ def upload_document(file: UploadFile = File(...), purpose: str = Form("analysis"
         raise ApiError(400, "VALIDATION_ERROR", "purpose must be analysis or chat.", {"field": "purpose"})
     if cfg.uploads_per_hour > 0:
         state.limiter.check(f"upload:{uid}", cfg.uploads_per_hour, 3600, "You are uploading very quickly. Please wait a little and try again.")
-    docs_service.purge_expired(state.db, cfg)
+    docs_service.purge_if_due(state.db, cfg)
     if cfg.docs_per_user > 0:
         n = state.db.one("select count(*) as n from app.documents where user_id = %s", [uid])["n"]
         if n >= cfg.docs_per_user:
@@ -47,12 +47,23 @@ def upload_document(file: UploadFile = File(...), purpose: str = Form("analysis"
         raise ApiError(413, "FILE_TOO_LARGE", f"This file is larger than {cfg.max_upload_mb} MB.")
     if not data:
         raise ApiError(400, "VALIDATION_ERROR", "The file is empty.", {"field": "file"})
+    expires = datetime.now(timezone.utc) + timedelta(days=cfg.doc_retention_days) if cfg.doc_retention_days > 0 else None
     try:
+        kind = sniff(data)
+        if purpose == "chat" and cfg.ocr_enabled and cfg.ocr_defer_chat and kind in ("jpg", "png"):
+            # A photo in chat: accept it now, read it when the question is sent (the chat shows "Analyzing the image…"), so the upload is instant.
+            check_image(data, cfg)
+            name, original_size = _safe_name(file.filename), len(data)
+            data, kind = compact_image(data, kind, cfg)
+            row = state.db.one(
+                "insert into app.documents (user_id, name, file_type, size_bytes, pages, purpose, text, char_count, status, raw, expires_at) "
+                "values (%s, %s, %s, %s, 1, 'chat', '', 0, 'pending', %s, %s) returning id", [uid, name, kind, original_size, data, expires])
+            return {"id": str(row["id"]), "name": name, "sizeBytes": original_size, "fileType": kind, "pages": 1, "ocrUsed": False, "urdu": False,
+                    "truncated": False, "charCount": 0, "pending": True, "warnings": [], "expiresAt": iso(expires)}
         res = extract(data, cfg)
     except ExtractError as e:
         raise ApiError(e.status, e.code, e.message)
 
-    expires = datetime.now(timezone.utc) + timedelta(days=cfg.doc_retention_days) if cfg.doc_retention_days > 0 else None
     row = state.db.one(
         "insert into app.documents (user_id, name, file_type, size_bytes, pages, purpose, text, char_count, ocr_pages, ocr_conf, truncated, expires_at) "
         "values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) returning id, created_at",
@@ -82,6 +93,8 @@ def create_analysis(body: AnalysisIn, user: dict = Depends(current_user), state:
     if len(ids) > cfg.analysis_max_docs:
         raise ApiError(422, "UNPROCESSABLE", f"You can analyse up to {cfg.analysis_max_docs} documents at once.")
     owned = docs_service.load_owned(state.db, uid, ids, with_text=False)               # 404 for anything missing or not theirs
+    if any(d.get("status") == "pending" for d in owned):
+        raise ApiError(422, "UNPROCESSABLE", "That photo has not been read yet. Upload it again on the Analysis page.")
     label = owned[0]["name"] + (f" (+{len(owned) - 1} more)" if len(owned) > 1 else "")
     if not state.engine.enabled:
         raise ApiError(503, "UNAVAILABLE", "Document analysis is switched off on this server.")

@@ -15,17 +15,18 @@ import time
 from datetime import datetime, timezone
 from typing import Callable
 
+from . import lang as langmod
 from . import prompts
 from .confidence import score as confidence_score
 from .llm import BudgetExceeded, CacheMiss, DeepSeek, LLMError, parse_json
 from .pii import scrub
 from .plainspeak import plain, plain_answer
 from .richtext import cited_ids, strip_markup, to_segments
+from .strings import tr
 from .verify import verify
 
-DISCLAIMER = "This is general legal information based on the Pakistani laws available to LegalMate, not legal advice. Laws change: please verify with a qualified lawyer."
-EMERGENCY = ("If you or someone else is in immediate danger, call Police on 15 or Rescue on 1122 now. "
-             "(Numbers shown for Pakistan; confirm local helplines in the Emergency section.)")
+DISCLAIMER = tr("disclaimer", "en")          # the English texts, kept as constants; every message uses tr(key, language)
+EMERGENCY = tr("emergency", "en")
 GREETING = re.compile(r"^\s*(hi|hello|hey|salam|salaam|assalam[\w\s\-']*|aoa|good\s(morning|afternoon|evening)|thanks?(\s+you)?|thank\s*you|shukriya|jazak\w*)\W*$", re.I)
 INTENTS = {"legal_question", "follow_up", "document_question", "greeting", "out_of_scope", "unclear"}
 TAGS = {"Property Law", "Family Law", "Criminal Law", "Labour & Employment", "Contract Law", "Consumer Rights",
@@ -78,14 +79,23 @@ class ActRouter:
         return sorted({d for alias, d in self.aliases if alias in t})
 
 
-BUSY_TEXT = "LegalMate has reached its answer limit for today. Please try again tomorrow."
+BUSY_TEXT = tr("busy", "en")
 
 
-def _failure_text(e: Exception, fallback: str) -> tuple[str, str]:
+def _failure_text(e: Exception, fallback_key: str, lang: str = "en") -> tuple[str, str]:
     """(reason, text) for a failed model call: a spent budget is reported as 'busy', anything else as 'error'."""
     if isinstance(e, BudgetExceeded):
-        return "busy", BUSY_TEXT
-    return "error", fallback
+        return "busy", tr("busy", lang)
+    return "error", tr(fallback_key, lang)
+
+
+def _has_urdu(text: str) -> bool:
+    return bool(langmod._URDU_LETTER.search(text or ""))
+
+
+def _in_language(text: str, lang: str) -> bool:
+    """Is a short model-written text in the script the user asked for? (Urdu script for 'ur', Latin letters otherwise.)"""
+    return _has_urdu(text) == (lang == "ur")
 
 
 def _now() -> str:
@@ -156,9 +166,10 @@ class ChatEngine:
         return out
 
     # ------------------------------------------------------------------ the whole turn
-    def respond(self, text: str, *, history: list[dict] | None = None, profile: dict | None = None, language: str = "en",
+    def respond(self, text: str, *, history: list[dict] | None = None, profile: dict | None = None, language: str = "auto",
                 attachment_text: str | None = None, on_status: Callable[[str], None] | None = None) -> dict:
-        """`on_status` (optional) is called with 'understanding', 'searching_sources', 'writing_answer' as the turn progresses."""
+        """`on_status` (optional) is called with 'understanding', 'searching_sources', 'writing_answer' as the turn progresses.
+        `language`: "auto" (answer in the language the user wrote in), or "en" / "ur" / "ur-roman" to force one."""
         status = on_status or (lambda s: None)
         t0 = time.time()
         history = history or []
@@ -167,25 +178,29 @@ class ChatEngine:
         if removed:
             meta["pii_removed"] = removed
         hist = [{"role": h["role"], "content": scrub(h["content"])[0], "kind": h.get("kind")} for h in history]
+        lang = langmod.resolve(language, clean, hist)               # by code, from what was typed; the analyser's guess refines it below
 
         if GREETING.match(clean) and not attachment_text:
-            return self._done(self._info("greeting", "Hello! I can explain Pakistani law in plain language, with the sources I used. "
-                                                      "Ask me about tenancy, family, criminal, labour, contract or property matters, or upload a document."), meta, t0, None)
+            return self._done(self._info("greeting", tr("greeting", lang), lang=lang), meta, t0, None)
         status("understanding")
         try:
-            analysis = self.analyse(clean, hist, profile, language, bool(attachment_text))
+            analysis = self.analyse(clean, hist, profile, lang, bool(attachment_text))
         except (BudgetExceeded, CacheMiss, LLMError) as e:
-            reason, text = _failure_text(e, "I can't answer right now. Please try again in a few minutes.")
-            return self._done(self._info(reason, text), meta, t0, None, error=f"{type(e).__name__}: {e}")
+            reason, text = _failure_text(e, "error", lang)
+            return self._done(self._info(reason, text, lang=lang), meta, t0, None, error=f"{type(e).__name__}: {e}")
+        lang = langmod.resolve(language, clean, hist, analysis.get("language"))
+        meta["language"] = lang
         meta["analysis"] = {k: analysis[k] for k in ("intent", "language", "jurisdiction", "emergency", "needs_clarification", "search_queries", "tag")}
         conv = {"title": analysis["title"], "tag": analysis["tag"]}
-        emergency = EMERGENCY if analysis["emergency"] else None
+        emergency = tr("emergency", lang) if analysis["emergency"] else None
 
         if analysis["intent"] in ("greeting", "out_of_scope", "unclear"):
-            reply = plain(analysis.get("reply") or "") or "I can only help with questions about Pakistani law. Could you tell me about your legal question?"
-            return self._done(self._info(analysis["intent"], reply, emergency), meta, t0, conv)
+            reply = plain(analysis.get("reply") or "")
+            if not reply or not _in_language(reply, lang):         # the model answered in another language than the user's: use the fixed text
+                reply = tr("greeting" if analysis["intent"] == "greeting" else "out_of_scope", lang)
+            return self._done(self._info(analysis["intent"], reply, emergency, lang=lang), meta, t0, conv)
         if analysis["needs_clarification"]:
-            return self._done(self._clarify(analysis["questions"]), meta, t0, conv)
+            return self._done(self._clarify(analysis["questions"], lang), meta, t0, conv)
 
         jur = norm_jurisdiction(analysis["jurisdiction"]) or norm_jurisdiction((profile or {}).get("province")) \
             or norm_jurisdiction((profile or {}).get("city"))
@@ -194,9 +209,8 @@ class ChatEngine:
         passages = self.retrieve(analysis["search_queries"], jur)
         meta["retrieval_seconds"] = round(time.time() - t1, 3)
         if not passages:
-            return self._done(self._info("no_source", "I could not find a specific law that matches this question. "
-                                                      "Please try rephrasing it, or ask a qualified lawyer."), meta, t0, conv)
-        answer_lang = "ur" if (language == "ur" or analysis.get("language") == "ur") else "en"
+            return self._done(self._info("no_source", tr("no_source", lang), lang=lang), meta, t0, conv)
+        answer_lang = lang
         doc_note = scrub(attachment_text or "")[0][: self.doc_chars]          # identity numbers in a document never leave
         msgs = prompts.answer_messages(clean, history=hist, profile_line=profile_line(profile), answer_language=answer_lang,
                                        passages=passages, document_note=doc_note)
@@ -204,8 +218,8 @@ class ChatEngine:
         try:
             ans = parse_json(self.llm.complete(msgs, tag="answer", max_tokens=1400).text)
         except (BudgetExceeded, CacheMiss, LLMError, ValueError) as e:
-            reason, text = _failure_text(e, "I could not prepare an answer just now. Please try again.")
-            return self._done(self._info(reason, text), meta, t0, conv, error=f"{type(e).__name__}: {e}")
+            reason, text = _failure_text(e, "error_answer", lang)
+            return self._done(self._info(reason, text, lang=lang), meta, t0, conv, error=f"{type(e).__name__}: {e}")
         if self.rescue_enabled and not bool(ans.get("sufficient", True)):
             ans, passages = self._second_look(clean, ans, passages, analysis, hist, profile, answer_lang, jur, doc_note, status, meta)
         message = self._build_answer(ans, passages, answer_lang, emergency, meta)
@@ -240,6 +254,9 @@ class ChatEngine:
         rep = verify(ans, passages)
         meta["verify"] = {"issues": rep.issues, "cited_fraction": round(rep.cited_fraction, 2), "quote_rate": round(rep.quote_rate, 2),
                           "unverified_sections": rep.unverified_sections, "unverified_numbers": rep.unverified_numbers}
+        body = f"{ans.get('intro', '')} {ans.get('law', '')}"
+        if body.strip() and not _in_language(body, lang):            # recorded, so a drift from the user's language shows in the logs
+            meta["language_mismatch"] = lang
         valid = set(rep.cited_ids)
         order: list[int] = []                                   # renumber sources by first appearance: 1, 2, 3...
         for f in [ans.get("intro", ""), ans.get("law", "")] + list(ans.get("steps") or []) + [ans.get("important", ""), ans.get("outro", "")]:
@@ -259,9 +276,9 @@ class ChatEngine:
             q = rep.quotes.get(old, {"quote": "", "verified": False})
             note = None
             if p.get("legal_status") == "repealed":
-                note = f"Marked as repealed in {p.get('status_scope') or 'some jurisdictions'}. Check the current law before relying on it."
+                note = tr("note_repealed", lang, scope=p.get("status_scope") or tr("some_places", lang))
             elif p.get("amended_by_titles"):
-                note = "Amended later by " + "; ".join(p["amended_by_titles"][:3]) + ". The wording below may have changed: check the current law."
+                note = tr("note_amended", lang, titles="; ".join(p["amended_by_titles"][:3]))
             sources.append({
                 "id": remap[old], "title": p["act_title"],
                 "section": (p["section_label"] + (f" - {p['heading']}" if p.get("heading") else ""))[:110],
@@ -276,24 +293,24 @@ class ChatEngine:
             important = (emergency + " " + important).strip()
         return {
             "role": "assistant", "kind": "answer", "createdAt": _now(), "language": lang, "sufficient": sufficient,
-            "intro": to_segments(fix(ans.get("intro", "")), ids), "lawTitle": ans.get("law_title") or "What the law says",
+            "intro": to_segments(fix(ans.get("intro", "")), ids), "lawTitle": tr("law_title", lang),
             "law": to_segments(fix(ans.get("law", "")), ids),
             "steps": [to_segments(fix(s), ids) for s in (ans.get("steps") or [])][:5],
             "important": important, "outro": strip_markup(fix(ans.get("outro", ""))),
             "sources": sources, "confidence": conf, "followUps": [str(x) for x in (ans.get("follow_ups") or [])][:2],
-            "disclaimer": DISCLAIMER, "feedback": None,
+            "disclaimer": tr("disclaimer", lang), "feedback": None,
             "content": strip_markup(fix(ans.get("intro", "") + " " + ans.get("law", ""))),
         }
 
     @staticmethod
-    def _info(reason: str, text: str, emergency: str | None = None) -> dict:
-        return {"role": "assistant", "kind": "info", "reason": reason, "createdAt": _now(),
+    def _info(reason: str, text: str, emergency: str | None = None, lang: str = "en") -> dict:
+        return {"role": "assistant", "kind": "info", "reason": reason, "createdAt": _now(), "language": lang,
                 "text": ((emergency + " ") if emergency else "") + text, "content": text, "confidence": None}
 
     @staticmethod
-    def _clarify(questions: list[dict]) -> dict:
-        intro = "To give you accurate guidance I need a little more information. Tap an option or type your own answer:"
-        return {"role": "assistant", "kind": "clarify", "createdAt": _now(), "intro": intro, "questions": questions, "confidence": None,
+    def _clarify(questions: list[dict], lang: str = "en") -> dict:
+        intro = tr("clarify_intro", lang)
+        return {"role": "assistant", "kind": "clarify", "createdAt": _now(), "language": lang, "intro": intro, "questions": questions, "confidence": None,
                 "content": intro + " " + " ".join(q["text"] for q in questions)}
 
     def _done(self, message: dict, meta: dict, t0: float, conv: dict | None, error: str | None = None) -> dict:

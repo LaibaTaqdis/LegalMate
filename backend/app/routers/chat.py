@@ -96,7 +96,7 @@ def send_message(conv_id: UUID, body: MessageIn, request: Request, user: dict = 
             raise ApiError(429, "RATE_LIMITED", "LegalMate is still answering your previous question. Please wait for it to finish.")
         state.inflight.add(uid)
 
-    language = body.language or ("ur" if request.headers.get("accept-language", "").lower().startswith("ur") else "en")
+    language = body.language or "auto"          # the interface language does not decide the answer language: what the user writes does
     events: queue.Queue = queue.Queue()
 
     def status(stage: str) -> None:

@@ -15,6 +15,7 @@ import { chatService } from '../api/services/chatService'
 import { ACCEPTED_TYPES, MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from '../api/services/documentService'
 import { TOPIC_CARDS } from '../api/mocks/chat'
 import { formatDate, formatTime } from '../utils/format'
+import { ANSWER_LANGS, answerText } from '../utils/answerText'
 
 /* ---------------- normalisers: accept both mock shapes and API shapes ---------------- */
 const isToday = d => new Date(d).toDateString() === new Date().toDateString()
@@ -179,9 +180,10 @@ function ConversationList({ activeId }) {
 
 /* ---------------- Composer ---------------- */
 function Composer({ onSend, placeholder, big, disabled }) {
-  const { toast, language } = useUI()
+  const { toast } = useUI()
   const [text, setText] = useState('')
-  const [lang, setLang] = useState(language === 'اردو' ? 'اردو' : 'English')   // answer language follows the interface language; the user can switch it per message
+  const [lang, setLang] = useState('auto')   // 'auto' = answer in the language the question is written in (English, Urdu, Roman Urdu); the user can force one
+  const langLabel = (ANSWER_LANGS.find(l => l.value === lang) || ANSWER_LANGS[0]).label
   const [langOpen, setLangOpen] = useState(false)
   const [recording, setRecording] = useState(false)
   const [files, setFiles] = useState([]) // { id, name, uploading }
@@ -212,7 +214,7 @@ function Composer({ onSend, placeholder, big, disabled }) {
     onSend(text.trim() || `Please review the attached file: ${files[0].name}`, {
       attachmentIds: files.map(f => f.id),
       attachments: files.map(f => ({ id: f.id, name: f.name })),
-      language: lang === 'English' ? 'en' : 'ur',
+      language: lang,
     })
     setText('')
     setFiles([])
@@ -233,10 +235,10 @@ function Composer({ onSend, placeholder, big, disabled }) {
         <button className="composer-tool" onClick={() => fileRef.current.click()}><Paperclip size={20} /> Attach</button>
         <button className={`composer-tool ${recording ? 'rec' : ''}`} onClick={() => { setRecording(r => !r); toast(recording ? 'Voice input stopped' : 'Listening… speak your question', 'info') }}><Mic size={20} /> {recording ? 'Listening…' : 'Voice'}</button>
         <div className="composer-lang" ref={langRef}>
-          <button className="composer-tool" onClick={() => setLangOpen(o => !o)}><Globe size={20} /> <span className={lang === 'اردو' ? 'urdu' : ''}>{lang}</span> <ChevronDown size={15} /></button>
+          <button className="composer-tool" title="Answer language" aria-label={`Answer language: ${langLabel}`} onClick={() => setLangOpen(o => !o)}><Globe size={20} /> <span className={lang === 'ur' ? 'urdu' : ''}>{langLabel}</span> <ChevronDown size={15} /></button>
           {langOpen && (
             <div className="popover popover-sm composer-lang-menu">
-              {['English', 'اردو'].map(l => <button key={l} className={`popover-item ${l === lang ? 'active' : ''}`} onClick={() => { setLang(l); setLangOpen(false) }}>{l}</button>)}
+              {ANSWER_LANGS.map(l => <button key={l.value} title={l.hint} className={`popover-item ${l.value === lang ? 'active' : ''}`} onClick={() => { setLang(l.value); setLangOpen(false) }}>{l.label}</button>)}
             </div>
           )}
         </div>
@@ -253,23 +255,24 @@ function Answer({ m, onCite, onPanel, panel, onAsk }) {
   const navigate = useNavigate()
   const [vote, setVote] = useState(m.feedback || null)
   const [saving, setSaving] = useState(false)
+  const T = answerText(m.language)
 
   const copy = () => {
     const text = [m.intro, m.law].flat().filter(x => typeof x === 'string').join('')
     navigator.clipboard?.writeText(text)
-    toast('Answer copied to clipboard')
+    toast(T.copied)
   }
   const rate = async v => {
     const prev = vote
     setVote(v)
     try {
       await chatService.feedback(m.id, v)
-      toast(v === 'up' ? 'Thanks for your feedback!' : 'Thanks - we’ll use this to improve.', v === 'up' ? 'success' : 'info')
+      toast(v === 'up' ? T.thanksUp : T.thanksDown, v === 'up' ? 'success' : 'info')
     } catch (e) { setVote(prev); toast(e.message, 'info') }
   }
   const save = async () => {
     setSaving(true)
-    try { await chatService.saveToVault(m.id); toast('Answer saved to your Legal Vault') } catch (e) { toast(e.message, 'info') } finally { setSaving(false) }
+    try { await chatService.saveToVault(m.id); toast(T.saved) } catch (e) { toast(e.message, 'info') } finally { setSaving(false) }
   }
 
   return (
@@ -277,13 +280,13 @@ function Answer({ m, onCite, onPanel, panel, onAsk }) {
       <span className="msg-bot-avatar"><img src="/assets/img/logo-mark-gold.png" alt="" /></span>
       <div className="msg-bot-body">
         <p className="msg-meta"><b>LegalMate</b> {m.time}</p>
-        <div className="answer">
+        <div className="answer" dir={m.language === 'ur' ? 'rtl' : 'ltr'} lang={m.language === 'ur' ? 'ur' : undefined}>
           <p><Rich parts={m.intro} onCite={onCite} /></p>
           {m.lawTitle && <h4><FileText size={20} /> {m.lawTitle}</h4>}
           {m.law && <p><Rich parts={m.law} onCite={onCite} /></p>}
           {m.steps?.length > 0 && (
             <>
-              <h4><ListChecks size={20} /> Steps you can take</h4>
+              <h4><ListChecks size={20} /> {T.steps}</h4>
               <ol className="answer-steps">
                 {m.steps.map((s, i) => <li key={i}><span>{i + 1}</span><p><Rich parts={s} onCite={onCite} /></p></li>)}
               </ol>
@@ -292,22 +295,22 @@ function Answer({ m, onCite, onPanel, panel, onAsk }) {
           {m.important && (
             <div className="answer-important">
               <AlertTriangle size={22} />
-              <div><b>Important</b><p>{m.important}</p></div>
+              <div><b>{T.important}</b><p>{m.important}</p></div>
             </div>
           )}
           {m.outro && <p>{m.outro}</p>}
         </div>
         <p className="msg-done">{m.doneTime}</p>
         {m.followUps?.length > 0 && (
-          <div className="followups" aria-label="Suggested follow-up questions">
+          <div className="followups" aria-label={T.followUps} dir={m.language === 'ur' ? 'rtl' : 'ltr'}>
             {m.followUps.map(q => <button key={q} className="followup" onClick={() => onAsk(q)}>{q}</button>)}
           </div>
         )}
         <div className="answer-actions">
-          <button className={`chip-btn chip-sources ${panel === 'sources' ? 'on' : ''}`} onClick={() => onPanel('sources')}><NotebookText size={16} /> Sources: {m.sources?.length || 0} <ChevronDown size={15} /></button>
-          {m.confidence && m.sources?.length > 0 && <button className={`chip-btn chip-conf ${m.confidence.score < 60 ? 'low' : ''} ${panel === 'confidence' ? 'on' : ''}`} onClick={() => onPanel('confidence')}><CheckCircle2 size={16} /> {m.confidence.score}% Confidence</button>}
-          <button className="chip-btn" onClick={save} disabled={saving}>{saving ? <Loader2 size={16} className="spin" /> : <Bookmark size={16} />} Save to Vault</button>
-          <button className="chip-btn" onClick={() => navigate(`/case-briefs/new?fromMessage=${encodeURIComponent(m.id)}`)}><FileText size={16} /> Create Case Brief</button>
+          <button className={`chip-btn chip-sources ${panel === 'sources' ? 'on' : ''}`} onClick={() => onPanel('sources')}><NotebookText size={16} /> {T.sources}: {m.sources?.length || 0} <ChevronDown size={15} /></button>
+          {m.confidence && m.sources?.length > 0 && <button className={`chip-btn chip-conf ${m.confidence.score < 60 ? 'low' : ''} ${panel === 'confidence' ? 'on' : ''}`} onClick={() => onPanel('confidence')}><CheckCircle2 size={16} /> {m.confidence.score}% {T.confidence}</button>}
+          <button className="chip-btn" onClick={save} disabled={saving}>{saving ? <Loader2 size={16} className="spin" /> : <Bookmark size={16} />} {T.save}</button>
+          <button className="chip-btn" onClick={() => navigate(`/case-briefs/new?fromMessage=${encodeURIComponent(m.id)}`)}><FileText size={16} /> {T.brief}</button>
         </div>
         <div className="answer-feedback">
           <button className={vote === 'up' ? 'on' : ''} onClick={() => rate('up')} aria-label="Helpful"><ThumbsUp size={19} /></button>
@@ -323,6 +326,7 @@ function Answer({ m, onCite, onPanel, panel, onAsk }) {
 /* ---------------- Clarifying questions and plain replies ---------------- */
 function Clarify({ m, onAsk, answered }) {
   const qs = m.questions || []
+  const T = answerText(m.language)
   const [picked, setPicked] = useState({})
   const ready = qs.length > 0 && qs.every(q => picked[q.id])
   const send = (map = picked) => onAsk(qs.map(q => `${q.text} ${map[q.id]}`).join(' '))
@@ -337,7 +341,7 @@ function Clarify({ m, onAsk, answered }) {
       <span className="msg-bot-avatar"><img src="/assets/img/logo-mark-gold.png" alt="" /></span>
       <div className="msg-bot-body">
         <p className="msg-meta"><b>LegalMate</b> {m.time}</p>
-        <div className="answer clarify">
+        <div className="answer clarify" dir={m.language === 'ur' ? 'rtl' : 'ltr'}>
           <p>{Array.isArray(m.intro) ? <Rich parts={m.intro} onCite={() => {}} /> : m.intro}</p>
           {qs.map(q => (
             <div key={q.id} className="clarify-q">
@@ -351,9 +355,9 @@ function Clarify({ m, onAsk, answered }) {
             </div>
           ))}
           {qs.length > 1 && !answered && (
-            <button className="btn btn-orange" disabled={!ready} onClick={() => send()}>Continue <ArrowRight size={16} /></button>
+            <button className="btn btn-orange" disabled={!ready} onClick={() => send()}>{T.carry} <ArrowRight size={16} /></button>
           )}
-          {!answered && <p className="clarify-hint">Or type your own answer below.</p>}
+          {!answered && <p className="clarify-hint">{T.typeOwn}</p>}
         </div>
       </div>
     </div>
@@ -366,7 +370,7 @@ function PlainReply({ m }) {
       <span className="msg-bot-avatar"><img src="/assets/img/logo-mark-gold.png" alt="" /></span>
       <div className="msg-bot-body">
         <p className="msg-meta"><b>LegalMate</b> {m.time}</p>
-        <div className="answer"><p>{m.text}</p></div>
+        <div className="answer" dir={m.language === 'ur' ? 'rtl' : 'ltr'}><p>{m.text}</p></div>
       </div>
     </div>
   )
@@ -504,7 +508,7 @@ export default function Chat() {
     seen.current.len = messages.length
   }, [id, messages.length, typing])
 
-  const STAGES = { thinking: 'Reading your question…', searching_sources: 'Searching Pakistani laws…', searching_deeper: 'Looking more closely…', writing_answer: 'Writing and checking the answer…' }
+  const STAGES = { thinking: 'Reading your question…', reading_image: 'Analyzing the image…', searching_sources: 'Searching Pakistani laws…', searching_deeper: 'Looking more closely…', writing_answer: 'Writing and checking the answer…' }
   const reply = async (convId, text, opts = {}) => {
     setTyping(true)
     setStage(STAGES.thinking)

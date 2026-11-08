@@ -19,6 +19,7 @@ import io
 import logging
 import re
 import threading
+import time
 import zipfile
 from dataclasses import dataclass, field
 
@@ -102,7 +103,55 @@ def _latin_get():
             except ImportError as e:                                   # pragma: no cover - depends on the install
                 raise ExtractError(503, "UNAVAILABLE", "Reading scanned documents is not available on this server.") from e
             _latin = RapidOCR()
+            _bucket_recognizer(_latin)
     return _latin
+
+
+REC_WIDTH_STEP = 160                          # text-line crops are padded to a multiple of this many pixels (see _bucket_recognizer)
+
+
+def _bucket_recognizer(reader) -> None:
+    """Make the English reader fast on a photo of a size it has not seen before.
+
+    Its recognizer pads every batch of text lines to a width that depends on the longest line in the batch, so almost every new picture
+    produces new tensor shapes, and the runtime pays a one-off set-up cost for each shape: measured 12 s for the first reading of a
+    picture, 3-4 s for the second reading of the same one. Rounding the width up to a multiple of 160 px (and reading one line at a
+    time) leaves a handful of shapes in total, so after the first few lines every picture is fast. Extra white padding on the right
+    does not change what the recognizer reads (measured: same text, same line count)."""
+    try:
+        rec = reader.text_rec
+        original = rec.resize_norm_img
+
+        def bucketed(img, max_wh_ratio, _orig=original):
+            width = max(REC_WIDTH_STEP, -(-int(48 * max_wh_ratio) // REC_WIDTH_STEP) * REC_WIDTH_STEP)
+            return _orig(img, (width + 0.5) / 48)
+
+        rec.resize_norm_img = bucketed
+        rec.rec_batch_num = 1
+    except Exception:                                                  # noqa: BLE001 - a different version of the package: keep its own behaviour
+        log.warning("could not set up fixed-width text recognition; images will read more slowly the first time", exc_info=True)
+
+
+def warm(cfg: DocSettings) -> float:
+    """Load both readers and run them once, so the first user upload does not pay for model loading and first-run set-up.
+    The English recognizer is also run once per width it will meet (a few seconds in total). Returns the seconds it took."""
+    import numpy as np
+    from PIL import Image, ImageDraw
+
+    t0 = time.time()
+    img = Image.new("RGB", (900, 120), "white")
+    ImageDraw.Draw(img).text((20, 40), "LegalMate OCR warm-up 123", fill="black")
+    ocr_image(img, cfg)
+    reader = _latin_get()
+    with _slots_get(cfg):
+        for width in range(REC_WIDTH_STEP, 1601, REC_WIDTH_STEP):       # every width a normal line is rounded to
+            reader.text_rec([np.full((48, width, 3), 255, dtype=np.uint8)])
+    if "ur" in cfg.ocr_langs:
+        urdu = _urdu_get(cfg)
+        if urdu is not None:                                            # its text detector and recognizer are created on the first line it sees
+            with _slots_get(cfg):
+                urdu(np.array(img))
+    return time.time() - t0
 
 
 def _urdu_get(cfg: DocSettings):
@@ -150,17 +199,38 @@ def _bbox(box) -> tuple[float, float, float, float]:
 
 
 def _ink_outside(gray, lines: list[_Line]) -> float:
-    """Share of the page's dark pixels that lie outside every line the English reader found."""
-    import numpy as np
+    """Share of the page's ink that lies outside every line the English reader found.
 
-    ink = gray < 140
+    Ink is a pixel clearly darker than its own neighbourhood (strokes of writing), not a pixel below a fixed grey level: on a phone photo
+    a shadow, a dark desk or an uneven light would otherwise count as unread writing and start the slow Urdu reader on an English page
+    (measured: 5-7 s wasted on every photo). The check runs on a reduced copy, so it costs a few milliseconds."""
+    import numpy as np
+    from PIL import Image, ImageFilter
+
+    h, w = gray.shape
+    scale = min(1.0, 1400 / max(h, w))
+    small = Image.fromarray(gray)
+    if scale < 1.0:
+        small = small.resize((max(1, round(w * scale)), max(1, round(h * scale))), Image.BILINEAR)
+    sm = np.asarray(small, dtype=np.int16)
+    local = np.asarray(small.filter(ImageFilter.BoxBlur(max(6, round(22 * scale)))), dtype=np.int16)
+    ink = (local - sm) > 38
+    sh, sw = ink.shape
+    try:                                                    # long structures are not writing: the paper's edge, table rules, page borders
+        import cv2
+        _, labels, stats, _ = cv2.connectedComponentsWithStats(ink.astype(np.uint8), connectivity=8)
+        long_ = (stats[:, cv2.CC_STAT_WIDTH] > 0.2 * max(sh, sw)) | (stats[:, cv2.CC_STAT_HEIGHT] > 0.2 * max(sh, sw))
+        long_[0] = False
+        ink &= ~long_[labels]
+    except Exception:                                       # noqa: BLE001 - OpenCV comes with the OCR packages; without it the plain measure is used
+        pass
     total = int(ink.sum())
-    if total < 400:
+    if total < 150:
         return 0.0
     mask = np.zeros(ink.shape, dtype=bool)
-    h, w = ink.shape
+    pad = 6 * scale
     for ln in lines:
-        mask[max(0, int(ln.y0) - 6): min(h, int(ln.y1) + 6), max(0, int(ln.x0) - 6): min(w, int(ln.x1) + 6)] = True
+        mask[max(0, int(ln.y0 * scale - pad)): min(sh, int(ln.y1 * scale + pad) + 1), max(0, int(ln.x0 * scale - pad)): min(sw, int(ln.x1 * scale + pad) + 1)] = True
     return float(ink[~mask].sum() / total)
 
 
@@ -328,6 +398,45 @@ def _read_docx(data: bytes, cfg: DocSettings) -> Extracted:
     res = Extracted(text, pages, "docx")
     res.urdu = arabic_fraction(text) > 0.3
     return res
+
+
+def check_image(data: bytes, cfg: DocSettings) -> None:
+    """The quick part of reading a photo, with no OCR: is it a picture that can be opened, and not absurdly large? Raises ExtractError.
+    Used to accept a chat photo at once and read it later."""
+    from PIL import Image
+
+    Image.MAX_IMAGE_PIXELS = cfg.max_image_pixels
+    try:
+        img = Image.open(io.BytesIO(data))
+        if img.width * img.height > cfg.max_image_pixels:
+            raise ExtractError(422, "TOO_LARGE_IMAGE", "This image is too large to read. Please upload a smaller photo.")
+        img.verify()
+    except ExtractError:
+        raise
+    except Exception as e:                                                             # includes DecompressionBombError
+        raise ExtractError(422, "UNREADABLE", "This image could not be opened. It may be damaged.") from e
+
+
+def compact_image(data: bytes, kind: str, cfg: DocSettings) -> tuple[bytes, str]:
+    """A big phone photo made smaller before it is stored for reading later: at most 3000 px on the long side, as a JPEG (a 4-8 MB photo
+    becomes about 1 MB, so the upload to the database is quick). Reading is unaffected: text is just as readable at 3000 px (measured:
+    same text at 3000 and 4000 px). Small pictures are kept as they are."""
+    from PIL import Image, ImageOps
+
+    if len(data) <= 1_000_000:
+        try:
+            if max(Image.open(io.BytesIO(data)).size) <= 3000:
+                return data, kind
+        except Exception:                                                              # noqa: BLE001 - check_image has already accepted it
+            return data, kind
+    try:
+        img = ImageOps.exif_transpose(Image.open(io.BytesIO(data)))
+        img.thumbnail((3000, 3000))
+        out = io.BytesIO()
+        img.convert("RGB").save(out, "JPEG", quality=88)
+        return out.getvalue(), "jpg"
+    except Exception:                                                                  # noqa: BLE001 - keep the original rather than fail the upload
+        return data, kind
 
 
 def _read_image(data: bytes, file_type: str, cfg: DocSettings) -> Extracted:

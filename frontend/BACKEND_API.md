@@ -35,7 +35,7 @@ Limits that exist today: 30 questions per hour and 100 per day per user, one ans
 - Field names are **camelCase**.
 - Dates are **ISO 8601** strings. Date-only values use `YYYY-MM-DD` (e.g. `dueDate`). The UI formats them for display, so send raw values, not labels.
 - File sizes are in bytes (`sizeBytes`). Money is a plain number in PKR.
-- The frontend sends `Accept-Language: en` or `ur`, based on the language picker. Use it for AI answers and any localised text.
+- The frontend sends `Accept-Language: en` or `ur`, based on the interface language picker. It does NOT decide the chat answer language: that follows what the user writes (see `language` on the chat message request).
 
 ### 1.2 Authentication
 - JWT bearer tokens: `Authorization: Bearer <accessToken>`.
@@ -393,7 +393,9 @@ Creates the empty conversation with a provisional `title` (a topic card's own ti
 ### POST `/chat/conversations/:id/messages` (SSE stream)
 ```json
 // request
-{ "content": "Can my landlord increase rent?", "attachmentIds": ["doc_1"], "language": "en|ur" }
+{ "content": "Can my landlord increase rent?", "attachmentIds": ["doc_1"], "language": "auto|en|ur|ur-roman" }
+// language: omitted or "auto" = answer in the language the question is written in (English, Urdu script, or Roman Urdu = Urdu in Latin letters).
+// "en" / "ur" / "ur-roman" force one. The answer message carries "language" (en|ur|ur-roman); the frontend uses it for headings and direction.
 ```
 The response is `Content-Type: text/event-stream`:
 ```

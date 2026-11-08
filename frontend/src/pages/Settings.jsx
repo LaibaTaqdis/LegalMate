@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
-  Bell, Camera, ChevronRight, Database, Download, Eye, EyeOff, Globe, KeyRound, Laptop, Loader2, Lock, LogOut,
+  Sparkles, Bell, Camera, ChevronRight, Database, Download, Eye, EyeOff, Globe, KeyRound, Laptop, Loader2, Lock, LogOut,
   Mail, MapPin, Monitor, Phone, Shield, ShieldCheck, Smartphone, Trash2, User, IdCard, Link2, Palette, Moon, Sun
 } from 'lucide-react'
 import { Breadcrumb, Modal, Select, Toggle } from '../components/common'
@@ -11,10 +11,12 @@ import { ErrorState, Skeleton } from '../components/States'
 import { useAuth } from '../context/AuthContext'
 import { useQuery } from '../hooks/useApi'
 import { settingsService } from '../api/services/settingsService'
+import { profileService } from '../api/services/profileService'
 import { formatBytes } from '../utils/format'
 
 const TABS = [
   { k: 'profile', icon: User, label: 'Profile', sub: 'Personal information' },
+  { k: 'personalise', icon: Sparkles, label: 'Personalise my answers', sub: 'Location, role, interests' },
   { k: 'security', icon: Shield, label: 'Account & Security', sub: 'Password, 2FA, sessions' },
   { k: 'notifications', icon: Bell, label: 'Notifications', sub: 'Email, SMS, WhatsApp' },
   { k: 'language', icon: Globe, label: 'Language & Region', sub: 'Language, date format' },
@@ -36,11 +38,20 @@ function Row({ title, sub, children }) {
 
 const CardSkeleton = () => <div className="card st-card"><Skeleton w={200} h={22} /><Skeleton h={160} style={{ marginTop: 16 }} /></div>
 
+const LANG_LABEL = { en: 'English', ur: 'اردو (Urdu)', both: 'English and Urdu' }
+/** The saved onboarding answers as label / value rows; empty answers show as "Not set". */
+const answerRows = p => [
+  ['Province or territory', p.province], ['City', p.city], ['I am a…', p.userType], ['Work status', p.employmentStatus],
+  ['In my legal matter I am…', (p.roles || []).join(', ')], ['Age', p.ageBand], ['Marital status', p.maritalStatus],
+  ['Answer me in', LANG_LABEL[p.language] || p.language], ['Topics I care about', (p.interests || []).join(', ')],
+]
+
 export default function Settings() {
   const navigate = useNavigate()
   const { toast, language, setLanguage } = useUI()
   const { user, logout, updateUser } = useAuth()
-  const [tab, setTab] = useState('profile')
+  const [params] = useSearchParams()
+  const [tab, setTab] = useState(TABS.some(t => t.k === params.get('tab')) ? params.get('tab') : 'profile')     // /settings?tab=personalise opens that tab
   const [profile, setProfile] = useState(null)
   const [savingProfile, setSavingProfile] = useState(false)
   const [showPw, setShowPw] = useState(false)
@@ -52,6 +63,7 @@ export default function Settings() {
 
   const profileQ = useQuery(signal => settingsService.getProfile(signal), [])
   const prefs = useQuery(signal => settingsService.getPreferences(signal), [])
+  const answers = useQuery(signal => profileService.get(signal), [], { enabled: tab === 'personalise' })
   const security = useQuery(signal => settingsService.getSecurity(signal), [], { enabled: tab === 'security' })
   const sessions = useQuery(signal => settingsService.listSessions(signal), [], { enabled: tab === 'security' })
   const storage = useQuery(signal => settingsService.getStorage(signal), [], { enabled: tab === 'privacy' })
@@ -173,6 +185,21 @@ export default function Settings() {
               <div className="st-actions">
                 <button className="btn btn-outline btn-lg" onClick={() => { setProfile(profileQ.data); toast('Changes discarded', 'info') }}>Cancel</button>
                 <button className="btn btn-orange btn-lg" onClick={saveProfile} disabled={savingProfile}>{savingProfile && <Loader2 size={18} className="spin" />} Save Changes</button>
+              </div>
+            </div>
+          ))}
+
+          {tab === 'personalise' && (!answers.data ? (answers.error ? <ErrorState error={answers.error} onRetry={answers.reload} /> : <CardSkeleton />) : (
+            <div className="card st-card">
+              <div className="st-card-head"><h2>Personalise my answers</h2><p>A few facts about your situation help LegalMate pick the right laws for where you live and what you do. They never include your name, CNIC, phone or email, and you can change them any time.</p></div>
+              {!answers.data.completed && (
+                <p className="st-note"><Sparkles size={18} /> You haven’t filled this in yet, so answers are general. It takes about a minute and every question is optional.</p>
+              )}
+              {answers.data.completed && answerRows(answers.data).map(([label, value]) => (
+                <Row key={label} title={label}><span className={value ? 'st-answer' : 'st-answer unset'} dir="auto">{value || 'Not set'}</span></Row>
+              ))}
+              <div className="st-actions">
+                <button className="btn btn-orange btn-lg" onClick={() => navigate('/profile-setup?from=settings')}><Sparkles size={18} /> {answers.data.completed ? 'Edit my answers' : 'Personalise my answers'}</button>
               </div>
             </div>
           ))}
