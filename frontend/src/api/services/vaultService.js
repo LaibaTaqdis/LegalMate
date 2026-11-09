@@ -1,112 +1,96 @@
-import { api, download, upload } from '../client'
-import { USE_MOCKS } from '../config'
+import { api } from '../client'
+import { isMock } from '../config'
 import { EP } from '../endpoints'
-import { mock, mockDownload, uid } from '../mock'
+import { mock, uid } from '../mock'
 import { vaultDb } from '../mocks/vault'
 
-const folderName = id => vaultDb.folders.find(f => f.id === id)?.name
-const withFolder = d => ({ ...d, folderName: folderName(d.folderId) })
+const MOCK = () => isMock('vault')
 
 /* ---------- mock implementations (mirror the real API's behaviour) ---------- */
-function mockList({ category = 'all', folderId, q, status, sort = 'updated_desc' }) {
-  let list = vaultDb.documents
-  if (q) list = list.filter(d => d.name.toLowerCase().includes(q.toLowerCase()))
-  if (category === 'favourites') list = list.filter(d => d.favourite)
-  else if (category === 'shared') list = list.slice(1, 3)
-  else if (category === 'trash') list = vaultDb.trash
-  else if (category !== 'all') list = list.filter(d => d.category === category)
-  if (folderId) list = list.filter(d => d.folderId === folderId)
-  if (status) list = list.filter(d => d.status === status)
-  const sorted = [...list].sort({
-    updated_desc: (a, b) => b.updatedAt.localeCompare(a.updatedAt),
-    updated_asc: (a, b) => a.updatedAt.localeCompare(b.updatedAt),
-    name_asc: (a, b) => a.name.localeCompare(b.name),
-    name_desc: (a, b) => b.name.localeCompare(a.name),
-  }[sort])
-  const unfiltered = category === 'all' && !folderId && !q && !status
-  return { items: sorted.map(withFolder), total: unfiltered ? vaultDb.totalDocuments : sorted.length, page: 1, pageSize: 50 }
+const live = i => !i.trashedAt
+function counts() {
+  const all = vaultDb.items
+  return { all: all.filter(live).length, answer: all.filter(i => live(i) && i.kind === 'answer').length, analysis: all.filter(i => live(i) && i.kind === 'analysis').length,
+    brief: 0, favourites: all.filter(i => live(i) && i.favourite).length, trash: all.filter(i => !live(i)).length }
 }
-
-function mockUpdate(id, patch) {
-  const d = vaultDb.documents.find(x => x.id === id)
-  if (d) Object.assign(d, patch, { updatedAt: new Date().toISOString() })
-  return withFolder(d)
+function mockList({ category = 'all', q, sort = 'updated_desc' }) {
+  let list = vaultDb.items.filter(category === 'trash' ? i => !live(i) : live)
+  if (category === 'favourites') list = list.filter(i => i.favourite)
+  else if (['answer', 'analysis', 'brief'].includes(category)) list = list.filter(i => i.kind === category)
+  if (q) list = list.filter(i => (i.title + ' ' + i.summary).toLowerCase().includes(q.toLowerCase()))
+  const cmp = { updated_desc: (a, b) => b.updatedAt.localeCompare(a.updatedAt), updated_asc: (a, b) => a.updatedAt.localeCompare(b.updatedAt),
+    name_asc: (a, b) => a.title.localeCompare(b.title), name_desc: (a, b) => b.title.localeCompare(a.title) }[sort]
+  const items = [...list].sort(cmp).map(({ content, ...rest }) => rest)
+  return { items, total: items.length, page: 1, pageSize: 24, counts: counts() }
 }
+const find = id => vaultDb.items.find(i => i.id === id)
+const touch = (i, patch = {}) => Object.assign(i, patch, { updatedAt: new Date().toISOString() })
+const log = (id, action) => { vaultDb.activity[id] = [{ action, createdAt: new Date().toISOString() }, ...(vaultDb.activity[id] || [])] }
 
 export const vaultService = {
-  /** -> { storage: { usedBytes, quotaBytes }, counts: { all, Contracts, ..., favourites, shared, trash } } */
-  getStats: signal => (USE_MOCKS
-    ? mock({ storage: vaultDb.storage, counts: { ...vaultDb.counts, favourites: vaultDb.documents.filter(d => d.favourite).length + 2 } })
-    : api.get(EP.vault.stats, { signal })),
+  /** -> { counts: { all, answer, analysis, brief, favourites, trash } } */
+  getStats: signal => (MOCK() ? mock({ counts: counts() }, 150) : api.get(EP.vault.stats, { signal })),
 
-  /** -> { items: Folder[] } */
-  listFolders: signal => (USE_MOCKS ? mock({ items: vaultDb.folders }) : api.get(EP.vault.folders, { signal })),
-  createFolder: ({ name, color = '#0ea5e9' }) => {
-    if (!USE_MOCKS) return api.post(EP.vault.folders, { name, color })
-    const f = { id: uid('fld'), name, color, fileCount: 0 }
-    vaultDb.folders.push(f)
-    return mock(f, 150)
+  /** filters: { category: all|answer|analysis|brief|favourites|trash, q, sort: updated_desc|updated_asc|name_asc|name_desc, page, pageSize }
+   *  -> { items: SavedItem[], total, page, pageSize, counts } */
+  listItems: (filters, signal) => (MOCK() ? mock(mockList(filters)) : api.get(EP.vault.items, { query: filters, signal })),
+
+  /** -> SavedItem + content (answer: { question, answer: Message }; analysis: the analysis result) */
+  getItem: (id, signal) => (MOCK() ? mock(find(id) || vaultDb.items[0]) : api.get(EP.vault.item(id), { signal })),
+
+  /** Saves a chat answer or a finished analysis. ref: { kind: 'answer', messageId } | { kind: 'analysis', analysisId } -> { id, alreadySaved } */
+  save: ref => (MOCK() ? mock({ id: uid('vi'), alreadySaved: false }, 300) : api.post(EP.vault.items, ref)),
+
+  rename: (id, title) => {
+    if (!MOCK()) return api.patch(EP.vault.item(id), { title })
+    const i = find(id); touch(i, { title }); log(id, 'renamed')
+    return mock(i, 150)
   },
-
-  /** filters: { category, folderId, q, status, sort, page, pageSize } -> { items, total, page, pageSize } */
-  listDocuments: (filters, signal) => (USE_MOCKS ? mock(mockList(filters)) : api.get(EP.vault.documents, { query: filters, signal })),
-
-  /** Uploads straight into the vault. -> Document */
-  uploadDocument: (file, { folderId, category, onProgress } = {}) => {
-    if (!USE_MOCKS) return upload(EP.vault.documents, file, { fields: { folderId, category }, onProgress })
-    const ext = file.name.split('.').pop().toLowerCase()
-    const d = {
-      id: uid('doc'), name: file.name, fileType: ['pdf', 'docx', 'xlsx', 'jpg', 'png'].includes(ext) ? ext : 'pdf',
-      category: category || 'Personal', folderId: folderId || 'fld_personal', updatedAt: new Date().toISOString(),
-      sizeBytes: file.size, status: 'secure', favourite: false, pages: 1, verified: false, tags: [],
-    }
-    vaultDb.documents.unshift(d)
-    return mock(withFolder(d), 400)
+  setFavourite: (id, favourite) => {
+    if (!MOCK()) return api.put(EP.vault.favourite(id), { favourite })
+    touch(find(id), { favourite }); log(id, favourite ? 'favourited' : 'unfavourited')
+    return mock(null, 100)
   },
-
-  /** -> Document (full metadata incl. tags, owner, verified, analysisId) */
-  getDocument: (id, signal) => {
-    if (!USE_MOCKS) return api.get(EP.vault.document(id), { signal })
-    const d = vaultDb.documents.find(x => x.id === id) || vaultDb.documents[0]
-    return mock({ ...withFolder(d), owner: 'You', uploadedAt: d.updatedAt })
-  },
-
-  /** -> { pageCount, fileUrl, pages: [{ number, html }] } - html must be sanitised server-side */
-  getContent: (id, signal) => (USE_MOCKS ? mock({ pageCount: 12, fileUrl: null, pages: null }) : api.get(EP.vault.content(id), { signal })),
-
-  /** patch: { name?, folderId?, category?, tags? } -> Document */
-  updateDocument: (id, patch) => (USE_MOCKS ? mock(mockUpdate(id, patch), 150) : api.patch(EP.vault.document(id), patch)),
-
-  setFavourite: (id, favourite) => (USE_MOCKS ? mock(mockUpdate(id, { favourite }), 100) : api.put(EP.vault.favourite(id), { favourite })),
-
-  copyDocument: id => {
-    if (!USE_MOCKS) return api.post(EP.vault.copy(id))
-    const d = vaultDb.documents.find(x => x.id === id)
-    const copy = { ...d, id: uid('doc'), name: d.name.replace(/(\.[a-z]+)$/i, ' (1)$1'), favourite: false }
-    vaultDb.documents.unshift(copy)
-    return mock(withFolder(copy), 200)
-  },
-
-  /** Moves to Trash (restorable for 30 days). */
-  deleteDocument: id => {
-    if (!USE_MOCKS) return api.delete(EP.vault.document(id))
-    const d = vaultDb.documents.find(x => x.id === id)
-    vaultDb.documents = vaultDb.documents.filter(x => x.id !== id)
-    if (d) vaultDb.trash.push(d)
+  /** Moves to the Trash (emptied by the server after 30 days). */
+  trash: id => {
+    if (!MOCK()) return api.delete(EP.vault.item(id))
+    touch(find(id), { trashedAt: new Date().toISOString() }); log(id, 'trashed')
     return mock(null, 150)
   },
-
-  downloadDocument: (id, name) => (USE_MOCKS ? mockDownload() : download(EP.vault.file(id), name)),
-
-  /** -> { items: Note[] } */
-  listNotes: (id, signal) => (USE_MOCKS ? mock({ items: vaultDb.notes[id] || [] }) : api.get(EP.vault.notes(id), { signal })),
-  addNote: (id, text) => {
-    if (!USE_MOCKS) return api.post(EP.vault.notes(id), { text })
-    const n = { id: uid('note'), text, createdAt: new Date().toISOString() }
-    vaultDb.notes[id] = [n, ...(vaultDb.notes[id] || [])]
-    return mock(n, 150)
+  restore: id => {
+    if (!MOCK()) return api.post(EP.vault.restore(id))
+    touch(find(id), { trashedAt: null }); log(id, 'restored')
+    return mock(null, 150)
+  },
+  /** Only for an item that is already in the Trash. */
+  deleteForever: id => {
+    if (!MOCK()) return api.delete(EP.vault.item(id), { query: { permanent: true } })
+    vaultDb.items = vaultDb.items.filter(i => i.id !== id)
+    return mock(null, 150)
+  },
+  emptyTrash: () => {
+    if (!MOCK()) return api.delete(EP.vault.trash)
+    const n = vaultDb.items.filter(i => !live(i)).length
+    vaultDb.items = vaultDb.items.filter(live)
+    return mock({ deleted: n }, 200)
   },
 
-  /** -> { items: ActivityEvent[] } */
-  listActivity: (id, signal) => (USE_MOCKS ? mock({ items: vaultDb.activity }) : api.get(EP.vault.activity(id), { signal })),
+  /** -> { items: Note[] } newest first */
+  listNotes: (id, signal) => (MOCK() ? mock({ items: vaultDb.notes[id] || [] }) : api.get(EP.vault.notes(id), { signal })),
+  addNote: (id, text) => {
+    if (!MOCK()) return api.post(EP.vault.notes(id), { text })
+    const n = { id: uid('vn'), text, createdAt: new Date().toISOString() }
+    vaultDb.notes[id] = [n, ...(vaultDb.notes[id] || [])]
+    const i = find(id); touch(i, { noteCount: (i.noteCount || 0) + 1 }); log(id, 'noted')
+    return mock(n, 150)
+  },
+  deleteNote: (id, noteId) => {
+    if (!MOCK()) return api.delete(EP.vault.note(id, noteId))
+    vaultDb.notes[id] = (vaultDb.notes[id] || []).filter(n => n.id !== noteId)
+    const i = find(id); if (i) i.noteCount = Math.max(0, (i.noteCount || 1) - 1)
+    return mock(null, 100)
+  },
+
+  /** -> { items: [{ action: saved|renamed|favourited|unfavourited|noted|trashed|restored, createdAt }] } newest first */
+  listActivity: (id, signal) => (MOCK() ? mock({ items: vaultDb.activity[id] || [] }) : api.get(EP.vault.activity(id), { signal })),
 }

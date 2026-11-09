@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Request, Response
 from fastapi.responses import StreamingResponse
 
 from .. import chat_service as cs
-from .. import docs_service
+from .. import docs_service, vault
 from ..deps import current_user, get_state
 from ..errors import ApiError, not_found
 from ..schemas import ConversationCreate, ConversationPatch, FeedbackIn, MessageIn, PinIn, SourceReportIn
@@ -43,7 +43,14 @@ def get_conversation(conv_id: UUID, user: dict = Depends(current_user), state: A
     rows = state.db.all("select id, role, kind, content, payload, attachment_ids, feedback, created_at from app.messages "
                         "where conversation_id = %s order by seq limit 500", [conv["id"]])
     names = cs.attachment_names(state, rows)
-    return {"conversation": cs.conv_out(conv), "messages": [cs.msg_out(r, names) for r in rows]}
+    answer_ids = [str(r["id"]) for r in rows if r["role"] == "assistant" and r["kind"] == "answer"]
+    saved = {str(x["source_id"]) for x in state.db.all("select source_id from app.vault_items where user_id = %s and kind = 'answer' and trashed_at is null "
+                                                       "and source_id = any(%s::uuid[])", [user["id"], answer_ids])} if answer_ids else set()
+    messages = [cs.msg_out(r, names) for r in rows]
+    for m in messages:
+        if m["id"] in saved:
+            m["savedToVault"] = True                                                   # the Save button shows "Saved" after a reload too
+    return {"conversation": cs.conv_out(conv), "messages": messages}
 
 
 @router.patch("/conversations/{conv_id}")
@@ -150,8 +157,10 @@ def feedback(message_id: UUID, body: FeedbackIn, user: dict = Depends(current_us
 
 
 @router.post("/messages/{message_id}/save")
-def save_to_vault(message_id: UUID, _: dict = Depends(current_user)):
-    raise ApiError(501, "NOT_IMPLEMENTED", "The Legal Vault is not available yet, so answers cannot be saved there.")
+def save_to_vault(message_id: UUID, user: dict = Depends(current_user), state: AppState = Depends(get_state)):
+    """Saves this answer to the Legal Vault (the same as POST /vault/items). -> {id, alreadySaved}"""
+    state.limiter.check(f"vault:{user['id']}", 120, 60, "You are doing that very quickly. Please wait a moment.")
+    return vault.save_answer(state.db, state.settings.docs, str(user["id"]), str(message_id))
 
 
 @router.post("/sources/report", status_code=204)

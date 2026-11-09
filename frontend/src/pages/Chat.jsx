@@ -255,6 +255,7 @@ function Answer({ m, onCite, onPanel, panel, onAsk }) {
   const navigate = useNavigate()
   const [vote, setVote] = useState(m.feedback || null)
   const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(!!m.savedToVault)
   const T = answerText(m.language)
 
   const copy = () => {
@@ -272,7 +273,7 @@ function Answer({ m, onCite, onPanel, panel, onAsk }) {
   }
   const save = async () => {
     setSaving(true)
-    try { await chatService.saveToVault(m.id); toast(T.saved) } catch (e) { toast(e.message, 'info') } finally { setSaving(false) }
+    try { const r = await chatService.saveToVault(m.id); setSaved(true); toast(r?.alreadySaved ? T.alreadySaved : T.saved) } catch (e) { toast(e.message, 'info') } finally { setSaving(false) }
   }
 
   return (
@@ -309,7 +310,7 @@ function Answer({ m, onCite, onPanel, panel, onAsk }) {
         <div className="answer-actions">
           <button className={`chip-btn chip-sources ${panel === 'sources' ? 'on' : ''}`} onClick={() => onPanel('sources')}><NotebookText size={16} /> {T.sources}: {m.sources?.length || 0} <ChevronDown size={15} /></button>
           {m.confidence && m.sources?.length > 0 && <button className={`chip-btn chip-conf ${m.confidence.score < 60 ? 'low' : ''} ${panel === 'confidence' ? 'on' : ''}`} onClick={() => onPanel('confidence')}><CheckCircle2 size={16} /> {m.confidence.score}% {T.confidence}</button>}
-          <button className="chip-btn" onClick={save} disabled={saving}>{saving ? <Loader2 size={16} className="spin" /> : <Bookmark size={16} />} {T.save}</button>
+          <button className={`chip-btn ${saved ? 'on' : ''}`} onClick={save} disabled={saving || saved}>{saving ? <Loader2 size={16} className="spin" /> : <Bookmark size={16} fill={saved ? 'currentColor' : 'none'} />} {saved ? T.savedLabel : T.save}</button>
           <button className="chip-btn" onClick={() => navigate(`/case-briefs/new?fromMessage=${encodeURIComponent(m.id)}`)}><FileText size={16} /> {T.brief}</button>
         </div>
         <div className="answer-feedback">

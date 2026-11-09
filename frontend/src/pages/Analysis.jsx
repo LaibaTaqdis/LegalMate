@@ -54,9 +54,11 @@ function AnalysisProgress({ a }) {
   )
 }
 
-function AnalysisResult({ a }) {
+/** `snapshot`: shown from the Legal Vault as it was saved: no download, save, share or case-brief buttons (they need the live analysis). */
+export function AnalysisResult({ a, snapshot = false }) {
   const navigate = useNavigate()
   const { toast } = useUI()
+  const [saved, setSaved] = useState(!!a.savedToVault)
   const [openClauses, setOpenClauses] = useState(true)
   const [allClauses, setAllClauses] = useState(false)
   const [openRisks, setOpenRisks] = useState(true)
@@ -88,12 +90,13 @@ function AnalysisResult({ a }) {
     try { const r = await fn(); if (success) toast(typeof success === 'function' ? success(r) : success) } catch (e) { toast(e.message, 'info') } finally { setBusy(null) }
   }
   const download = () => act('download', () => documentService.downloadReport(a.id, `${title.replace(/\s+/g, '_')}_Analysis.pdf`), `Report downloaded: ${title.replace(/\s+/g, '_')}_Analysis.pdf`)
-  const save = () => act('save', () => documentService.saveToVault(a.id), 'Saved to Legal Vault')
+  const save = () => act('save', async () => { const r = await documentService.saveToVault(a.id); setSaved(true); return r },
+    r => (r?.alreadySaved ? 'It is already in your Legal Vault' : 'Saved to your Legal Vault'))
   const share = () => act('share', async () => { const { url } = await documentService.share(a.id); await navigator.clipboard?.writeText(url) }, 'Share link copied')
 
   return (
     <div className="analysis">
-      <Breadcrumb items={[{ label: 'Home', to: '/dashboard' }, { label: 'Analysis', to: '/analysis' }, { label: title, ...(docLink ? { to: docLink } : {}) }]} />
+      {!snapshot && <Breadcrumb items={[{ label: 'Home', to: '/dashboard' }, { label: 'Analysis', to: '/analysis' }, { label: title, ...(docLink ? { to: docLink } : {}) }]} />}
       <div className="an-head">
         <span className="an-file"><FileIcon type={doc.fileType} size={30} /></span>
         <div className="an-title">
@@ -102,10 +105,12 @@ function AnalysisResult({ a }) {
         </div>
         <div className="an-actions">
           <span className="pill pill-green an-complete"><CheckCircle2 size={17} fill="#22a45a" color="#fff" /> Analysis Complete</span>
-          <button className="btn btn-outline" onClick={download} disabled={busy === 'download'}>{busy === 'download' ? <Loader2 size={17} className="spin" /> : <Download size={17} />} Download Report</button>
-          <button className="btn btn-outline" onClick={save} disabled={busy === 'save'}>{busy === 'save' ? <Loader2 size={17} className="spin" /> : <Bookmark size={17} />} Save to Vault</button>
-          <button className="btn btn-outline" onClick={share} disabled={busy === 'share'}><Share2 size={17} /> Share</button>
-          <button className="icon-btn" aria-label="More" onClick={() => toast('More options coming soon', 'info')}><MoreHorizontal size={18} /></button>
+          {!snapshot && <>
+            <button className="btn btn-outline" onClick={download} disabled={busy === 'download'}>{busy === 'download' ? <Loader2 size={17} className="spin" /> : <Download size={17} />} Download Report</button>
+            <button className="btn btn-outline" onClick={save} disabled={busy === 'save'}>{busy === 'save' ? <Loader2 size={17} className="spin" /> : <Bookmark size={17} fill={saved ? 'currentColor' : 'none'} />} {saved ? 'Saved to Vault' : 'Save to Vault'}</button>
+            <button className="btn btn-outline" onClick={share} disabled={busy === 'share'}><Share2 size={17} /> Share</button>
+            <button className="icon-btn" aria-label="More" onClick={() => toast('More options coming soon', 'info')}><MoreHorizontal size={18} /></button>
+          </>}
         </div>
       </div>
 
@@ -276,7 +281,7 @@ function AnalysisResult({ a }) {
             <ul className="rec-actions">
               {a.recommendedActions.map(x => <li key={x}><FileCheck2 size={16} />{x}<ChevronRight size={16} className="rec-chev" /></li>)}
             </ul>
-            <button className="btn btn-orange btn-lg btn-block" onClick={() => navigate(`/case-briefs/new?fromAnalysis=${encodeURIComponent(a.id)}`)}><FileText size={19} /> Generate Case Brief</button>
+            {!snapshot && <button className="btn btn-orange btn-lg btn-block" onClick={() => navigate(`/case-briefs/new?fromAnalysis=${encodeURIComponent(a.id)}`)}><FileText size={19} /> Generate Case Brief</button>}
           </section>
         </div>
       </div>

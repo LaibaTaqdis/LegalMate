@@ -10,7 +10,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, File, Form, Query, Response, UploadFile
 from psycopg.types.json import Jsonb
 
-from .. import docs_service
+from .. import docs_service, vault
 from ..deps import current_user, get_state
 from ..errors import ApiError, not_found
 from ..extract import ExtractError, check_image, compact_image, extract, sniff
@@ -70,7 +70,7 @@ def upload_document(file: UploadFile = File(...), purpose: str = Form("analysis"
         [uid, _safe_name(file.filename), res.file_type, len(data), res.pages, purpose, res.text, len(res.text), res.ocr_pages, res.ocr_conf, res.truncated, expires])
     warnings = list(res.warnings)
     if saveToVault:
-        warnings.append("The Legal Vault is not available yet, so the original file was not kept. Only the text needed for analysis is stored.")
+        warnings.append("Your analysis will be saved to the Legal Vault when it is ready. The original file is not kept: only the text needed for the analysis is stored.")
     return {"id": str(row["id"]), "name": _safe_name(file.filename), "sizeBytes": len(data), "fileType": res.file_type, "pages": res.pages,
             "ocrUsed": res.ocr_pages > 0, "urdu": res.urdu, "truncated": res.truncated, "charCount": len(res.text), "warnings": warnings,
             "expiresAt": iso(expires)}
@@ -107,7 +107,7 @@ def create_analysis(body: AnalysisIn, user: dict = Depends(current_user), state:
         if today >= cfg.analysis_per_day:
             raise ApiError(429, "RATE_LIMITED", f"You have reached today's limit of {cfg.analysis_per_day} analyses. Please come back tomorrow.")
     row = state.db.one("insert into app.analyses (user_id, document_id, language, depth, input) values (%s, %s, %s, %s, %s) returning id",
-                       [uid, ids[0], body.language, body.depth, Jsonb({"documentIds": ids, "name": label})])
+                       [uid, ids[0], body.language, body.depth, Jsonb({"documentIds": ids, "name": label, "saveToVault": body.saveToVault})])
     aid = str(row["id"])
     try:
         state.analysis_executor.submit(run_analysis, state, aid)
@@ -190,7 +190,9 @@ def get_analysis(analysis_id: UUID, user: dict = Depends(current_user), state: A
         raise not_found("That analysis")
     base = {"id": str(r["id"]), "status": r["status"], "progress": r["progress"], "error": r["error"]}
     if r["status"] == "completed" and r["result"]:
-        return {**base, **r["result"]}
+        saved = state.db.one("select 1 as x from app.vault_items where user_id = %s and kind = 'analysis' and source_id = %s and trashed_at is null",
+                             [user["id"], r["id"]]) is not None
+        return {**base, **r["result"], "savedToVault": saved}
     ids = (r["input"] or {}).get("documentIds", [])
     name = None
     if ids:
@@ -209,8 +211,10 @@ def analysis_report(analysis_id: UUID, _: dict = Depends(current_user)):
 
 
 @router.post("/analyses/{analysis_id}/save")
-def analysis_save(analysis_id: UUID, _: dict = Depends(current_user)):
-    raise ApiError(501, "NOT_IMPLEMENTED", "The Legal Vault is not available yet, so the analysis cannot be saved there.")
+def analysis_save(analysis_id: UUID, user: dict = Depends(current_user), state: AppState = Depends(get_state)):
+    """Saves the finished analysis to the Legal Vault (the same as POST /vault/items). -> {id, alreadySaved}"""
+    state.limiter.check(f"vault:{user['id']}", 120, 60, "You are doing that very quickly. Please wait a moment.")
+    return vault.save_analysis(state.db, state.settings.docs, str(user["id"]), str(analysis_id))
 
 
 @router.post("/analyses/{analysis_id}/share")

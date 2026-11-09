@@ -198,6 +198,24 @@ class MessageIn(Body):
     language: Literal["auto", "en", "ur", "ur-roman"] | None = None      # None / "auto": answer in the language the user wrote in
 
 
+class VaultSaveIn(Body):
+    kind: Literal["answer", "analysis", "brief"]
+    messageId: str | None = Field(default=None, max_length=64)
+    analysisId: str | None = Field(default=None, max_length=64)
+
+
+class VaultRenameIn(Body):
+    title: str = Field(min_length=1, max_length=160)
+
+
+class VaultFavouriteIn(Body):
+    favourite: bool = True
+
+
+class VaultNoteIn(Body):
+    text: str = Field(min_length=1, max_length=5000)               # the real limit (VAULT_NOTE_CHARS) is checked by the endpoint
+
+
 class AnalysisIn(Body):
     documentIds: list[str] = Field(min_length=1, max_length=10)
     language: Literal["auto", "en", "ur"] = "auto"

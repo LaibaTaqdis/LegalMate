@@ -52,6 +52,9 @@ def load_doc_settings() -> "DocSettings":
         analysis_per_user_running=max(1, _int("ANALYSIS_PER_USER_RUNNING", d.analysis_per_user_running)), analysis_per_day=_int("ANALYSIS_PER_DAY", d.analysis_per_day),
         analysis_stale_minutes=max(1, _int("ANALYSIS_STALE_MINUTES", d.analysis_stale_minutes)),
         analysis_page_size=min(50, max(1, _int("ANALYSIS_PAGE_SIZE", d.analysis_page_size))),
+        vault_trash_days=max(1, _int("VAULT_TRASH_DAYS", d.vault_trash_days)), vault_max_items=max(0, _int("VAULT_MAX_ITEMS", d.vault_max_items)),
+        vault_page_size=min(100, max(1, _int("VAULT_PAGE_SIZE", d.vault_page_size))), vault_max_notes=max(1, _int("VAULT_MAX_NOTES", d.vault_max_notes)),
+        vault_note_chars=min(5000, max(50, _int("VAULT_NOTE_CHARS", d.vault_note_chars))),
         law_refs_enabled=_bool("LAW_REFS_ENABLED", d.law_refs_enabled), law_refs_max=min(20, max(1, _int("LAW_REFS_MAX", d.law_refs_max))),
         law_refs_per_clause=min(4, max(1, _int("LAW_REFS_PER_CLAUSE", d.law_refs_per_clause))),
         law_refs_quote_chars=min(1200, max(80, _int("LAW_REFS_QUOTE_CHARS", d.law_refs_quote_chars))),
@@ -99,6 +102,11 @@ class DocSettings:
     law_refs_max: int = 8                 # LAW_REFS_MAX            laws shown in the box at most
     law_refs_per_clause: int = 2          # LAW_REFS_PER_CLAUSE     laws linked from one clause (the table may allow a few more candidates)
     law_refs_quote_chars: int = 260       # LAW_REFS_QUOTE_CHARS    characters of the law's own wording shown for each
+    vault_trash_days: int = 30            # VAULT_TRASH_DAYS        a saved item in the Trash is deleted for good after this many days
+    vault_max_items: int = 500            # VAULT_MAX_ITEMS         saved items per user, Trash included (0 = no limit)
+    vault_page_size: int = 24             # VAULT_PAGE_SIZE         items per page in the Vault list
+    vault_max_notes: int = 50             # VAULT_MAX_NOTES         notes per saved item
+    vault_note_chars: int = 2000          # VAULT_NOTE_CHARS        characters in one note
 
     @property
     def max_upload_bytes(self) -> int:

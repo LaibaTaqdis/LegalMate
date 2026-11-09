@@ -18,11 +18,14 @@ The frontend switches services to the real backend one by one (`VITE_REAL_SERVIC
 | Account: `GET/PATCH /users/me`, `POST /users/me/password` | **Done.** Email and phone changes are not re-verified yet. |
 | Onboarding profile: `GET/PUT /users/me/profile` | **Done** (new, see section 13). It gives the chatbot context about the user. |
 | Chat: conversations, streaming messages, feedback, source reports | **Done** (section 5). |
-| Chat: `POST /chat/messages/:id/save` (Legal Vault) | Answers `501 NOT_IMPLEMENTED`. |
+| Chat: `POST /chat/messages/:id/save` (Legal Vault) | **Done** (section 7, part A). |
 | Documents: `POST/DELETE /documents`, `POST /analyses`, `GET /analyses/:id`, chat attachments | **Done** (section 6). Text is extracted and stored, the original file is not kept. |
-| Analysis: `/analyses/:id/report`, `/save`, `/share` | Answer `501 NOT_IMPLEMENTED` (PDF report, Legal Vault and share links are later). |
+| Analysis: `/analyses/:id/save` | **Done** (section 7, part A). |
+| Analysis: `/analyses/:id/report`, `/share` | Answer `501 NOT_IMPLEMENTED` (PDF report and share links are later). |
+| Legal Vault part A: saved answers and analyses (`/vault/items`, notes, activity, Trash, `/vault/stats`) | **Done** (section 7). |
+| Legal Vault part B: your own uploaded files (`/vault/documents`, folders, storage quota) | Not built (spec kept in section 7, part B). |
 | Settings: security, sessions, preferences, avatar, export, delete account, integrations | Not built (mock). |
-| Dashboard, vault, briefs, calculators, legal aid, lawyers, bookings, admin, community, emergency, offline, WhatsApp | Not built (mock). |
+| Dashboard, briefs, calculators, legal aid, lawyers, bookings, admin, community, emergency, offline, WhatsApp | Not built (mock). |
 
 Limits that exist today: 30 questions per hour and 100 per day per user, one answer at a time per user, 8 failed sign-ins per account per 15 minutes, 6 sign-ups per hour per address, 4000 characters per message.
 
@@ -117,8 +120,8 @@ File endpoints return the binary with `Content-Type` and `Content-Disposition: a
 | 28 | GET | `/analyses/:id/report` | "Download Report" |
 | 29 | POST | `/analyses/:id/save` | "Save to Vault" |
 | 30 | POST | `/analyses/:id/share` | "Share" |
-| **Legal Vault** |||
-| 31 | GET | `/vault/stats` | Vault sidebar, Settings |
+| **Legal Vault** (part A, saved answers and analyses, is BUILT: `/vault/items...` in section 7. Rows 32-45 below are part B, your own files, not built) |||
+| 31 | GET | `/vault/stats` | Vault sidebar, Settings (part A: counts; part B adds storage) |
 | 32 | GET | `/vault/folders` | Vault, Document view (move) |
 | 33 | POST | `/vault/folders` | Vault "New Folder" |
 | 34 | GET | `/vault/documents` | Vault list |
@@ -423,7 +426,7 @@ data: { ...assistant Message (full JSON, any kind) }
 `{ "vote": "up|down", "comment": "optional" }` → `204`. `comment: "sources"` means the vote came from the Sources panel.
 
 ### POST `/chat/messages/:id/save`
-Saves the answer as a document in the Legal Vault → `{ "documentId": "doc_9" }`. **Not built yet: answers `501 NOT_IMPLEMENTED`.**
+Saves the answer to the Legal Vault as a snapshot (the question, the answer and its sources) → `{ "id": "<vault item id>", "alreadySaved": false }`. Saving the same answer again returns the same id with `alreadySaved: true` (and takes it out of the Trash if it was there). `422` if the message is not an answer, `404` if it is not the user's, `422 QUOTA_EXCEEDED` when the Vault is full. Same as `POST /vault/items` with `{ "kind": "answer", "messageId" }`. `GET /chat/conversations/:id` marks saved answers with `savedToVault: true`.
 
 ### POST `/chat/sources/report`
 `{ "messageId": "msg_2", "sourceId": 1, "reason": "user_report" }` → `204`
@@ -507,13 +510,44 @@ A clause that has a matching law always keeps its main law in the list, even whe
 ### GET `/analyses/:id/report`
 PDF report download. **Not built yet: answers `501 NOT_IMPLEMENTED`.**
 ### POST `/analyses/:id/save`
-→ `{ "vaultDocumentId": "..." }`
+Saves the finished analysis to the Legal Vault as a snapshot → `{ "id": "<vault item id>", "alreadySaved": false }` (`422` while it is still running or failed). Same as `POST /vault/items` with `{ "kind": "analysis", "analysisId" }`. Starting an analysis with `saveToVault: true` saves it automatically when it completes. `GET /analyses/:id` returns `savedToVault: true|false` once it is complete.
 ### POST `/analyses/:id/share`
 → `{ "url": "https://legalmate.pk/s/analysis/abc" }` (read-only, expiring link)
 
 ---
 
 ## 7. Legal Vault
+
+The Vault is built in two independent parts. **Part A (built)** keeps what the user saves from the app: chat answers and analyses, as snapshots that stay readable after the chat or the analysis is deleted. **Part B (not built)** keeps the user's own uploaded files. They share only the Vault page.
+
+### Part A: saved items
+
+```json
+SavedItem = { "id": "uuid", "kind": "answer|analysis|brief", "title": "...", "summary": "first ~240 characters",
+  "tag": "Property Law|Tenancy Agreement|null", "risk": "Low|Medium|High|null", "language": "en|ur|ur-roman|null", "confidence": 94,
+  "conversationId": "uuid|null", "sourceId": "uuid|null (the message or analysis it came from)", "favourite": false, "noteCount": 2,
+  "savedAt": "...", "updatedAt": "...", "trashedAt": "...|null" }
+```
+`GET /vault/items/:id` adds `content`: for an answer `{ "question": "...", "answer": <the assistant Message as it was> }`, for an analysis the analysis result (same shape as `GET /analyses/:id`).
+
+| Method | Path | Notes |
+|---|---|---|
+| POST | `/vault/items` | `{ "kind": "answer", "messageId" }` or `{ "kind": "analysis", "analysisId" }` → `201 { id, alreadySaved }`. `kind: "brief"` is `422` until case briefs are real. |
+| GET | `/vault/items` | Query: `category` (`all` default, `answer`, `analysis`, `brief`, `favourites`, `trash`), `q` (title, summary, question), `sort` (`updated_desc` default, `updated_asc`, `name_asc`, `name_desc`), `page`, `pageSize` (default 24, max 100) → `{ items, total, page, pageSize, counts }` |
+| GET | `/vault/stats` | → `{ counts: { all, answer, analysis, brief, favourites, trash } }` (the Trash is not counted in `all`) |
+| GET | `/vault/items/:id` | SavedItem + `content` (readable while in the Trash) |
+| PATCH | `/vault/items/:id` | `{ "title" }` (1-160 characters) → SavedItem. `404` while in the Trash. |
+| PUT | `/vault/items/:id/favourite` | `{ "favourite": true }` → `204` |
+| DELETE | `/vault/items/:id` | Moves to the Trash → `204` (again when already there: `204`). `?permanent=true` deletes an item that is already in the Trash for good (`422` if it is not). |
+| POST | `/vault/items/:id/restore` | `204` |
+| DELETE | `/vault/trash` | Empties the Trash → `{ "deleted": 3 }` |
+| GET/POST | `/vault/items/:id/notes` | `{ "text" }` (up to `VAULT_NOTE_CHARS`, 2000) → Note `{ id, text, createdAt }` (201). `422` in the Trash or past `VAULT_MAX_NOTES` (50). |
+| DELETE | `/vault/items/:id/notes/:noteId` | `204` |
+| GET | `/vault/items/:id/activity` | → `{ items: [ { action: saved\|renamed\|favourited\|unfavourited\|noted\|trashed\|restored, createdAt } ] }` newest first |
+
+Limits (all environment variables, see `backend/.env.example`): `VAULT_MAX_ITEMS` 500 per user (`422 QUOTA_EXCEEDED`), `VAULT_TRASH_DAYS` 30 (the server removes older Trash items), `VAULT_PAGE_SIZE` 24. Every id that is not the caller's answers `404`.
+
+### Part B: your own files (not built; the earlier design, kept for when it is)
 
 ### Document (vault)
 ```json
@@ -524,7 +558,7 @@ PDF report download. **Not built yet: answers `501 NOT_IMPLEMENTED`.**
   "verified": true, "tags": ["Tenancy", "Property"], "owner": "You", "analysisId": "ana_1|null" }
 ```
 
-### GET `/vault/stats`
+### GET `/vault/stats` (part B adds file storage to the part A response)
 ```json
 { "storage": { "usedBytes": 1800000000, "quotaBytes": 5000000000 },
   "counts": { "all": 24, "Contracts": 6, "Notices": 4, "Court Documents": 5, "Case Briefs": 3,

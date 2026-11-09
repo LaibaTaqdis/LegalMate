@@ -13,7 +13,7 @@ import Chat from './pages/Chat'
 import Upload from './pages/Upload'
 import Analysis from './pages/Analysis'
 import Vault from './pages/Vault'
-import DocumentView from './pages/DocumentView'
+import SavedItem from './pages/SavedItem'
 import CaseBrief from './pages/CaseBrief'
 import CaseBriefView from './pages/CaseBriefView'
 import Calculator from './pages/Calculator'
@@ -72,7 +72,8 @@ export default function App() {
           <Route path="/documents/analysis" element={<Navigate to="/analysis" replace />} />
           <Route path="/documents/analysis/:id" element={<OldAnalysisLink />} />
           <Route path="/vault" element={<Vault />} />
-          <Route path="/vault/document/:id" element={<DocumentView />} />
+          <Route path="/vault/item/:id" element={<SavedItem />} />
+          <Route path="/vault/document/:id" element={<Navigate to="/vault" replace />} />       {/* uploaded files: coming soon */}
           <Route path="/case-briefs" element={<Navigate to="/case-briefs/new" replace />} />
           <Route path="/case-briefs/new" element={<CaseBrief />} />
           <Route path="/case-briefs/:id" element={<CaseBriefView />} />

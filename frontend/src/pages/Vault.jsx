@@ -1,112 +1,113 @@
-import { useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  ArrowRight, CheckCircle2, ChevronDown, Crown, FileText, Filter, Folder, FolderPlus, LayoutGrid, List,
-  Loader2, MoreVertical, Plus, Scale, Search, ShieldCheck, Star, Trash2, Users, X, FileArchive
+  ChevronDown, ChevronLeft, ChevronRight, FileText, FolderOpen, Folder, LayoutGrid, List, Loader2, MessageCircleMore, MoreVertical,
+  Pencil, RotateCcw, Search, Star, Trash2, Upload
 } from 'lucide-react'
 import { Breadcrumb, Modal, useClickOutside } from '../components/common'
-import { FileIcon, FolderIcon } from '../components/Icons'
 import { useUI } from '../components/UIContext'
 import { ErrorState, Skeleton } from '../components/States'
 import { useQuery } from '../hooks/useApi'
 import { useDebounced } from '../hooks/useDebounced'
 import { vaultService } from '../api/services/vaultService'
-import { formatBytes, formatDate } from '../utils/format'
+import { formatDate } from '../utils/format'
 
 const CATEGORIES = [
-  { key: 'all', label: 'All Files', icon: Folder },
-  { key: 'Contracts', label: 'Contracts', icon: FileText },
-  { key: 'Notices', label: 'Notices', icon: FileArchive },
-  { key: 'Court Documents', label: 'Court Documents', icon: Scale },
-  { key: 'Case Briefs', label: 'Case Briefs', icon: FileText },
-  { key: 'shared', label: 'Shared with Me', icon: Users },
+  { key: 'all', label: 'All Saved', icon: Folder },
+  { key: 'answer', label: 'Chat Answers', icon: MessageCircleMore },
+  { key: 'analysis', label: 'Analyses', icon: FileText },
   { key: 'favourites', label: 'Favourites', icon: Star },
   { key: 'trash', label: 'Trash', icon: Trash2 },
 ]
-
-// Label shown in the UI -> `sort` query value sent to the API
-const SORTS = [
-  ['Updated (Newest)', 'updated_desc'],
-  ['Updated (Oldest)', 'updated_asc'],
-  ['Name (A–Z)', 'name_asc'],
-  ['Name (Z–A)', 'name_desc'],
-]
-const STATUS_FILTERS = [['All', null], ['Analysed', 'analysed'], ['Secure', 'secure']]
+const SORTS = [['Updated (Newest)', 'updated_desc'], ['Updated (Oldest)', 'updated_asc'], ['Name (A–Z)', 'name_asc'], ['Name (Z–A)', 'name_desc']]
+const KIND_LABEL = { answer: 'Chat answer', analysis: 'Analysis', brief: 'Case brief' }
+const KIND_ICON = { answer: MessageCircleMore, analysis: FileText, brief: FileText }
+const RISK_PILL = { Low: 'pill-green', Medium: 'pill-orange', High: 'pill-red' }
+const EMPTY = {
+  all: ['Nothing saved yet', 'Use “Save to Vault” under a chat answer or on an analysis, and it will be kept here.'],
+  answer: ['No saved answers', 'Use “Save to Vault” under an answer in the chat to keep it here.'],
+  analysis: ['No saved analyses', 'Open a finished analysis and choose “Save to Vault”.'],
+  favourites: ['No favourites yet', 'Tap the star on a saved item to keep it handy.'],
+  trash: ['The Trash is empty', 'Items you delete wait here for 30 days before they are removed for good.'],
+}
 
 export default function Vault() {
   const navigate = useNavigate()
   const { toast } = useUI()
-  const fileRef = useRef(null)
   const [view, setView] = useState('grid')
   const [cat, setCat] = useState('all')
   const [q, setQ] = useState('')
-  const [folder, setFolder] = useState(null) // folder object
   const [sort, setSort] = useState(SORTS[0])
   const [sortOpen, setSortOpen] = useState(false)
-  const [filterOpen, setFilterOpen] = useState(false)
-  const [statusFilter, setStatusFilter] = useState(STATUS_FILTERS[0])
+  const [page, setPage] = useState(1)
   const [menu, setMenu] = useState(null)
-  const [newFolder, setNewFolder] = useState(null)
-  const [uploading, setUploading] = useState(0)
-  const [creating, setCreating] = useState(false)
+  const [renaming, setRenaming] = useState(null)        // { id, title }
+  const [busy, setBusy] = useState(false)
+  const [confirmEmpty, setConfirmEmpty] = useState(false)
   const sortRef = useClickOutside(() => setSortOpen(false))
-  const filterRef = useClickOutside(() => setFilterOpen(false))
+  const menuRef = useClickOutside(() => setMenu(null))
   const search = useDebounced(q, 300)
 
-  const stats = useQuery(signal => vaultService.getStats(signal), [])
-  const folders = useQuery(signal => vaultService.listFolders(signal), [])
-  const docs = useQuery(
-    signal => vaultService.listDocuments({ category: cat, folderId: folder?.id, q: search || undefined, status: statusFilter[1] || undefined, sort: sort[1] }, signal),
-    [cat, folder?.id, search, statusFilter[1], sort[1]],
-  )
-  const items = docs.data?.items || []
+  const list = useQuery(signal => vaultService.listItems({ category: cat, q: search || undefined, sort: sort[1], page }, signal), [cat, search, sort[1], page])
+  useEffect(() => { setPage(1) }, [cat, search, sort[1]])
+  const items = list.data?.items || []
+  const counts = list.data?.counts
+  const pages = list.data ? Math.max(1, Math.ceil(list.data.total / list.data.pageSize)) : 1
 
-  const open = d => navigate(`/vault/document/${d.id}`)
-
-  const toggleFav = async d => {
-    docs.setData(x => ({ ...x, items: x.items.map(i => (i.id === d.id ? { ...i, favourite: !i.favourite } : i)) }))
-    try { await vaultService.setFavourite(d.id, !d.favourite); stats.reload({ silent: true }) } catch (e) { toast(e.message, 'info'); docs.reload({ silent: true }) }
-  }
-
-  const remove = async d => {
+  const refresh = () => list.reload({ silent: true })
+  const run = async (fn, msg) => {
     setMenu(null)
-    docs.setData(x => ({ ...x, items: x.items.filter(i => i.id !== d.id), total: x.total - 1 }))
-    try { await vaultService.deleteDocument(d.id); toast('Moved to Trash'); stats.reload({ silent: true }) } catch (e) { toast(e.message, 'info'); docs.reload({ silent: true }) }
+    try { await fn(); if (msg) toast(msg) ; refresh() } catch (e) { toast(e.message, 'info'); refresh() }
   }
-
-  const downloadDoc = async d => {
-    setMenu(null)
-    try { await vaultService.downloadDocument(d.id, d.name); toast(`Downloading ${d.name}`) } catch (e) { toast(e.message, 'info') }
+  const toggleFav = i => {
+    list.setData(x => ({ ...x, items: x.items.map(y => (y.id === i.id ? { ...y, favourite: !y.favourite } : y)) }))
+    run(() => vaultService.setFavourite(i.id, !i.favourite))
   }
-
-  const uploadFiles = async files => {
-    const list = Array.from(files)
-    if (!list.length) return
-    setUploading(n => n + list.length)
-    const results = await Promise.allSettled(list.map(f => vaultService.uploadDocument(f, { folderId: folder?.id })))
-    setUploading(n => n - list.length)
-    const ok = results.filter(r => r.status === 'fulfilled').length
-    if (ok) toast(`${ok} file(s) uploaded to your vault`)
-    if (ok < list.length) toast(`${list.length - ok} file(s) failed to upload`, 'info')
-    docs.reload({ silent: true })
-    stats.reload({ silent: true })
-  }
-
-  const createFolder = async e => {
+  const rename = async e => {
     e.preventDefault()
-    const name = newFolder.trim()
-    if (!name) return
-    setCreating(true)
-    try {
-      const f = await vaultService.createFolder({ name })
-      folders.setData(x => ({ ...x, items: [...x.items, f] }))
-      setNewFolder(null)
-      toast(`Folder “${name}” created`)
-    } catch (err) { toast(err.message, 'info') } finally { setCreating(false) }
+    const title = renaming.title.trim()
+    if (!title) return
+    setBusy(true)
+    try { await vaultService.rename(renaming.id, title); toast('Renamed'); setRenaming(null); refresh() } catch (err) { toast(err.message, 'info') } finally { setBusy(false) }
+  }
+  const emptyTrash = async () => {
+    setBusy(true)
+    try { const r = await vaultService.emptyTrash(); toast(`Trash emptied (${r?.deleted ?? 0} deleted)`); setConfirmEmpty(false); refresh() } catch (err) { toast(err.message, 'info') } finally { setBusy(false) }
   }
 
-  const storage = stats.data?.storage
-  const pct = storage ? Math.round((storage.usedBytes / storage.quotaBytes) * 100) : 0
+  const open = i => navigate(`/vault/item/${i.id}`)
+  const inTrash = cat === 'trash'
+  const [emptyTitle, emptyText] = EMPTY[cat]
+
+  const Menu = ({ i }) => (
+    <div className="top-pop" ref={menu === i.id ? menuRef : null}>
+      <button className="icon-btn-plain doc-kebab" aria-label="Item options" onClick={e => { e.stopPropagation(); setMenu(menu === i.id ? null : i.id) }}><MoreVertical size={19} /></button>
+      {menu === i.id && (
+        <div className="popover popover-sm doc-menu" onClick={e => e.stopPropagation()}>
+          <button className="popover-item" onClick={() => open(i)}>Open</button>
+          {inTrash ? (
+            <>
+              <button className="popover-item" onClick={() => run(() => vaultService.restore(i.id), 'Restored')}><RotateCcw size={15} /> Restore</button>
+              <button className="popover-item danger" onClick={() => run(() => vaultService.deleteForever(i.id), 'Deleted for good')}>Delete forever</button>
+            </>
+          ) : (
+            <>
+              <button className="popover-item" onClick={() => { setMenu(null); setRenaming({ id: i.id, title: i.title }) }}><Pencil size={15} /> Rename</button>
+              <button className="popover-item danger" onClick={() => run(() => vaultService.trash(i.id), 'Moved to Trash')}>Move to Trash</button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+
+  const Meta = ({ i }) => (
+    <>
+      <span className="vi-kind">{KIND_LABEL[i.kind] || i.kind}</span>
+      {i.tag && <span className="vi-tag">{i.tag}</span>}
+      {i.kind === 'analysis' && i.risk && <span className={`pill ${RISK_PILL[i.risk] || 'pill-gray'}`}>{i.risk} risk</span>}
+    </>
+  )
 
   return (
     <div className="vault">
@@ -114,83 +115,44 @@ export default function Vault() {
         <div>
           <Breadcrumb items={[{ label: 'Home', to: '/dashboard' }, { label: 'Legal Vault' }]} />
           <h1 className="page-title">Legal Vault</h1>
-          <p className="page-sub vault-sub">Securely store, organise and access all your legal documents.</p>
+          <p className="page-sub vault-sub">Answers and analyses you saved, kept as they were when you saved them.</p>
         </div>
         <div className="vault-tools">
-          <label className="vault-search"><Search size={19} /><input value={q} onChange={e => setQ(e.target.value)} placeholder="Search files, folders or keywords..." /></label>
+          <label className="vault-search"><Search size={19} /><input value={q} onChange={e => setQ(e.target.value)} placeholder="Search saved items..." /></label>
           <div className="view-toggle">
             <button className={view === 'grid' ? 'active' : ''} onClick={() => setView('grid')} aria-label="Grid view"><LayoutGrid size={20} /></button>
             <button className={view === 'list' ? 'active' : ''} onClick={() => setView('list')} aria-label="List view"><List size={20} /></button>
           </div>
-          <div className="top-pop" ref={filterRef}>
-            <button className="btn btn-outline vault-filter" onClick={() => setFilterOpen(o => !o)}><Filter size={19} /> Filter{statusFilter[1] && <span className="pill pill-blue">{statusFilter[0]}</span>}</button>
-            {filterOpen && (
-              <div className="popover popover-sm">
-                {STATUS_FILTERS.map(s => <button key={s[0]} className={`popover-item ${s[0] === statusFilter[0] ? 'active' : ''}`} onClick={() => { setStatusFilter(s); setFilterOpen(false) }}>{s[0]}</button>)}
-              </div>
-            )}
-          </div>
-          <input ref={fileRef} type="file" hidden multiple onChange={e => { uploadFiles(e.target.files); e.target.value = '' }} />
-          <button className="btn btn-orange vault-upload" onClick={() => fileRef.current.click()} disabled={uploading > 0}>
-            {uploading > 0 ? <Loader2 size={20} className="spin" /> : <Plus size={20} />} {uploading > 0 ? 'Uploading…' : 'Upload Document'}
-          </button>
         </div>
       </div>
 
       <div className="vault-grid">
         <aside className="vault-side">
           <section className="card vault-files">
-            <h2 className="card-title">My Files</h2>
+            <h2 className="card-title">Saved in Vault</h2>
             <ul>
               {CATEGORIES.map(c => (
                 <li key={c.key}>
-                  <button className={cat === c.key ? 'active' : ''} onClick={() => { setCat(c.key); setFolder(null) }}>
+                  <button className={cat === c.key ? 'active' : ''} onClick={() => setCat(c.key)}>
                     {c.key === 'favourites' ? <Star size={19} fill="#f59e0b" color="#f59e0b" /> : c.key === 'all' ? <Folder size={19} fill="#1d5fd6" color="#1d5fd6" /> : <c.icon size={19} />}
-                    <span>{c.label}</span><em>{stats.data?.counts?.[c.key] ?? ''}</em>
+                    <span>{c.label}</span><em>{counts?.[c.key] ?? ''}</em>
                   </button>
                 </li>
               ))}
             </ul>
           </section>
-          <section className="card vault-storage">
-            <h2 className="card-title">Storage Usage</h2>
-            {storage ? (
-              <>
-                <div className="vs-row"><span><b>{formatBytes(storage.usedBytes)}</b> of {formatBytes(storage.quotaBytes).replace('.0 ', ' ')} used</span><span>{pct}%</span></div>
-                <div className="progress"><span style={{ width: `${pct}%`, background: '#1d5fd6' }} /></div>
-              </>
-            ) : <Skeleton h={30} />}
-            <button className="link vs-upgrade" onClick={() => toast('Upgrade plans coming soon', 'info')}>Upgrade Storage <ArrowRight size={17} /></button>
-            <div className="vs-more">
-              <div className="vs-more-head"><Crown size={24} /><div><b>Need more space?</b><span>Upgrade to store more documents and keep your legal records safe.</span></div></div>
-              <button className="btn btn-outline btn-block" onClick={() => toast('Plans: Basic 5 GB (Free) · Plus 50 GB · Pro 200 GB', 'info')}>View Plans</button>
-            </div>
+          <section className="card vault-soon">
+            <span className="icon-tile tile-blue"><Upload /></span>
+            <b>Your own files</b>
+            <p>Uploading contracts, notices and photos to keep in the Vault is coming soon.</p>
           </section>
         </aside>
 
-        <div className="vault-main">
-          <section className="card vault-folders">
-            <div className="card-head">
-              <h2 className="vault-h2">Folders <span>({folders.data?.items.length ?? 0})</span></h2>
-              <button className="link" onClick={() => setNewFolder('')}><Plus size={19} /> New Folder</button>
-            </div>
-            <div className="folder-grid">
-              {!folders.data && folders.loading && Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} h={122} r={10} />)}
-              {folders.data?.items.map(f => (
-                <div key={f.id} className={`folder ${folder?.id === f.id ? 'active' : ''}`} onClick={() => setFolder(folder?.id === f.id ? null : f)}>
-                  <FolderIcon color={f.color} size={54} />
-                  <b>{f.name}</b>
-                  <span>{f.fileCount} files</span>
-                  <button className="icon-btn-plain folder-kebab" aria-label="Folder options" onClick={e => { e.stopPropagation(); toast(`Options for ${f.name}`, 'info') }}><MoreVertical size={18} /></button>
-                </div>
-              ))}
-            </div>
-            {folders.error && <ErrorState compact error={folders.error} onRetry={folders.reload} />}
-          </section>
-
-          <section className="card vault-docs">
-            <div className="card-head">
-              <h2 className="vault-h2">Documents <span>({docs.data?.total ?? 0})</span>{folder && <button className="pill pill-blue vault-chip" onClick={() => setFolder(null)}>{folder.name} <X size={13} /></button>}</h2>
+        <section className="card vault-docs">
+          <div className="card-head">
+            <h2 className="vault-h2">{CATEGORIES.find(c => c.key === cat).label} <span>({list.data?.total ?? 0})</span></h2>
+            <div className="vault-head-right">
+              {inTrash && items.length > 0 && <button className="btn btn-outline btn-sm" onClick={() => setConfirmEmpty(true)}><Trash2 size={16} /> Empty Trash</button>}
               <div className="vault-sort" ref={sortRef}>
                 <span>Sort by:</span>
                 <button onClick={() => setSortOpen(o => !o)}>{sort[0]} <ChevronDown size={18} /></button>
@@ -201,65 +163,83 @@ export default function Vault() {
                 )}
               </div>
             </div>
+          </div>
+          {inTrash && <p className="vault-note">Items stay in the Trash for 30 days and are then deleted for good. Restore one to keep it.</p>}
 
-            {docs.error && !docs.data && <ErrorState compact error={docs.error} onRetry={docs.reload} />}
-            {!docs.data && docs.loading && <div className="doc-grid">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} h={144} r={10} />)}</div>}
-            {docs.data && items.length === 0 && <div className="vault-empty"><Folder size={40} /><p>No documents here yet.</p></div>}
+          {list.error && !list.data && <ErrorState compact error={list.error} onRetry={list.reload} />}
+          {!list.data && list.loading && <div className="doc-grid">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} h={150} r={10} />)}</div>}
+          {list.data && items.length === 0 && (
+            <div className="vault-empty"><FolderOpen size={40} /><b>{search ? 'Nothing matches your search' : emptyTitle}</b><p>{search ? 'Try a different word.' : emptyText}</p></div>
+          )}
 
-            {items.length > 0 && (view === 'grid' ? (
-              <div className={`doc-grid ${docs.loading ? 'is-refreshing' : ''}`}>
-                {items.map(d => (
-                  <div key={d.id} className="doc-card" onClick={() => open(d)}>
+          {items.length > 0 && (view === 'grid' ? (
+            <div className={`doc-grid ${list.loading ? 'is-refreshing' : ''}`}>
+              {items.map(i => {
+                const Icon = KIND_ICON[i.kind] || FileText
+                return (
+                  <div key={i.id} className="doc-card vi-card" onClick={() => open(i)}>
                     <div className="doc-card-top">
-                      <FileIcon type={d.fileType} size={52} />
-                      <div className="doc-card-info"><b>{d.name}</b><span>{d.category}</span><small>Updated {formatDate(d.updatedAt)} • {formatBytes(d.sizeBytes)}</small></div>
-                      <div className="top-pop">
-                        <button className="icon-btn-plain doc-kebab" aria-label="Document options" onClick={e => { e.stopPropagation(); setMenu(menu === d.id ? null : d.id) }}><MoreVertical size={19} /></button>
-                        {menu === d.id && (
-                          <div className="popover popover-sm doc-menu" onClick={e => e.stopPropagation()}>
-                            <button className="popover-item" onClick={() => open(d)}>Open</button>
-                            <button className="popover-item" onClick={() => downloadDoc(d)}>Download</button>
-                            <button className="popover-item danger" onClick={() => remove(d)}>Delete</button>
-                          </div>
-                        )}
-                      </div>
+                      <span className={`vi-icon vi-${i.kind}`}><Icon size={24} /></span>
+                      <div className="doc-card-info"><b dir="auto" title={i.title}>{i.title}</b><div className="vi-meta"><Meta i={i} /></div></div>
+                      <Menu i={i} />
                     </div>
+                    <p className="vi-summary" dir="auto">{i.summary}</p>
                     <div className="doc-card-foot">
-                      {d.status === 'analysed'
-                        ? <span className="pill pill-green doc-status"><CheckCircle2 size={16} fill="#22a45a" color="#fff" /> Analysed</span>
-                        : <span className="pill pill-blue doc-status doc-secure"><ShieldCheck size={16} /> Secure</span>}
-                      <button className={`icon-btn-plain doc-star ${d.favourite ? 'on' : ''}`} onClick={e => { e.stopPropagation(); toggleFav(d) }} aria-label="Favourite"><Star size={21} /></button>
+                      <small>{inTrash ? `Deleted ${formatDate(i.trashedAt)}` : `Saved ${formatDate(i.savedAt)}`}{i.noteCount > 0 && ` • ${i.noteCount} note${i.noteCount > 1 ? 's' : ''}`}</small>
+                      {!inTrash && <button className={`icon-btn-plain doc-star ${i.favourite ? 'on' : ''}`} onClick={e => { e.stopPropagation(); toggleFav(i) }} aria-label="Favourite"><Star size={21} /></button>}
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className={`doc-table ${docs.loading ? 'is-refreshing' : ''}`}>
-                <div className="doc-tr doc-th"><span>Name</span><span>Category</span><span>Updated</span><span>Size</span><span>Status</span><span /></div>
-                {items.map(d => (
-                  <div key={d.id} className="doc-tr" onClick={() => open(d)}>
-                    <span className="doc-td-name"><FileIcon type={d.fileType} size={30} /><b>{d.name}</b></span>
-                    <span>{d.category}</span><span>{formatDate(d.updatedAt)}</span><span>{formatBytes(d.sizeBytes)}</span>
-                    <span>{d.status === 'analysed' ? <span className="pill pill-green">Analysed</span> : <span className="pill pill-blue">Secure</span>}</span>
-                    <button className={`icon-btn-plain doc-star ${d.favourite ? 'on' : ''}`} onClick={e => { e.stopPropagation(); toggleFav(d) }} aria-label="Favourite"><Star size={19} /></button>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </section>
-        </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className={`doc-table vi-table ${list.loading ? 'is-refreshing' : ''}`}>
+              <div className="doc-tr doc-th"><span>Title</span><span>Type</span><span>Saved</span><span>Notes</span><span /><span /></div>
+              {items.map(i => (
+                <div key={i.id} className="doc-tr" onClick={() => open(i)}>
+                  <span className="doc-td-name"><b dir="auto">{i.title}</b></span>
+                  <span className="vi-meta"><Meta i={i} /></span>
+                  <span>{formatDate(inTrash ? i.trashedAt : i.savedAt)}</span>
+                  <span>{i.noteCount || ''}</span>
+                  {!inTrash ? <button className={`icon-btn-plain doc-star ${i.favourite ? 'on' : ''}`} onClick={e => { e.stopPropagation(); toggleFav(i) }} aria-label="Favourite"><Star size={19} /></button> : <span />}
+                  <Menu i={i} />
+                </div>
+              ))}
+            </div>
+          ))}
+
+          {pages > 1 && (
+            <div className="vault-pager">
+              <button className="btn btn-outline btn-sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}><ChevronLeft size={16} /> Previous</button>
+              <span>Page {page} of {pages}</span>
+              <button className="btn btn-outline btn-sm" disabled={page >= pages} onClick={() => setPage(p => p + 1)}>Next <ChevronRight size={16} /></button>
+            </div>
+          )}
+        </section>
       </div>
 
-      <Modal open={newFolder !== null} onClose={() => setNewFolder(null)} className="modal-sm">
-        <form className="confirm" onSubmit={createFolder}>
-          <span className="icon-tile tile-blue tile-lg"><FolderPlus /></span>
-          <h3>New Folder</h3>
-          <input autoFocus className="input" value={newFolder || ''} onChange={e => setNewFolder(e.target.value)} placeholder="Folder name" />
+      <Modal open={renaming !== null} onClose={() => setRenaming(null)} className="modal-sm">
+        <form className="confirm" onSubmit={rename}>
+          <span className="icon-tile tile-blue tile-lg"><Pencil /></span>
+          <h3>Rename</h3>
+          <input autoFocus className="input" maxLength={160} value={renaming?.title || ''} onChange={e => setRenaming(r => ({ ...r, title: e.target.value }))} placeholder="Title" />
           <div className="confirm-actions">
-            <button type="button" className="btn btn-outline" onClick={() => setNewFolder(null)}>Cancel</button>
-            <button className="btn btn-orange" disabled={creating}>{creating && <Loader2 size={16} className="spin" />} Create Folder</button>
+            <button type="button" className="btn btn-outline" onClick={() => setRenaming(null)}>Cancel</button>
+            <button className="btn btn-orange" disabled={busy || !renaming?.title.trim()}>{busy && <Loader2 size={16} className="spin" />} Save</button>
           </div>
         </form>
+      </Modal>
+
+      <Modal open={confirmEmpty} onClose={() => setConfirmEmpty(false)} className="modal-sm">
+        <div className="confirm">
+          <span className="icon-tile tile-red tile-lg"><Trash2 /></span>
+          <h3>Empty the Trash?</h3>
+          <p>Everything in the Trash will be deleted for good. This cannot be undone.</p>
+          <div className="confirm-actions">
+            <button className="btn btn-outline" onClick={() => setConfirmEmpty(false)}>Cancel</button>
+            <button className="btn btn-orange" onClick={emptyTrash} disabled={busy}>{busy && <Loader2 size={16} className="spin" />} Delete everything</button>
+          </div>
+        </div>
       </Modal>
     </div>
   )

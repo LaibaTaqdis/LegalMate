@@ -19,6 +19,7 @@ def purge_expired(db: Database, cfg: DocSettings) -> dict:
     out["documents"] = db.run("delete from app.documents where expires_at is not null and expires_at < now()")
     out["unread_photos"] = db.run("delete from app.documents where status = 'pending' and created_at < now() - make_interval(hours => %s)", [cfg.pending_hours])
     out["analyses"] = db.run("delete from app.analyses where expires_at is not null and expires_at < now()")
+    out["vault_trash"] = db.run("delete from app.vault_items where trashed_at is not null and trashed_at < now() - make_interval(days => %s)", [cfg.vault_trash_days])
     out["stale"] = db.run(
         "update app.analyses set status = 'failed', error = 'The analysis was interrupted. Please start it again.', finished_at = now() "
         "where status in ('queued', 'processing') and created_at < now() - make_interval(mins => %s)", [cfg.analysis_stale_minutes])

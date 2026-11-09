@@ -268,7 +268,7 @@ export default function Settings() {
                 </div>
               )}
               <div className="card st-card">
-                <div className="st-storage"><Database size={24} /><div><b>Legal Vault storage</b><span>{st ? `${formatBytes(st.usedBytes)} of ${formatBytes(st.quotaBytes).replace('.0 ', ' ')} used` : '…'}</span><div className="progress"><span style={{ width: `${pct}%`, background: '#1d5fd6' }} /></div></div><Link to="/vault" className="btn btn-outline">Manage</Link></div>
+                <div className="st-storage"><Database size={24} /><div><b>Legal Vault</b><span>{st ? `${formatBytes(st.usedBytes)} of ${formatBytes(st.quotaBytes).replace('.0 ', ' ')} used` : storage.data?.counts ? `${storage.data.counts.all} saved item${storage.data.counts.all === 1 ? '' : 's'}` : '…'}</span>{st && <div className="progress"><span style={{ width: `${pct}%`, background: '#1d5fd6' }} /></div>}</div><Link to="/vault" className="btn btn-outline">Manage</Link></div>
                 <Row title="Download your data" sub="Get a copy of your documents, briefs and chats"><button className="btn btn-outline" onClick={() => run('export', settingsService.requestExport, 'We’ll email you a download link within 24 hours')} disabled={busy === 'export'}>{busy === 'export' ? <Loader2 size={17} className="spin" /> : <Download size={17} />} Request Export</button></Row>
                 <Row title="Delete account" sub="Permanently delete your account and all data"><button className="btn btn-danger-soft" onClick={() => setConfirmDelete(true)}><Trash2 size={17} /> Delete Account</button></Row>
               </div>

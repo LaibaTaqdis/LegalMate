@@ -289,6 +289,12 @@ def run_analysis(state: AppState, analysis_id: str) -> None:
         expires = datetime.now(timezone.utc) + timedelta(days=cfg.analysis_retention_days) if cfg.analysis_retention_days > 0 else None
         db.run("update app.analyses set status = 'completed', progress = 100, result = %s, finished_at = now(), expires_at = %s where id = %s",
                [Jsonb(result), expires, analysis_id])
+        if (row["input"] or {}).get("saveToVault"):                                    # "Save to Legal Vault" was ticked when it was started
+            try:
+                from . import vault
+                vault.save_analysis(db, cfg, str(row["user_id"]), analysis_id)
+            except Exception:                                                          # noqa: BLE001 - the analysis itself is done; a full Vault must not fail it
+                log.warning("could not save analysis %s to the Vault", analysis_id, exc_info=True)
     except BudgetExceeded:
         fail("LegalMate has reached its limit for today. Please try again tomorrow.")
     except (CacheMiss, LLMError):
