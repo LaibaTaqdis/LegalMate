@@ -36,7 +36,7 @@ def upload_document(file: UploadFile = File(...), purpose: str = Form("analysis"
         raise ApiError(400, "VALIDATION_ERROR", "purpose must be analysis or chat.", {"field": "purpose"})
     if cfg.uploads_per_hour > 0:
         state.limiter.check(f"upload:{uid}", cfg.uploads_per_hour, 3600, "You are uploading very quickly. Please wait a little and try again.")
-    docs_service.purge_if_due(state.db, cfg)
+    docs_service.purge_if_due(state.db, cfg, state.storage)
     if cfg.docs_per_user > 0:
         n = state.db.one("select count(*) as n from app.documents where user_id = %s", [uid])["n"]
         if n >= cfg.docs_per_user:

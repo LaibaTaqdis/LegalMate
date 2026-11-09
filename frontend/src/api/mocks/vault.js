@@ -28,3 +28,17 @@ export const vaultDb = {
   notes: { vi_1: [{ id: 'vn_1', text: 'Ask the landlord for the notice in writing.', createdAt: iso(1) }] },
   activity: { vi_1: [{ action: 'noted', createdAt: iso(1) }, { action: 'saved', createdAt: iso(2) }] },
 }
+
+// part B: your own files (demo data)
+export const vaultFilesDb = {
+  storage: { usedBytes: 1_800_000, quotaBytes: 50 * 1024 * 1024 },
+  folders: [{ id: 'fo_1', name: 'Property', color: '#fbbf24', fileCount: 1 }, { id: 'fo_2', name: 'Family', color: '#34d399', fileCount: 0 }],
+  files: [
+    { id: 'vf_1', name: 'Tenancy Agreement.pdf', fileType: 'pdf', category: 'Contracts', folderId: 'fo_1', folderName: 'Property', sizeBytes: 1_200_000, pages: 6,
+      favourite: true, noteCount: 0, textStatus: 'ready', hasText: true, uploadedAt: iso(9), updatedAt: iso(9), trashedAt: null },
+    { id: 'vf_2', name: 'Rent receipt.jpg', fileType: 'jpg', category: 'Personal', folderId: null, folderName: null, sizeBytes: 600_000, pages: 1,
+      favourite: false, noteCount: 0, textStatus: 'ready', hasText: true, uploadedAt: iso(3), updatedAt: iso(3), trashedAt: null },
+  ],
+  notes: {},
+  activity: {},
+}

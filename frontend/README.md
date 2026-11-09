@@ -4,6 +4,8 @@ React + Vite implementation of the **UI Designs By Isha** screens (18 screens / 
 
 All data flows through an API layer. By default it runs on built-in **mock data** (no backend needed: login and signup accept any input). Point it at a real backend with one environment switch, and every page loads and saves through the API with no page changes.
 
+The real backend exists now for **auth, chat, profile, documents and the Legal Vault**: list those in `VITE_REAL_SERVICES` in `.env.local` (see `.env.example`: `VITE_REAL_SERVICES=auth,chat,profile,documents,vault`). Every other service stays on mock data until its backend is built.
+
 ## Run
 
 ```bash
@@ -35,8 +37,8 @@ For local development without CORS, set `VITE_API_BASE_URL=/api/v1` and `VITE_PR
 | 8 | Confidence Indicator | `/chat/tenant-rights?panel=confidence` (or click the “% Confidence” chip) |
 | 9 | Document Upload | `/documents/upload` |
 | 10 | Document Analysis Result | `/documents/analysis/tenancy` |
-| 11 | Legal Vault | `/vault` |
-| 12 | Document View | `/vault/document/tenancy` |
+| 11 | Legal Vault: two tabs, **Saved** (chat answers and analyses you saved) and **My Files** (your own documents, folders, storage meter) | `/vault` and `/vault?tab=files` |
+| 12 | A saved item opened (answer or analysis) / a file opened (preview, notes, activity) | `/vault/item/:id` and `/vault/file/:id` |
 | 13 | AI Case Brief | `/case-briefs/new` |
 | 14 | Case Brief Share | `/case-briefs/ahmad-khan-vs-state?share=1` (or click Share) |
 | 15 | Legal Calculator | `/calculator` |
@@ -73,10 +75,10 @@ src/styles/               base tokens + one stylesheet per area
 ### How a page talks to the backend
 
 ```jsx
-const vault = useQuery(signal => vaultService.listDocuments({ category, sort }, signal), [category, sort])
+const vault = useQuery(signal => vaultService.listItems({ category, sort }, signal), [category, sort])
 // vault.data / vault.loading / vault.error / vault.reload() / vault.setData() for optimistic updates
 
-await vaultService.setFavourite(id, true)   // mutations call the service directly
+await vaultService.setFavourite(id, true)        // saved items; files use setFileFavourite   // mutations call the service directly
 ```
 
 To change an endpoint, edit `src/api/endpoints.js` and the matching service. Pages never call `fetch` directly.

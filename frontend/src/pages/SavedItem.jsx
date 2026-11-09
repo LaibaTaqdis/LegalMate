@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { AlertTriangle, ListChecks, FileText, Loader2, MessageCircleMore, Pencil, RotateCcw, Star, Trash2, X } from 'lucide-react'
+import { AlertTriangle, ListChecks, FileText, Loader2, MessageCircleMore, Pencil, RotateCcw, Star, Trash2 } from 'lucide-react'
 import { Breadcrumb, Modal } from '../components/common'
+import { VaultActivity, VaultNotes } from '../components/VaultParts'
 import { useUI } from '../components/UIContext'
 import { QueryBoundary, PageSkeleton } from '../components/States'
 import { useQuery } from '../hooks/useApi'
@@ -11,7 +12,6 @@ import { formatDateTime } from '../utils/format'
 import { AnalysisResult } from './Analysis'
 
 const KIND_LABEL = { answer: 'Chat answer', analysis: 'Analysis', brief: 'Case brief' }
-const ACTION_LABEL = { saved: 'Saved to the Vault', renamed: 'Renamed', favourited: 'Added to favourites', unfavourited: 'Removed from favourites', noted: 'Note added', trashed: 'Moved to Trash', restored: 'Restored from Trash' }
 
 /** The model's rich text ([text, {b}, {cite}]) with citation chips that jump to the source below. */
 function Segs({ parts, onCite }) {
@@ -67,53 +67,6 @@ function SavedAnswer({ content }) {
         </section>
       )}
     </>
-  )
-}
-
-function Notes({ id, locked, onChanged }) {
-  const { toast } = useUI()
-  const q = useQuery(signal => vaultService.listNotes(id, signal), [id])
-  const [text, setText] = useState('')
-  const [busy, setBusy] = useState(false)
-  const add = async e => {
-    e.preventDefault()
-    if (!text.trim()) return
-    setBusy(true)
-    try { await vaultService.addNote(id, text.trim()); setText(''); q.reload({ silent: true }); onChanged?.() } catch (err) { toast(err.message, 'info') } finally { setBusy(false) }
-  }
-  const remove = async n => {
-    q.setData(d => ({ ...d, items: d.items.filter(x => x.id !== n.id) }))
-    try { await vaultService.deleteNote(id, n.id) } catch (err) { toast(err.message, 'info'); q.reload({ silent: true }) }
-  }
-  return (
-    <section className="card vi-notes">
-      <h3>Notes</h3>
-      {!locked && (
-        <form className="vi-note-form" onSubmit={add}>
-          <textarea value={text} maxLength={2000} onChange={e => setText(e.target.value)} placeholder="Add a note for yourself…" aria-label="New note" />
-          <div><span>{text.length}/2000</span><button className="btn btn-outline btn-sm" disabled={busy || !text.trim()}>{busy && <Loader2 size={15} className="spin" />} Add note</button></div>
-        </form>
-      )}
-      {q.data?.items.length === 0 && <p className="vi-empty">{locked ? 'No notes.' : 'No notes yet.'}</p>}
-      {q.data?.items.map(n => (
-        <div key={n.id} className="vi-note">
-          <div><p>{n.text}</p><small>{formatDateTime(n.createdAt)}</small></div>
-          {!locked && <button className="icon-btn-plain" aria-label="Delete note" onClick={() => remove(n)}><X size={16} /></button>}
-        </div>
-      ))}
-    </section>
-  )
-}
-
-function Activity({ id, version }) {
-  const q = useQuery(signal => vaultService.listActivity(id, signal), [id, version])
-  return (
-    <section className="card vi-activity">
-      <h3>Activity</h3>
-      <ul className="vi-log">
-        {q.data?.items.map((a, i) => <li key={i}>{ACTION_LABEL[a.action] || a.action}<span>{formatDateTime(a.createdAt)}</span></li>)}
-      </ul>
-    </section>
   )
 }
 
@@ -175,8 +128,9 @@ function Item({ item, reload, setItem }) {
       {item.kind === 'analysis' && !item.content && <section className="card vi-q"><p>{item.summary}</p></section>}
 
       <div className="vi-two">
-        <Notes id={item.id} locked={trashed} onChanged={() => setVersion(v => v + 1)} />
-        <Activity id={item.id} version={version} />
+        <VaultNotes id={item.id} locked={trashed} onChanged={() => setVersion(v => v + 1)}
+          api={{ list: vaultService.listNotes, add: vaultService.addNote, remove: vaultService.deleteNote }} />
+        <VaultActivity id={item.id} version={version} load={vaultService.listActivity} />
       </div>
 
       <Modal open={renaming !== null} onClose={() => setRenaming(null)} className="modal-sm">

@@ -14,6 +14,7 @@ import Upload from './pages/Upload'
 import Analysis from './pages/Analysis'
 import Vault from './pages/Vault'
 import SavedItem from './pages/SavedItem'
+import VaultFile from './pages/VaultFile'
 import CaseBrief from './pages/CaseBrief'
 import CaseBriefView from './pages/CaseBriefView'
 import Calculator from './pages/Calculator'
@@ -73,7 +74,8 @@ export default function App() {
           <Route path="/documents/analysis/:id" element={<OldAnalysisLink />} />
           <Route path="/vault" element={<Vault />} />
           <Route path="/vault/item/:id" element={<SavedItem />} />
-          <Route path="/vault/document/:id" element={<Navigate to="/vault" replace />} />       {/* uploaded files: coming soon */}
+          <Route path="/vault/file/:id" element={<VaultFile />} />
+          <Route path="/vault/document/:id" element={<Navigate to="/vault?tab=files" replace />} />
           <Route path="/case-briefs" element={<Navigate to="/case-briefs/new" replace />} />
           <Route path="/case-briefs/new" element={<CaseBrief />} />
           <Route path="/case-briefs/:id" element={<CaseBriefView />} />

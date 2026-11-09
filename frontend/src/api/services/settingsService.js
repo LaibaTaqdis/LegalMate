@@ -48,7 +48,7 @@ export const settingsService = {
 
   /* ---------- Data ---------- */
   /** -> { storage: { usedBytes, quotaBytes } | null, counts?: { all, ... } }. The real Vault counts saved items; file storage arrives with the Vault's "My files" part. */
-  getStorage: signal => (isMock('vault') ? mock({ storage: MOCK_SETTINGS.storage }) : api.get(EP.vault.stats, { signal }).then(s => ({ storage: null, counts: s.counts }))),
+  getStorage: signal => (isMock('vault') ? mock({ storage: MOCK_SETTINGS.storage }) : api.get(EP.vault.stats, { signal }).then(s => ({ storage: s.filesEnabled ? s.storage : null, counts: s.counts }))),
   /** Queues a data export; the backend emails a download link. -> { requestId } */
   requestExport: () => (USE_MOCKS ? mock({ requestId: 'exp_1' }, 400) : api.post(EP.settings.export)),
   /** Starts account deletion; the backend emails a confirmation link. */

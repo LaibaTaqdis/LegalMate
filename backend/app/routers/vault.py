@@ -51,7 +51,10 @@ def list_items(category: Literal["all", "answer", "analysis", "brief", "favourit
 
 @router.get("/stats")
 def stats(user: dict = Depends(current_user), state: AppState = Depends(get_state)):
-    return vault.stats(state.db, str(user["id"]))
+    """Part A: `counts` (saved answers and analyses). Part B adds `files` (counts), `storage` and `filesEnabled`."""
+    from .. import vault_files
+    uid = str(user["id"])
+    return {**vault.stats(state.db, uid), **vault_files.stats(state.db, state.settings.docs, uid), "filesEnabled": state.storage is not None}
 
 
 @router.get("/items/{item_id}")

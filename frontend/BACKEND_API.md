@@ -23,7 +23,7 @@ The frontend switches services to the real backend one by one (`VITE_REAL_SERVIC
 | Analysis: `/analyses/:id/save` | **Done** (section 7, part A). |
 | Analysis: `/analyses/:id/report`, `/share` | Answer `501 NOT_IMPLEMENTED` (PDF report and share links are later). |
 | Legal Vault part A: saved answers and analyses (`/vault/items`, notes, activity, Trash, `/vault/stats`) | **Done** (section 7). |
-| Legal Vault part B: your own uploaded files (`/vault/documents`, folders, storage quota) | Not built (spec kept in section 7, part B). |
+| Legal Vault part B: your own uploaded files (`/vault/files`, `/vault/folders`, storage quota) | **Done** (section 7, part B). Originals are kept in private Supabase Storage. |
 | Settings: security, sessions, preferences, avatar, export, delete account, integrations | Not built (mock). |
 | Dashboard, briefs, calculators, legal aid, lawyers, bookings, admin, community, emergency, offline, WhatsApp | Not built (mock). |
 
@@ -120,7 +120,7 @@ File endpoints return the binary with `Content-Type` and `Content-Disposition: a
 | 28 | GET | `/analyses/:id/report` | "Download Report" |
 | 29 | POST | `/analyses/:id/save` | "Save to Vault" |
 | 30 | POST | `/analyses/:id/share` | "Share" |
-| **Legal Vault** (part A, saved answers and analyses, is BUILT: `/vault/items...` in section 7. Rows 32-45 below are part B, your own files, not built) |||
+| **Legal Vault** (both parts are BUILT: `/vault/items...` is part A, `/vault/files...` and `/vault/folders` are part B; section 7 has the current API. Rows 32-45 below are the original design) |||
 | 31 | GET | `/vault/stats` | Vault sidebar, Settings (part A: counts; part B adds storage) |
 | 32 | GET | `/vault/folders` | Vault, Document view (move) |
 | 33 | POST | `/vault/folders` | Vault "New Folder" |
@@ -518,7 +518,7 @@ Saves the finished analysis to the Legal Vault as a snapshot → `{ "id": "<vaul
 
 ## 7. Legal Vault
 
-The Vault is built in two independent parts. **Part A (built)** keeps what the user saves from the app: chat answers and analyses, as snapshots that stay readable after the chat or the analysis is deleted. **Part B (not built)** keeps the user's own uploaded files. They share only the Vault page.
+The Vault is built in two independent parts. **Part A (built)** keeps what the user saves from the app: chat answers and analyses, as snapshots that stay readable after the chat or the analysis is deleted. **Part B (built)** keeps the user's own uploaded files. They share only the Vault page (two tabs) and `GET /vault/stats`.
 
 ### Part A: saved items
 
@@ -547,71 +547,41 @@ SavedItem = { "id": "uuid", "kind": "answer|analysis|brief", "title": "...", "su
 
 Limits (all environment variables, see `backend/.env.example`): `VAULT_MAX_ITEMS` 500 per user (`422 QUOTA_EXCEEDED`), `VAULT_TRASH_DAYS` 30 (the server removes older Trash items), `VAULT_PAGE_SIZE` 24. Every id that is not the caller's answers `404`.
 
-### Part B: your own files (not built; the earlier design, kept for when it is)
+### Part B: your own files (built)
 
-### Document (vault)
+The user's own contracts, notices and photos. The original is kept in a PRIVATE Supabase Storage bucket (`VAULT_BUCKET`, default `legalmate-vault`); the database holds the name, folder, category, size and the text read from the file (for search). The browser never gets a permanent address: it asks for a short-lived signed link. Accepted types (decided by the file's bytes, never its name): PDF, Word (.docx), JPG, PNG, up to `MAX_UPLOAD_MB` (10). `503 UNAVAILABLE` when `SUPABASE_URL` / `SUPABASE_SERVICE_KEY` are not set (`GET /vault/stats` then returns `filesEnabled: false`).
+
 ```json
-{ "id": "tenancy", "name": "Tenancy Agreement.pdf", "fileType": "pdf|docx|xlsx|jpg|png",
-  "category": "Contracts|Notices|Court Documents|Case Briefs|Property|Personal|Family",
-  "folderId": "fld_property", "folderName": "Property", "updatedAt": "...", "uploadedAt": "...",
-  "sizeBytes": 2516582, "status": "analysed|secure", "favourite": true, "pages": 12,
-  "verified": true, "tags": ["Tenancy", "Property"], "owner": "You", "analysisId": "ana_1|null" }
+VaultFile = { "id": "uuid", "name": "Tenancy Agreement.pdf", "fileType": "pdf|docx|jpg|png",
+  "category": "Contracts|Notices|Court Documents|Property|Personal|Family|Other", "folderId": "uuid|null", "folderName": "Property|null",
+  "sizeBytes": 2516582, "pages": 12, "favourite": false, "noteCount": 0,
+  "textStatus": "ready|pending|none", "hasText": true,
+  "uploadedAt": "...", "updatedAt": "...", "trashedAt": "...|null" }
+Folder = { "id": "uuid", "name": "Property", "color": "#fbbf24", "fileCount": 6 }
 ```
+`textStatus: "pending"` means a photo or scanned PDF is still being read in the background (the file is usable at once; poll `GET /vault/files/:id` until it is `ready` or `none`).
 
-### GET `/vault/stats` (part B adds file storage to the part A response)
-```json
-{ "storage": { "usedBytes": 1800000000, "quotaBytes": 5000000000 },
-  "counts": { "all": 24, "Contracts": 6, "Notices": 4, "Court Documents": 5, "Case Briefs": 3,
-              "shared": 2, "favourites": 4, "trash": 1 } }
-```
+| Method | Path | Notes |
+|---|---|---|
+| POST | `/vault/files` | multipart `file`, optional `folderId`, `category` (default `Other`) → `201 VaultFile`. `415` wrong type, `413` too large, `422 QUOTA_EXCEEDED` (`VAULT_QUOTA_MB` 50 per user, the Trash counts until emptied; `VAULT_MAX_FILES` 200), `429` past `VAULT_UPLOADS_PER_HOUR`. |
+| GET | `/vault/files` | Query: `category` (`all` default, `favourites`, `trash`, or one of the categories), `folderId`, `q` (file names AND the text inside), `sort` (`updated_desc` default, `updated_asc`, `name_asc`, `name_desc`, `size_desc`), `page`, `pageSize` (default 24) → `{ items, total, page, pageSize, counts: { all, favourites, trash, Contracts, ... }, storage: { usedBytes, quotaBytes } }` |
+| GET | `/vault/files/:id` | VaultFile |
+| GET | `/vault/files/:id/link` | `?download=true` → `{ url, expiresIn }`: a signed link valid `VAULT_LINK_SECONDS` (300) seconds. Without `download` it opens in place (PDF, image); with it the browser saves the file under its name. Readable while in the Trash. |
+| GET | `/vault/files/:id/text` | → `{ text, truncated, status }` (the text read from the file; used for Word previews) |
+| PATCH | `/vault/files/:id` | any of `{ "name", "folderId" (null = no folder), "category" }`; only what is sent changes → VaultFile. `404` while in the Trash. |
+| PUT | `/vault/files/:id/favourite` | `{ "favourite": true }` → `204` |
+| DELETE | `/vault/files/:id` | Moves to the Trash → `204`. `?permanent=true` deletes a file that is in the Trash for good: the stored original first, then the row (`503` if storage refuses, and the file stays so it can be retried; `422` if it is not in the Trash). |
+| POST | `/vault/files/:id/restore` | `204` |
+| DELETE | `/vault/files-trash` | Empties the file Trash → `{ "deleted": 3 }` |
+| GET/POST | `/vault/files/:id/notes` | same shape as part A notes |
+| DELETE | `/vault/files/:id/notes/:noteId` | `204` |
+| GET | `/vault/files/:id/activity` | → `{ items: [ { action: uploaded\|renamed\|moved\|categorised\|favourited\|unfavourited\|noted\|trashed\|restored\|downloaded, createdAt } ] }` |
+| GET | `/vault/folders` | → `{ items: Folder[] }` |
+| POST | `/vault/folders` | `{ "name", "color"? }` → `201 Folder`. `409` if the name exists (any case), `422` past `VAULT_MAX_FOLDERS` (30). |
+| PATCH | `/vault/folders/:id` | `{ "name"?, "color"? }` → Folder |
+| DELETE | `/vault/folders/:id` | `204`. The files inside are kept and simply have no folder. |
 
-### GET `/vault/folders`
-→ `{ "items": [ { "id": "fld_property", "name": "Property", "color": "#fbbf24", "fileCount": 6 } ] }`
-### POST `/vault/folders`
-`{ "name": "Tax", "color": "#0ea5e9" }` → `Folder` (`409` if the name already exists)
-
-### GET `/vault/documents`
-Query:
-
-| Param | Values |
-|---|---|
-| `category` | `all` (default), a category name, `favourites`, `shared`, `trash` |
-| `folderId` | folder id |
-| `q` | search text (name, tags, content) |
-| `status` | `analysed` \| `secure` |
-| `sort` | `updated_desc` (default) \| `updated_asc` \| `name_asc` \| `name_desc` |
-| `page`, `pageSize` | pagination |
-
-→ `{ "items": Document[], "total": 19, "page": 1, "pageSize": 50 }`
-
-### POST `/vault/documents` (multipart)
-Fields: `file`, `folderId?`, `category?` → `Document` (201). Enforce the storage quota (`422 QUOTA_EXCEEDED`).
-
-### GET `/vault/documents/:id` → `Document`
-### PATCH `/vault/documents/:id`
-Any of `{ "name", "folderId", "category", "tags": [] }` → `Document`
-### DELETE `/vault/documents/:id`
-Moves the document to Trash (restorable for 30 days) → `204`.
-### PUT `/vault/documents/:id/favourite`
-`{ "favourite": true }` → `204`
-### POST `/vault/documents/:id/copy` → `Document` (the copy)
-### GET `/vault/documents/:id/file`
-Original file download (or `302` to a short-lived signed storage URL).
-
-### GET `/vault/documents/:id/content`
-Used by the document viewer:
-```json
-{ "pageCount": 12, "fileUrl": "https://signed-url (for images)",
-  "pages": [ { "number": 1, "html": "<h2 class=\"doc-h\">TENANCY AGREEMENT</h2><p>... <mark>highlighted clause</mark> ...</p>" } ] }
-```
-The frontend renders `html` directly, so **it must be sanitised server-side** (allow only `h2, p, b, i, ol, ul, li, mark, span, div` plus `class`). Use `<mark>` for clauses highlighted by the analysis.
-
-### GET `/vault/documents/:id/notes`
-→ `{ "items": [ { "id": "n1", "text": "...", "createdAt": "..." } ] }`
-### POST `/vault/documents/:id/notes`
-`{ "text": "..." }` → `Note` (201)
-### GET `/vault/documents/:id/activity`
-→ `{ "items": [ { "id": "a1", "type": "analysed|verified|viewed|uploaded|renamed|moved|shared", "text": "Analysis completed", "createdAt": "..." } ] }`
+`GET /vault/stats` returns part A's `counts` plus `files` (the counts above), `storage` and `filesEnabled`. Files that stay in the Trash for `VAULT_TRASH_DAYS` (30) are deleted for good (original included) by the server's clean-up. Every id that is not the caller's answers `404`. Not built: copying a file, analysing a Vault file with one click, virus scanning, a Word/Excel viewer (Word files show as extracted text), sharing.
 
 ---
 
@@ -965,9 +935,9 @@ These reuse the marketplace's `Lawyer` and `Booking` shapes (section 15), scoped
 |---|---|
 | Auth | JWT + refresh-token rotation, argon2 passwords (done); Google OAuth, mail service for password reset and email verification, optional NADRA CNIC verification (not built; SMS OTP is not used in this version) |
 | AI chat | RAG over Pakistani laws (Acts, Rules, judgments) with a vector store, citation extraction, confidence scoring, Urdu + English support, SSE streaming |
-| Document analysis | File storage (S3-compatible, encrypted at rest), virus scan, OCR for scans/images, clause/risk/deadline extraction, background job queue, PDF report generation |
+| Document analysis | OCR for scans/images, clause/risk/deadline extraction, background jobs (done: text only is stored, the original is not kept); PDF report generation and virus scan (not built) |
 | Case briefs | LLM generation into the section/block schema, PDF + DOCX export, share links with expiry/password, invite emails/SMS |
-| Vault | Folders, categories, tags, favourites, trash with 30-day retention, storage quotas, signed download URLs, notes, activity log |
+| Vault | Done (section 7): saved answers and analyses, folders, categories, favourites, 30-day Trash, 50 MB quota, signed links (5 min), notes, activity log. Originals live in a private Supabase Storage bucket. Not built: tags, virus scan, copy, sharing |
 | Calculators | Configurable, province-specific rate tables with legal sources |
 | Legal aid | Verified provider directory, geo search, help-request inbox for providers |
 | Emergency Mode | Province-aware emergency number directory, SMS/WhatsApp alert dispatch, live-location link generation |
@@ -985,5 +955,5 @@ These reuse the marketplace's `Lawyer` and `Booking` shapes (section 15), scoped
 - Rate-limit auth, OTP, chat and upload endpoints.
 - Scope every resource to the authenticated user (return `404` for other users' ids).
 - Sanitise any HTML returned by `/vault/documents/:id/content`.
-- Never log document contents or CNIC numbers. Encrypt documents at rest.
+- Never log document contents or CNIC numbers. Documents are encrypted at rest by the storage platform (Supabase encrypts Postgres and Storage with AES-256 and all traffic is TLS); the app adds a private bucket, signed short-lived links and per-user scoping. An extra application-level encryption layer is not built (see `backend/README.md`, "Security and encryption").
 - Answers are general legal information, not legal advice. Keep the disclaimer in AI responses.

@@ -216,6 +216,18 @@ class VaultNoteIn(Body):
     text: str = Field(min_length=1, max_length=5000)               # the real limit (VAULT_NOTE_CHARS) is checked by the endpoint
 
 
+class VaultFilePatch(Body):
+    """Only the fields that are sent change; `folderId: null` takes the file out of its folder."""
+    name: str | None = Field(default=None, max_length=200)
+    folderId: str | None = Field(default=None, max_length=64)
+    category: str | None = Field(default=None, max_length=40)
+
+
+class VaultFolderIn(Body):
+    name: str | None = Field(default=None, max_length=120)
+    color: str | None = Field(default=None, max_length=9)
+
+
 class AnalysisIn(Body):
     documentIds: list[str] = Field(min_length=1, max_length=10)
     language: Literal["auto", "en", "ur"] = "auto"

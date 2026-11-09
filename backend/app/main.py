@@ -23,6 +23,8 @@ from .errors import body, install_error_handlers
 from .ratelimit import RateLimiter
 from .routers import auth, chat, documents, users
 from .routers import vault as vault_router
+from .routers import vault_files as vault_files_router
+from .storage import build_storage
 from .state import AppState, EngineHolder, build_engine
 
 API_PREFIX = "/api/v1"
@@ -30,7 +32,8 @@ MAX_JSON_BYTES = 1_000_000          # nothing in this API sends more than a few 
 log = logging.getLogger("legalmate.api")
 
 
-def create_app(settings: AppSettings | None = None, *, engine=None, db: Database | None = None) -> FastAPI:
+def create_app(settings: AppSettings | None = None, *, engine=None, db: Database | None = None, storage=None) -> FastAPI:
+    """`storage`: the Legal Vault's file storage; tests pass an in-memory one. When omitted it is built from SUPABASE_URL / SUPABASE_SERVICE_KEY."""
     if not logging.getLogger().handlers:
         logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     s = settings or get_app_settings()
@@ -42,11 +45,13 @@ def create_app(settings: AppSettings | None = None, *, engine=None, db: Database
         applied = migrate(database)
         if applied:
             log.info("database migrated: %s", ", ".join(applied))
-        purge_expired(database, s.docs)
+        files = storage if storage is not None else build_storage(s)
+        purge_expired(database, s.docs, files)
         holder = EngineHolder(engine=engine, enabled=s.enable_engine, factory=lambda: build_engine(s.docs.chat_doc_chars))
         app.state.ctx = AppState(settings=s, db=database, limiter=RateLimiter(), engine=holder,
                                  executor=ThreadPoolExecutor(max_workers=s.engine_concurrency, thread_name_prefix="chat"),
-                                 analysis_executor=ThreadPoolExecutor(max_workers=s.docs.analysis_concurrency, thread_name_prefix="analysis"))
+                                 analysis_executor=ThreadPoolExecutor(max_workers=s.docs.analysis_concurrency, thread_name_prefix="analysis"),
+                                 storage=files, vault_executor=ThreadPoolExecutor(max_workers=1, thread_name_prefix="vault-read"))
         if s.enable_engine and s.warm_engine and engine is None:
             holder.warm_in_background()
         if s.docs.ocr_enabled and s.docs.ocr_warm and s.warm_engine and engine is None:      # photos: models loaded and primed before the first upload
@@ -63,6 +68,9 @@ def create_app(settings: AppSettings | None = None, *, engine=None, db: Database
         finally:
             app.state.ctx.executor.shutdown(wait=False, cancel_futures=True)
             app.state.ctx.analysis_executor.shutdown(wait=False, cancel_futures=True)
+            app.state.ctx.vault_executor.shutdown(wait=False, cancel_futures=True)
+            if files is not None and hasattr(files, "close"):
+                files.close()
             if db is None:
                 database.close()
 
@@ -104,6 +112,6 @@ def create_app(settings: AppSettings | None = None, *, engine=None, db: Database
             out["engineError"] = ctx.engine.last_error
         return JSONResponse(out, status_code=200 if db_ok else 503)
 
-    for r in (auth.router, users.router, chat.router, documents.router, vault_router.router):
+    for r in (auth.router, users.router, chat.router, documents.router, vault_router.router, vault_files_router.router):
         app.include_router(r, prefix=API_PREFIX)
     return app

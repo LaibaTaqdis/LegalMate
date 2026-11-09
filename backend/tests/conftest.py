@@ -147,6 +147,42 @@ class FakeEngine:
         return {"message": msg, "conversation": {"title": "Rent increase rules", "tag": "Property Law"}, "meta": {"seconds": 0.2, "llm_calls_this_turn": 2}}
 
 
+class MemoryStorage:
+    """Stands in for Supabase Storage (same methods as app.storage.Storage). `objects` holds what was stored; flags simulate an outage."""
+
+    def __init__(self):
+        self.objects: dict[str, tuple[bytes, str]] = {}
+        self.fail_upload = self.fail_delete = self.fail_sign = False
+        self.links: list[str] = []
+
+    def ensure_bucket(self, max_bytes):
+        pass
+
+    def upload(self, path, data, content_type):
+        from app.storage import StorageError
+        if self.fail_upload:
+            raise StorageError("upload refused")
+        self.objects[path] = (data, content_type)
+
+    def signed_url(self, path, seconds, download_name=None):
+        from app.storage import StorageError
+        if self.fail_sign or path not in self.objects:
+            raise StorageError("cannot sign")
+        url = f"https://storage.test/sign/{path}?exp={seconds}" + (f"&download={download_name}" if download_name else "")
+        self.links.append(url)
+        return url
+
+    def delete(self, paths):
+        from app.storage import StorageError
+        if self.fail_delete:
+            raise StorageError("delete refused")
+        for p in paths:
+            self.objects.pop(p, None)
+
+    def close(self):
+        pass
+
+
 def make_settings(pg_url: str, **over) -> AppSettings:
     base = dict(database_url=pg_url, jwt_secret=SECRET, warm_engine=False, engine_concurrency=2, db_pool_max=4,
                 cors_origins=("http://localhost:5173",))

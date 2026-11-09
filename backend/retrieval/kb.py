@@ -14,6 +14,7 @@ import time
 import numpy as np
 import psycopg
 
+from . import kb_cache
 from .lexical import LexicalIndex
 from .search import Params, QueryEmbedder, fuse, jurisdiction_factor
 
@@ -31,7 +32,7 @@ class KnowledgeBase:
         t0 = time.time()
         self.meta: dict[str, tuple] = {}              # chunk_id -> (jurisdiction, applies_to set, repealed, text hash)
 
-        def rows():
+        def stream():
             with self.conn.transaction():                              # server-side cursors need a transaction
                 with self.conn.cursor(name="kb_stream") as cur:        # streams in batches: constant memory
                     cur.itersize = 2000
@@ -39,10 +40,21 @@ class KnowledgeBase:
                     for cid, jur, applies, status, h, header, body, utype in cur:
                         if utype == "toc":          # a table of contents that is not law: never retrievable
                             continue
-                        self.meta[cid] = (jur, set(applies or []) | {jur}, status == "repealed", h)
-                        yield cid, header, body
+                        yield cid, jur, list(applies or []), status, h, header, body
+
+        def fingerprint() -> str:
+            n, digest = self.conn.execute(kb_cache.FINGERPRINT_SQL).fetchone()
+            return f"{n}-{digest}"
+
+        source = kb_cache.Source(fingerprint, stream)                 # a local copy of the rows when KB_CACHE=on (off by default: see kb_cache.py)
+
+        def rows():
+            for cid, jur, applies, status, h, header, body in source:
+                self.meta[cid] = (jur, set(applies or []) | {jur}, status == "repealed", h)
+                yield cid, header, body
 
         self.lex = LexicalIndex(rows())
+        self.cache_status = source.status                              # 'hit' (read from disk), 'miss' (downloaded and saved) or 'off'
         self.docs = self.conn.execute("select doc_id, title, jurisdiction, is_amendment from law_documents").fetchall()   # for Act-name routing
         self._qcache: dict[tuple, np.ndarray] = {}
         self.startup_seconds = time.time() - t0

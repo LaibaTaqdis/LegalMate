@@ -35,7 +35,7 @@ def build_engine(doc_chars: int = 6000):
     )
     t0 = time.time()
     kb = KnowledgeBase(s.database_url)
-    log.info("knowledge base ready in %.1fs (%d chunks)", time.time() - t0, len(kb.lex))
+    log.info("knowledge base ready in %.1fs (%d chunks, local copy: %s)", time.time() - t0, len(kb.lex), getattr(kb, "cache_status", "off"))
     return ChatEngine(kb, DeepSeek(s), doc_chars=doc_chars)
 
 
@@ -94,3 +94,5 @@ class AppState:
     analysis_executor: ThreadPoolExecutor
     inflight: set = field(default_factory=set)               # user ids with an answer being computed
     inflight_lock: threading.Lock = field(default_factory=threading.Lock)
+    storage: object | None = None                            # private file storage for the Legal Vault (None: not configured)
+    vault_executor: ThreadPoolExecutor | None = None         # reads photos and scanned PDFs in the background after they are stored

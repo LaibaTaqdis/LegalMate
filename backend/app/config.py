@@ -52,6 +52,9 @@ def load_doc_settings() -> "DocSettings":
         analysis_per_user_running=max(1, _int("ANALYSIS_PER_USER_RUNNING", d.analysis_per_user_running)), analysis_per_day=_int("ANALYSIS_PER_DAY", d.analysis_per_day),
         analysis_stale_minutes=max(1, _int("ANALYSIS_STALE_MINUTES", d.analysis_stale_minutes)),
         analysis_page_size=min(50, max(1, _int("ANALYSIS_PAGE_SIZE", d.analysis_page_size))),
+        vault_quota_mb=max(1, _int("VAULT_QUOTA_MB", d.vault_quota_mb)), vault_max_files=max(0, _int("VAULT_MAX_FILES", d.vault_max_files)),
+        vault_max_folders=max(1, _int("VAULT_MAX_FOLDERS", d.vault_max_folders)), vault_link_seconds=min(3600, max(30, _int("VAULT_LINK_SECONDS", d.vault_link_seconds))),
+        vault_uploads_per_hour=max(0, _int("VAULT_UPLOADS_PER_HOUR", d.vault_uploads_per_hour)),
         vault_trash_days=max(1, _int("VAULT_TRASH_DAYS", d.vault_trash_days)), vault_max_items=max(0, _int("VAULT_MAX_ITEMS", d.vault_max_items)),
         vault_page_size=min(100, max(1, _int("VAULT_PAGE_SIZE", d.vault_page_size))), vault_max_notes=max(1, _int("VAULT_MAX_NOTES", d.vault_max_notes)),
         vault_note_chars=min(5000, max(50, _int("VAULT_NOTE_CHARS", d.vault_note_chars))),
@@ -102,7 +105,12 @@ class DocSettings:
     law_refs_max: int = 8                 # LAW_REFS_MAX            laws shown in the box at most
     law_refs_per_clause: int = 2          # LAW_REFS_PER_CLAUSE     laws linked from one clause (the table may allow a few more candidates)
     law_refs_quote_chars: int = 260       # LAW_REFS_QUOTE_CHARS    characters of the law's own wording shown for each
-    vault_trash_days: int = 30            # VAULT_TRASH_DAYS        a saved item in the Trash is deleted for good after this many days
+    vault_quota_mb: int = 50              # VAULT_QUOTA_MB          stored files per user (the Trash counts until it is emptied)
+    vault_max_files: int = 200            # VAULT_MAX_FILES         files per user (0 = no limit)
+    vault_max_folders: int = 30           # VAULT_MAX_FOLDERS       folders per user
+    vault_link_seconds: int = 300         # VAULT_LINK_SECONDS      how long a preview/download link works
+    vault_uploads_per_hour: int = 60      # VAULT_UPLOADS_PER_HOUR  files a user can add per hour (0 = no limit)
+    vault_trash_days: int = 30            # VAULT_TRASH_DAYS        a saved item or file in the Trash is deleted for good after this many days
     vault_max_items: int = 500            # VAULT_MAX_ITEMS         saved items per user, Trash included (0 = no limit)
     vault_page_size: int = 24             # VAULT_PAGE_SIZE         items per page in the Vault list
     vault_max_notes: int = 50             # VAULT_MAX_NOTES         notes per saved item
@@ -129,6 +137,9 @@ class AppSettings:
     engine_concurrency: int = 4           # answers computed at the same time (CPU + DeepSeek)
     history_messages: int = 6             # earlier messages shown to the model
     db_pool_max: int = 5
+    supabase_url: str = ""                # SUPABASE_URL           Storage for the Legal Vault files (empty = files are switched off)
+    supabase_service_key: str = ""        # SUPABASE_SERVICE_KEY   server-side only: never sent to the browser
+    vault_bucket: str = "legalmate-vault"  # VAULT_BUCKET          private bucket for the originals (created on first start if missing)
     docs: DocSettings = field(default_factory=DocSettings)
     extra: dict = field(default_factory=dict)
 
@@ -154,5 +165,7 @@ def get_app_settings() -> AppSettings:
         max_msgs_per_day=_int("CHAT_MSGS_PER_DAY", 0),
         engine_concurrency=_int("ENGINE_CONCURRENCY", 4),
         db_pool_max=_int("DB_POOL_MAX", 5),
+        supabase_url=os.environ.get("SUPABASE_URL", "").strip().rstrip("/"), supabase_service_key=os.environ.get("SUPABASE_SERVICE_KEY", "").strip(),
+        vault_bucket=os.environ.get("VAULT_BUCKET", "").strip() or "legalmate-vault",
         docs=load_doc_settings(),
     )

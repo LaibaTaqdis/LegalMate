@@ -13,9 +13,14 @@ from .errors import ApiError
 log = logging.getLogger("legalmate.docs")
 
 
-def purge_expired(db: Database, cfg: DocSettings) -> dict:
-    """Deletes documents and analyses past their retention, and marks analyses that were running when the server stopped as failed."""
+def purge_expired(db: Database, cfg: DocSettings, storage=None) -> dict:
+    """Deletes documents and analyses past their retention, and marks analyses that were running when the server stopped as failed.
+    With `storage`, Vault files that sat in the Trash too long are deleted too (the stored object first)."""
     out = {}
+    if storage is not None:
+        from .vault_files import purge_trash
+        out["vault_files"] = purge_trash(db, storage, cfg)
+    out["vault_unread"] = db.run("update app.vault_files set text_status = 'none' where text_status = 'pending' and created_at < now() - interval '30 minutes'")
     out["documents"] = db.run("delete from app.documents where expires_at is not null and expires_at < now()")
     out["unread_photos"] = db.run("delete from app.documents where status = 'pending' and created_at < now() - make_interval(hours => %s)", [cfg.pending_hours])
     out["analyses"] = db.run("delete from app.analyses where expires_at is not null and expires_at < now()")
@@ -32,14 +37,14 @@ _last_purge = 0.0
 PURGE_EVERY_SECONDS = 60
 
 
-def purge_if_due(db: Database, cfg: DocSettings) -> None:
-    """`purge_expired`, but at most once a minute per server: it is four database round trips, and an upload should not pay for them every time."""
+def purge_if_due(db: Database, cfg: DocSettings, storage=None) -> None:
+    """`purge_expired`, but at most once a minute per server: it is several database round trips, and an upload should not pay for them every time."""
     global _last_purge
     now = time.monotonic()
     if now - _last_purge < PURGE_EVERY_SECONDS:
         return
     _last_purge = now
-    purge_expired(db, cfg)
+    purge_expired(db, cfg, storage)
 
 
 def parse_ids(ids: list[str], what: str = "document") -> list[str]:
