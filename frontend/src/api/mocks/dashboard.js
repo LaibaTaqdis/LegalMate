@@ -9,13 +9,14 @@ export const MOCK_DASHBOARD = {
     { id: 'act_5', type: 'resource', title: 'CNIC Verification Guide', subtitle: 'Viewed legal resource', occurredAt: '2026-09-18T09:45:00', status: 'viewed', link: '/vault' },
   ],
   vault: {
-    usedBytes: 1.8e9,
-    quotaBytes: 5e9,
+    usedBytes: 1.8e8,
+    quotaBytes: 5e8,
+    filesEnabled: true,
+    fileCount: 6,
+    savedCount: 4,
     breakdown: [
-      { category: 'documents', label: 'Documents', bytes: 842e6 },
-      { category: 'briefs', label: 'Case Briefs', bytes: 420e6 },
-      { category: 'images', label: 'Images', bytes: 320e6 },
-      { category: 'other', label: 'Other', bytes: 218e6 },
+      { category: 'documents', label: 'Documents', bytes: 142e6 },
+      { category: 'images', label: 'Photos', bytes: 38e6 },
     ],
   },
   resources: [
@@ -23,10 +24,15 @@ export const MOCK_DASHBOARD = {
     { id: 'res_labour', category: 'labour', title: 'Labour Laws Guide', summary: 'A complete guide to employee rights.', link: '/chat/employment' },
     { id: 'res_family', category: 'family', title: 'Family Law Basics', summary: 'Understand marriage, divorce and custody.', link: '/chat/custody' },
   ],
-  deadlines: [
-    { id: 'dl_1', title: 'Court Hearing - Civil Case', location: 'District Court, Islamabad', dueDate: '2026-09-25', daysLeft: 3 },
-    { id: 'dl_2', title: 'Document Submission', location: 'Labour Tribunal', dueDate: '2026-10-10', daysLeft: 18 },
-    { id: 'dl_3', title: 'Reply to Legal Notice', location: 'Regarding rental dispute', dueDate: '2026-10-15', daysLeft: 23 },
-  ],
+  holidays: {
+    verifiedOn: '2026-11-09',
+    note: 'Demo data. With the backend connected, dates come from news reports of the courts notifications.',
+    notYetAnnounced: '',
+    courts: {},
+    items: [
+      { id: 'demo_h1', title: 'Quaid-e-Azam Day', kind: 'holiday', courtNames: ['All courts (public holiday)'], start: '2026-12-25', end: '2026-12-25', days: 1, status: 'notified', ongoing: false, daysUntil: 46, source: 'Demo', url: null },
+      { id: 'demo_h2', title: 'Winter vacation (Lahore High Court)', kind: 'vacation', courtNames: ['Lahore High Court'], start: '2026-12-28', end: '2027-01-09', days: 13, status: 'expected', ongoing: false, daysUntil: 49, source: 'Demo', url: null },
+    ],
+  },
   whatsapp: { connected: true },
 }

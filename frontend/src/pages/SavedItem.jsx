@@ -1,17 +1,43 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { AlertTriangle, ListChecks, FileText, Loader2, MessageCircleMore, Pencil, RotateCcw, Star, Trash2 } from 'lucide-react'
+import { AlertTriangle, Download, ListChecks, FileText, Loader2, MessageCircleMore, Pencil, RotateCcw, Star, Trash2 } from 'lucide-react'
 import { Breadcrumb, Modal } from '../components/common'
 import { VaultActivity, VaultNotes } from '../components/VaultParts'
 import { useUI } from '../components/UIContext'
 import { QueryBoundary, PageSkeleton } from '../components/States'
 import { useQuery } from '../hooks/useApi'
 import { vaultService } from '../api/services/vaultService'
+import { calculatorService } from '../api/services/calculatorService'
 import { answerText } from '../utils/answerText'
 import { formatDateTime } from '../utils/format'
 import { AnalysisResult } from './Analysis'
 
-const KIND_LABEL = { answer: 'Chat answer', analysis: 'Analysis', brief: 'Case brief' }
+const KIND_LABEL = { answer: 'Chat answer', analysis: 'Analysis', brief: 'Case brief', calculation: 'Calculation' }
+
+/** A saved calculation as it was worked out: the inputs, the breakdown, the notes and where the rule comes from. */
+function SavedCalculation({ content }) {
+  const r = content.result || {}
+  const rows = (r.rows || []).map(x => (Array.isArray(x) ? x : [x.label, x.value]))
+  const headline = r.text ?? (r.total != null ? `PKR ${Math.round(r.total).toLocaleString('en-US')}` : '')
+  const reported = r.confidence === 'reported'
+  return (
+    <section className="card vi-answer-card">
+      <p className="calc-res-value">{headline}</p>
+      <div className={`calc-conf ${reported ? 'calc-conf-rep' : 'calc-conf-law'}`}>
+        {reported ? <AlertTriangle size={20} /> : <ListChecks size={20} />}
+        <div><b>{reported ? 'Based on news reports: please verify' : 'Based on the text of the law'}</b><span>{r.verifiedOn ? `Data checked on ${r.verifiedOn}.` : ''}</span></div>
+      </div>
+      <div className="calc-break" style={{ marginTop: 14 }}>
+        <h3>Calculation Breakdown</h3>
+        {rows.map(([a, b]) => <div key={a} className="calc-break-row"><span>{a}</span><span>{b}</span></div>)}
+      </div>
+      {r.notes?.length > 0 && <><h3 className="calc-assume-title">Good to know</h3><ul className="calc-notes">{r.notes.map(n => <li key={n}>{n}</li>)}</ul></>}
+      {r.assumptions?.length > 0 && <><h3 className="calc-assume-title">Assumptions</h3><ol className="calc-assume">{r.assumptions.map(a => <li key={a}>{a}</li>)}</ol></>}
+      {r.source && <p className="calc-notes" style={{ marginTop: 14 }}><b>Source:</b> {r.source.title}{r.source.url && <> · <a className="link small" href={r.source.url} target="_blank" rel="noopener noreferrer">open</a></>}</p>}
+      <p className="calc-help-text" style={{ marginTop: 12 }}>Inputs: {Object.entries(content.inputs || {}).map(([k, v]) => `${k} = ${v}`).join(', ')}</p>
+    </section>
+  )
+}
 
 /** The model's rich text ([text, {b}, {cite}]) with citation chips that jump to the source below. */
 function Segs({ parts, onCite }) {
@@ -109,6 +135,7 @@ function Item({ item, reload, setItem }) {
             <>
               <button className="btn btn-outline" onClick={fav} disabled={busy === 'fav'}><Star size={17} fill={item.favourite ? '#f59e0b' : 'none'} color={item.favourite ? '#f59e0b' : 'currentColor'} /> {item.favourite ? 'Favourite' : 'Add to favourites'}</button>
               <button className="btn btn-outline" onClick={() => setRenaming(item.title)}><Pencil size={17} /> Rename</button>
+              {item.kind === 'calculation' && <button className="btn btn-outline" onClick={() => calculatorService.downloadSummary(item.id, 'Calculation_Summary.pdf').catch(e => toast(e.message, 'info'))}><Download size={17} /> Download summary</button>}
               {item.kind === 'answer' && item.conversationId && <Link to={`/chat/${item.conversationId}`} className="btn btn-outline"><MessageCircleMore size={17} /> Open the chat</Link>}
               <button className="btn btn-outline" onClick={() => run('trash', () => vaultService.trash(item.id), 'Moved to Trash', () => navigate('/vault'))} disabled={busy === 'trash'}><Trash2 size={17} /> Move to Trash</button>
             </>
@@ -125,6 +152,7 @@ function Item({ item, reload, setItem }) {
 
       {item.kind === 'answer' && item.content && <SavedAnswer content={item.content} />}
       {item.kind === 'analysis' && item.content && <AnalysisResult a={item.content} snapshot />}
+      {item.kind === 'calculation' && item.content && <SavedCalculation content={item.content} />}
       {item.kind === 'analysis' && !item.content && <section className="card vi-q"><p>{item.summary}</p></section>}
 
       <div className="vi-two">

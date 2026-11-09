@@ -353,3 +353,19 @@
   .wa-or::before, .wa-or::after { height: 1px; width: auto; }
   .phone { width: 100%; border-radius: 40px; }
 }
+
+/* legal calculator: trust badge, notes, unavailable card */
+.calc-conf { display: flex; gap: 12px; align-items: flex-start; margin: 12px 0 0; padding: 12px 14px; border-radius: 8px; border: 1px solid; }
+.calc-conf > svg { flex: none; margin-top: 1px; }
+.calc-conf div { display: flex; flex-direction: column; gap: 2px; }
+.calc-conf b { font-size: 13.5px; }
+.calc-conf span { font-size: 12.5px; line-height: 1.45; color: var(--ink-2); }
+.calc-conf-law { background: var(--green-50); border-color: #bfe5cc; color: #167a43; }
+.calc-conf-rep { background: var(--orange-50); border-color: #f4d3a3; color: #c26a00; }
+.calc-notes { padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; line-height: 1.5; color: var(--ink-2); }
+.calc-error { display: flex; gap: 10px; align-items: flex-start; margin-top: 16px; padding: 12px 14px; border-radius: 8px; background: var(--red-50); color: var(--red); }
+.calc-error svg { flex: none; margin-top: 1px; }
+.calc-error p { font-size: 13px; line-height: 1.45; }
+.calc-cats li button.calc-off { opacity: .7; }
+.calc-unavail .calc-note { margin-top: 18px; }
+.calc-unavail-text { margin: 16px 0 20px; font-size: 13.5px; line-height: 1.55; color: var(--ink-2); }

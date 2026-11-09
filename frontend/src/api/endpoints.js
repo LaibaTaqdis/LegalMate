@@ -75,6 +75,9 @@ export const EP = {
     saved: '/calculators/saved',
     summary: id => `/calculators/saved/${id}/summary`,
   },
+  calendar: {
+    courtHolidays: '/calendar/court-holidays',
+  },
   legalAid: {
     providers: '/legal-aid/providers',
     saved: id => `/legal-aid/providers/${id}/save`,

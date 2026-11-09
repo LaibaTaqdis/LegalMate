@@ -22,6 +22,7 @@ from .docs_service import purge_expired
 from .errors import body, install_error_handlers
 from .ratelimit import RateLimiter
 from .routers import auth, chat, documents, users
+from .routers import tools as tools_router
 from .routers import vault as vault_router
 from .routers import vault_files as vault_files_router
 from .storage import build_storage
@@ -112,6 +113,6 @@ def create_app(settings: AppSettings | None = None, *, engine=None, db: Database
             out["engineError"] = ctx.engine.last_error
         return JSONResponse(out, status_code=200 if db_ok else 503)
 
-    for r in (auth.router, users.router, chat.router, documents.router, vault_router.router, vault_files_router.router):
+    for r in (auth.router, users.router, chat.router, documents.router, vault_router.router, vault_files_router.router, tools_router.router):
         app.include_router(r, prefix=API_PREFIX)
     return app

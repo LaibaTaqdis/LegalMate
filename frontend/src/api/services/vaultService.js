@@ -11,12 +11,12 @@ const live = i => !i.trashedAt
 function counts() {
   const all = vaultDb.items
   return { all: all.filter(live).length, answer: all.filter(i => live(i) && i.kind === 'answer').length, analysis: all.filter(i => live(i) && i.kind === 'analysis').length,
-    brief: 0, favourites: all.filter(i => live(i) && i.favourite).length, trash: all.filter(i => !live(i)).length }
+    brief: 0, calculation: all.filter(i => live(i) && i.kind === 'calculation').length, favourites: all.filter(i => live(i) && i.favourite).length, trash: all.filter(i => !live(i)).length }
 }
 function mockList({ category = 'all', q, sort = 'updated_desc' }) {
   let list = vaultDb.items.filter(category === 'trash' ? i => !live(i) : live)
   if (category === 'favourites') list = list.filter(i => i.favourite)
-  else if (['answer', 'analysis', 'brief'].includes(category)) list = list.filter(i => i.kind === category)
+  else if (['answer', 'analysis', 'brief', 'calculation'].includes(category)) list = list.filter(i => i.kind === category)
   if (q) list = list.filter(i => (i.title + ' ' + i.summary).toLowerCase().includes(q.toLowerCase()))
   const cmp = { updated_desc: (a, b) => b.updatedAt.localeCompare(a.updatedAt), updated_asc: (a, b) => a.updatedAt.localeCompare(b.updatedAt),
     name_asc: (a, b) => a.title.localeCompare(b.title), name_desc: (a, b) => b.title.localeCompare(a.title) }[sort]
@@ -57,7 +57,7 @@ export const vaultService = {
   /** -> { counts: { all, answer, analysis, brief, favourites, trash } } */
   getStats: signal => (MOCK() ? mock({ counts: counts(), files: fileCounts(), storage: vaultFilesDb.storage, filesEnabled: true }, 150) : api.get(EP.vault.stats, { signal })),
 
-  /** filters: { category: all|answer|analysis|brief|favourites|trash, q, sort: updated_desc|updated_asc|name_asc|name_desc, page, pageSize }
+  /** filters: { category: all|answer|analysis|brief|calculation|favourites|trash, q, sort: updated_desc|updated_asc|name_asc|name_desc, page, pageSize }
    *  -> { items: SavedItem[], total, page, pageSize, counts } */
   listItems: (filters, signal) => (MOCK() ? mock(mockList(filters)) : api.get(EP.vault.items, { query: filters, signal })),
 

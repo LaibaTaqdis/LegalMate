@@ -26,6 +26,7 @@ export function timeAgo(iso) {
 /** 2516582 -> "2.4 MB" */
 export function formatBytes(bytes) {
   if (bytes == null) return ''
+  if (bytes === 0) return '0 KB'
   if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)} GB`
   if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`
   return `${Math.max(1, Math.round(bytes / 1024))} KB`

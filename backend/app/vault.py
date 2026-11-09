@@ -18,7 +18,7 @@ from .users_repo import iso
 
 log = logging.getLogger("legalmate.vault")
 
-KINDS = ("answer", "analysis", "brief")
+KINDS = ("answer", "analysis", "brief", "calculation")
 SORTS = {"updated_desc": "i.updated_at desc", "updated_asc": "i.updated_at asc", "name_asc": "lower(i.title) asc, i.updated_at desc",
          "name_desc": "lower(i.title) desc, i.updated_at desc"}
 LIST_COLS = ("i.id, i.kind, i.title, i.summary, i.meta, i.source_id, i.favourite, i.trashed_at, i.created_at, i.updated_at, "
@@ -107,8 +107,21 @@ def save_analysis(db: Database, cfg: DocSettings, user_id: str, analysis_id: str
     return _store(db, cfg, user_id, "analysis", str(row["id"]), title=name, summary=summary, content={"id": str(row["id"]), "status": "completed", **res}, meta=meta)
 
 
+def save_calculation(db: Database, cfg: DocSettings, user_id: str, kind: str, name: str, inputs: dict, result: dict) -> dict:
+    """A calculation is saved as it was (inputs and result); each save is its own item, so the same calculation can be kept with different numbers."""
+    _check_room(db, user_id, cfg)
+    headline = result.get("text") or (f"PKR {round(result['total']):,}" if result.get("total") is not None else "")
+    title = f"{name}: {headline}".strip(": ")
+    summary = "; ".join(f"{r['label']}: {r['value']}" for r in (result.get("rows") or [])[:3])
+    meta = {"tag": name, "risk": None, "language": "en", "calcType": kind, "confidence": result.get("confidence")}
+    row = db.one("insert into app.vault_items (user_id, kind, title, summary, content, meta) values (%s, 'calculation', %s, %s, %s, %s) returning id",
+                 [user_id, title[:160], summary[:240], Jsonb({"type": kind, "inputs": inputs, "result": result}), Jsonb(meta)])
+    _log(db, user_id, str(row["id"]), "saved")
+    return {"id": str(row["id"]), "alreadySaved": False}
+
+
 # ------------------------------------------------------------------------------------------------ reading
-Category = Literal["all", "answer", "analysis", "brief", "favourites", "trash"]
+Category = Literal["all", "answer", "analysis", "brief", "calculation", "favourites", "trash"]
 
 
 def list_items(db: Database, cfg: DocSettings, user_id: str, *, category: str = "all", q: str = "", sort: str = "updated_desc", page: int = 1,
@@ -133,13 +146,13 @@ def list_items(db: Database, cfg: DocSettings, user_id: str, *, category: str = 
 
 
 COUNTS_SQL = ("select count(*) filter (where trashed_at is null) as every, count(*) filter (where trashed_at is null and kind = 'answer') as answers, "
-              "count(*) filter (where trashed_at is null and kind = 'analysis') as analyses, count(*) filter (where trashed_at is null and kind = 'brief') as briefs, "
+              "count(*) filter (where trashed_at is null and kind = 'analysis') as analyses, count(*) filter (where trashed_at is null and kind = 'brief') as briefs, count(*) filter (where trashed_at is null and kind = 'calculation') as calcs, "
               "count(*) filter (where trashed_at is null and favourite) as favourites, count(*) filter (where trashed_at is not null) as trash "
               "from app.vault_items where user_id = %s")
 
 
 def counts_out(c: dict) -> dict:
-    return {"all": c["every"], "answer": c["answers"], "analysis": c["analyses"], "brief": c["briefs"], "favourites": c["favourites"], "trash": c["trash"]}
+    return {"all": c["every"], "answer": c["answers"], "analysis": c["analyses"], "brief": c["briefs"], "calculation": c["calcs"], "favourites": c["favourites"], "trash": c["trash"]}
 
 
 def stats(db: Database, user_id: str) -> dict:

@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  ArrowRight, BookOpen, Briefcase, Calculator, CheckCircle2, FilePlus2, FileText, Lock, MessageCircleMore,
-  MessageSquareText, MoreHorizontal, Scale, Sun, Moon, Sunrise
+  ArrowRight, BookOpen, Bookmark, Briefcase, Calculator, CheckCircle2, ExternalLink, FilePlus2, FileText, Landmark, Lock, MessageCircleMore,
+  MessageSquareText, Paperclip, Scale, Sun, Moon
 } from 'lucide-react'
 import { Breadcrumb, Donut } from '../components/common'
 import { WhatsAppIcon } from '../components/Icons'
-import { useUI } from '../components/UIContext'
 import { EmptyState, PageSkeleton, QueryBoundary } from '../components/States'
 import { useAuth } from '../context/AuthContext'
 import { useQuery } from '../hooks/useApi'
@@ -27,12 +26,22 @@ const ACTIVITY_STYLE = {
   brief: { icon: FileText, tone: 'purple', tab: 'Briefs' },
   calculator: { icon: Calculator, tone: 'orange', tab: 'Chats' },
   resource: { icon: FileText, tone: 'green', tab: 'Documents' },
+  saved: { icon: Bookmark, tone: 'orange', tab: 'Saved' },
+  file: { icon: Paperclip, tone: 'purple', tab: 'Saved' },
 }
-const STATUS = { completed: ['Completed', 'green'], analysed: ['Analysed', 'blue'], viewed: ['Viewed', 'blue'], processing: ['Processing', 'orange'] }
+const STATUS = { completed: ['Completed', 'green'], saved: ['Saved', 'orange'], failed: ['Failed', 'red'], analysed: ['Analysed', 'blue'], viewed: ['Viewed', 'blue'], processing: ['Processing', 'orange'] }
+const HOLIDAY_STATUS = { notified: ['Notified', 'green'], reported: ['Reported', 'blue'], expected: ['Expected', 'orange'] }
 const VAULT_COLORS = { documents: '#1d4ed8', briefs: '#7c3aed', images: '#22a45a', other: '#cbd5e1' }
-const RESOURCE_STYLE = { property: { icon: BookOpen, tone: 'blue' }, labour: { icon: Briefcase, tone: 'green' }, family: { icon: Scale, tone: 'purple' } }
+const RESOURCE_STYLE = {
+  property: { icon: BookOpen, tone: 'blue' }, labour: { icon: Briefcase, tone: 'green' }, family: { icon: Scale, tone: 'purple' },
+  laws: { icon: BookOpen, tone: 'blue' }, courts: { icon: Landmark, tone: 'purple' }, tax: { icon: Scale, tone: 'orange' },
+}
 
-const daysLeft = d => d.daysLeft ?? Math.max(0, Math.ceil((new Date(d.dueDate) - new Date()) / 86400000))
+const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+const parseDay = str => { const [y, m, d] = str.split('-').map(Number); return { y, m: m - 1, d } }
+const dayLabel = str => { const { m, d } = parseDay(str); return `${d} ${MONTHS[m].charAt(0)}${MONTHS[m].slice(1).toLowerCase()}` }
+const holidayRange = h => (h.start === h.end ? dayLabel(h.start) : `${dayLabel(h.start)} - ${dayLabel(h.end)} ${parseDay(h.end).y}`)
+const holidayWhen = h => (h.ongoing ? 'Now' : h.daysUntil === 0 ? 'Today' : h.daysUntil === 1 ? 'Tomorrow' : `In ${h.daysUntil} days`)
 
 function greeting() {
   const h = new Date().getHours()
@@ -43,7 +52,6 @@ function greeting() {
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const { toast } = useUI()
   const { user } = useAuth()
   const [tab, setTab] = useState('All')
   const g = greeting()
@@ -51,7 +59,7 @@ export default function Dashboard() {
 
   if (!query.data) return <QueryBoundary query={query} skeleton={<PageSkeleton cards={4} rows={2} />}>{() => null}</QueryBoundary>
 
-  const { activity, vault, resources, deadlines } = query.data
+  const { activity, vault, resources, holidays } = query.data
   const rows = tab === 'All' ? activity : activity.filter(a => ACTIVITY_STYLE[a.type]?.tab === tab)
   const vaultSegments = vault.breakdown.map(b => ({ label: b.label, value: b.bytes, color: VAULT_COLORS[b.category] || '#cbd5e1' }))
 
@@ -91,7 +99,7 @@ export default function Dashboard() {
             <Link to="/vault" className="link small">View All <ArrowRight size={15} /></Link>
           </div>
           <div className="seg">
-            {['All', 'Chats', 'Documents', 'Briefs'].map(t => (
+            {['All', 'Chats', 'Documents', 'Saved'].map(t => (
               <button key={t} className={tab === t ? 'active' : ''} onClick={() => setTab(t)}>{t}</button>
             ))}
           </div>
@@ -105,12 +113,11 @@ export default function Dashboard() {
                   <div className="act-main"><b>{a.title}</b><span>{a.subtitle}</span></div>
                   <div className="act-date"><span>{formatDate(a.occurredAt)}</span><span>{formatTime(a.occurredAt)}</span></div>
                   <span className={`pill pill-${tone} act-pill`}>{label}</span>
-                  <button className="icon-btn-plain act-more" aria-label="More" onClick={e => { e.stopPropagation(); toast(`Options for “${a.title}”`, 'info') }}><MoreHorizontal size={18} /></button>
                 </li>
               )
             })}
           </ul>
-          {!rows.length && <EmptyState title="No activity yet" text="Your chats, documents and briefs will appear here." />}
+          {!rows.length && <EmptyState title="No activity yet" text="Your chats, document analyses and saved items will appear here." />}
         </section>
 
         <section className="card card-pad dash-vault">
@@ -124,11 +131,14 @@ export default function Dashboard() {
             </Donut>
             <ul className="dv-legend">
               {vaultSegments.map(v => (
-                <li key={v.label}><span className="dv-dot" style={{ background: v.color }} />{v.label}<b>{Math.round(v.value / 1e6)} MB</b></li>
+                <li key={v.label}><span className="dv-dot" style={{ background: v.color }} />{v.label}<b>{formatBytes(v.value)}</b></li>
               ))}
+              <li><span className="dv-dot" style={{ background: '#f59e0b' }} />Saved answers &amp; analyses<b>{vault.savedCount}</b></li>
             </ul>
           </div>
-          <div className="dv-note"><Lock size={18} /><div><b>Your documents are encrypted and private.</b><span>Only you can access your legal records.</span></div></div>
+          {vault.filesEnabled === false
+            ? <div className="dv-note"><Lock size={18} /><div><b>File storage is switched off on this server.</b><span>Saved answers and analyses still work.</span></div></div>
+            : <div className="dv-note"><Lock size={18} /><div><b>{vault.fileCount} file{vault.fileCount === 1 ? '' : 's'} stored, encrypted and private</b><span>Only you can open your legal records.</span></div></div>}
           <Link to="/vault" className="btn btn-navy btn-block btn-lg dv-open">Open Vault <ArrowRight size={18} /></Link>
         </section>
       </div>
@@ -136,43 +146,50 @@ export default function Dashboard() {
       <div className="dash-bottom">
         <section className="card card-pad">
           <div className="card-head">
-            <h2 className="card-title">Recommended Legal Resources</h2>
-            <Link to="/chat" className="link small">View All <ArrowRight size={15} /></Link>
+            <h2 className="card-title">Official Legal Resources</h2>
           </div>
           <div className="res-grid">
             {resources.map(r => {
               const s = RESOURCE_STYLE[r.category] || RESOURCE_STYLE.property
-              return (
-                <Link to={r.link} key={r.id} className="res-card">
+              const external = /^https?:/.test(r.link)
+              const body = (
+                <>
                   <span className={`icon-tile tile-${s.tone} tile-md`}><s.icon /></span>
                   <b>{r.title}</b>
                   <span>{r.summary}</span>
-                  <span className="link small">Read More <ArrowRight size={14} /></span>
-                </Link>
+                  <span className="link small">{external ? <>Open website <ExternalLink size={14} /></> : <>Read More <ArrowRight size={14} /></>}</span>
+                </>
               )
+              return external
+                ? <a href={r.link} key={r.id} className="res-card" target="_blank" rel="noopener noreferrer">{body}</a>
+                : <Link to={r.link} key={r.id} className="res-card">{body}</Link>
             })}
           </div>
         </section>
 
         <section className="card card-pad">
           <div className="card-head">
-            <h2 className="card-title">Upcoming Deadlines</h2>
-            <Link to="/offline" className="link small">View All <ArrowRight size={15} /></Link>
+            <h2 className="card-title">Court Holidays &amp; Vacations</h2>
           </div>
           <ul className="dl-list">
-            {deadlines.map(d => {
-              const due = new Date(`${d.dueDate}T00:00:00`)
-              const left = daysLeft(d)
+            {holidays.items.map(h => {
+              const start = parseDay(h.start)
+              const [label, tone] = HOLIDAY_STATUS[h.status] || [h.status, 'gray']
               return (
-                <li key={d.id}>
-                  <span className="dl-date"><b>{due.getDate()}</b>{due.toLocaleString('en-US', { month: 'short' }).toUpperCase()}</span>
-                  <div className="dl-main"><b>{d.title}</b><span>{d.location}</span></div>
-                  <span className={`pill ${left <= 7 ? 'pill-red' : 'pill-red'}`}>{left} day{left === 1 ? '' : 's'} left</span>
+                <li key={h.id}>
+                  <span className="dl-date"><b>{start.d}</b>{MONTHS[start.m]}</span>
+                  <div className="dl-main">
+                    <b>{h.title}</b>
+                    <span>{holidayRange(h)}{h.days > 1 ? ` · ${h.days} days` : ''} · {h.courtNames.join(', ')}</span>
+                    <span>{h.url ? <a className="link small" href={h.url} target="_blank" rel="noopener noreferrer">{h.source}</a> : h.source}</span>
+                  </div>
+                  <div className="dl-side"><span className={`pill pill-${tone}`}>{label}</span><span className="dl-when">{holidayWhen(h)}</span></div>
                 </li>
               )
             })}
           </ul>
-          {!deadlines.length && <EmptyState title="No upcoming deadlines" />}
+          {!holidays.items.length && <EmptyState title="No upcoming court holidays on record" />}
+          <p className="dl-note">{holidays.note}{holidays.notYetAnnounced ? ` ${holidays.notYetAnnounced}` : ''}{holidays.verifiedOn ? ` Collected on ${formatDate(holidays.verifiedOn)}.` : ''}</p>
         </section>
 
         <section className="card card-pad dash-wa">

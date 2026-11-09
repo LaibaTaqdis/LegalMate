@@ -10,7 +10,7 @@ This document lists every backend API the LegalMate frontend needs to run fully 
 
 ## Implementation status (what the FastAPI backend in `backend/app` does today)
 
-The frontend switches services to the real backend one by one (`VITE_REAL_SERVICES=auth,chat,profile`, see `frontend/.env.example`). Everything else keeps running on mocks until it is built.
+The frontend switches services to the real backend one by one (`VITE_REAL_SERVICES=auth,chat,profile,documents,vault,calculators,dashboard`, see `frontend/.env.example`). Everything else keeps running on mocks until it is built.
 
 | Area | Status |
 |---|---|
@@ -25,7 +25,9 @@ The frontend switches services to the real backend one by one (`VITE_REAL_SERVIC
 | Legal Vault part A: saved answers and analyses (`/vault/items`, notes, activity, Trash, `/vault/stats`) | **Done** (section 7). |
 | Legal Vault part B: your own uploaded files (`/vault/files`, `/vault/folders`, storage quota) | **Done** (section 7, part B). Originals are kept in private Supabase Storage. |
 | Settings: security, sessions, preferences, avatar, export, delete account, integrations | Not built (mock). |
-| Dashboard, briefs, calculators, legal aid, lawyers, bookings, admin, community, emergency, offline, WhatsApp | Not built (mock). |
+| Dashboard: `GET /dashboard` | **Done** (section 4). Real Vault storage, real recent activity, court holidays and vacations, official links. |
+| Legal calculators: limitation, inheritance, compensation, stamp duty, property transfer; court holidays `GET /calendar/court-holidays` | **Done** (section 9). Every result says whether it rests on the law (`law`) or on news reports (`reported`). Court fee is deliberately not offered. |
+| Briefs, legal aid, lawyers, bookings, admin, community, emergency, offline, WhatsApp | Not built (mock). |
 
 Limits that exist today: 30 questions per hour and 100 per day per user, one answer at a time per user, 8 failed sign-ins per account per 15 minutes, 6 sign-ups per hour per address, 4000 characters per message.
 
@@ -281,32 +283,36 @@ Starts Google OAuth. After the callback, redirect to `redirect` with tokens deli
 
 ## 4. Dashboard and notifications
 
-### GET `/dashboard`
+### GET `/dashboard` (built)
+One call, one database round trip. Everything comes from the user's own data or from the court calendar.
 ```json
 {
   "activity": [
-    { "id": "act_1", "type": "chat|document|brief|calculator|resource", "title": "Tenancy rights in Pakistan",
-      "subtitle": "Chat with LegalMate", "occurredAt": "2026-09-23T10:24:00+05:00",
-      "status": "completed|analysed|viewed|processing", "link": "/chat/tenant-rights" }
+    { "id": "...", "type": "chat|document|saved|file", "title": "Tenancy rights in Pakistan",
+      "subtitle": "Chat with LegalMate", "occurredAt": "2026-09-23T10:24:00+00:00",
+      "status": "completed|analysed|processing|failed|saved", "link": "/chat/<id>" }
   ],
   "vault": {
-    "usedBytes": 1800000000, "quotaBytes": 5000000000,
-    "breakdown": [
-      { "category": "documents|briefs|images|other", "label": "Documents", "bytes": 842000000 }
-    ]
+    "usedBytes": 2516582, "quotaBytes": 52428800, "filesEnabled": true, "fileCount": 3, "savedCount": 5,
+    "breakdown": [ { "category": "documents|images", "label": "Documents (PDF, Word)", "bytes": 1500000 } ]
   },
-  "resources": [
-    { "id": "res_tenancy", "category": "property|labour|family", "title": "Tenancy Laws in Pakistan",
-      "summary": "Know your rights as a tenant...", "link": "/chat/tenant-rights" }
-  ],
-  "deadlines": [
-    { "id": "dl_1", "title": "Court Hearing - Civil Case", "location": "District Court, Islamabad",
-      "dueDate": "2026-09-25", "daysLeft": 3 }
-  ],
-  "whatsapp": { "connected": true }
+  "resources": [ { "id": "res_laws", "category": "laws|courts|property|tax", "title": "Pakistan Code", "summary": "...", "link": "https://pakistancode.gov.pk" } ],
+  "holidays": {
+    "items": [ { "id": "...", "title": "Quaid-e-Azam Day", "kind": "holiday|vacation|optional", "courts": ["all"], "courtNames": ["All courts (public holiday)"],
+                 "start": "2026-12-25", "end": "2026-12-25", "days": 1, "status": "notified|reported|expected", "source": "ARY News, 19 Jan 2026 (...)",
+                 "url": null, "ongoing": false, "daysUntil": 46 } ],
+    "verifiedOn": "2026-11-09", "note": "...", "notYetAnnounced": "...", "courts": { "lhc": "Lahore High Court and Punjab courts" }
+  }
 }
 ```
-`link` is a frontend route. Return the 5 latest activity items and the 3 nearest deadlines.
+* `usedBytes` is the real total of the user's stored Vault files (including those in the Trash, which still use storage until purged). `quotaBytes` is `VAULT_QUOTA_MB`.
+* `activity` is the 8 newest of: chats, document analyses, items saved to the Vault, and Vault files. `link` is a frontend route.
+* `resources` are official websites (external links). `holidays.items` are the 6 nearest court holidays and vacations that have not finished yet.
+* The calendar data is in `backend/app/reference/court_calendar.json`. Each entry has a status: `notified` (reported with its notification date), `reported` (one or two outlets) or `expected` (worked out from a published rule or a fixed national day). It was collected from news reports because the courts' own notifications could not be fetched, and it is dated (`verifiedOn`). Update the file when a new notification is issued.
+* The WhatsApp card on the dashboard is static until the WhatsApp module is built.
+
+### GET `/calendar/court-holidays?limit=&court=&all=` (built)
+`court` = `lhc` | `ihc` | `sc` | `fcc` (also returns the public holidays). `all=true` returns past entries too. Same item shape as `holidays` above, plus the notes.
 
 ### GET `/notifications?limit=10`
 ```json
@@ -652,42 +658,60 @@ Email or SMS each recipient a secure link.
 
 ---
 
-## 9. Legal calculator
+## 9. Legal calculator (built)
 
-`:type` = `court` | `stamp` | `inheritance` | `compensation` | `limitation` | `property`
+Every figure is worked out on the server (`backend/app/calculators.py`); the browser sends inputs only. Each result carries a `confidence`:
+
+* `law`: the rule was checked against the text of the law in the law library, or is settled Hanafi law (limitation periods, inheritance shares, Standing Order 12 gratuity and notice).
+* `reported`: official text or FBR rate card was not available, so the rate comes from news reports and commentary (Punjab stamp duty, property transfer taxes). The page shows a warning badge and the notes say which sources were used.
+
+`:type` = `limitation` | `inheritance` | `compensation` | `stamp` | `property`. `court` (court fee) is deliberately **not offered**: its scales differ by province and could not be verified, and a wrong fee is worse than none. `POST /calculators/court/calculate` answers `422` with the reason.
+
+### GET `/calculators`
+```json
+{ "verifiedOn": "2026-11-09",
+  "items": [ { "key": "limitation", "name": "Limitation Period", "confidence": "law" } ],
+  "unavailable": [ { "key": "court", "name": "Court Fee", "reason": "..." } ],
+  "options": { "limitation": [ { "key": "residuary", "label": "...", "appeal": false } ], "courts": { "lhc": "Lahore High Court / Punjab courts" } } }
+```
 
 ### POST `/calculators/:type/calculate`
-Inputs per type:
-
 | type | inputs |
 |---|---|
-| `court` | `province`, `caseType`, `amount` (PKR) |
-| `stamp` | `province`, `instrument`, `amount` |
-| `inheritance` | `amount`, `spouse` (`Wife`/`Husband`/`None`), `sons`, `daughters` |
-| `compensation` | `salary`, `years`, `reason` |
-| `limitation` | `kind`, `date` (`YYYY-MM-DD`) |
-| `property` | `province`, `amount`, `filer` (`Filer`/`Non-filer`) |
+| `limitation` | `kind` (key from `options.limitation`), `court` (`lhc`/`ihc`/`sc`/`fcc`), `date` (`YYYY-MM-DD`, the day time starts; that day is not counted), `copyDays` (appeals only: days to get the certified copy, not counted) |
+| `inheritance` | `amount`, `spouse` (`Wife`/`Husband`/`None`), `wives` (1 to 4), `sons`, `daughters`, `father`, `mother` (`Yes`/`No`) |
+| `compensation` | `salary`, `years`, `months`, `reason`, `workman` (`Permanent`/`Temporary / probationer`), `providentFund` (`Yes`/`No`) |
+| `stamp` | `amount`, `instrument` (Punjab sale deed only) |
+| `property` | `amount`, `sellerStatus`, `buyerStatus` (`Filer`/`Non-filer`) |
 
 ```json
 // request
-{ "inputs": { "province": "Punjab", "caseType": "Civil Suit (Money Claim)", "amount": 1000000 } }
+{ "inputs": { "kind": "contract_unregistered", "court": "lhc", "date": "2023-12-27" } }
 // 200
 {
   "total": 24500,                         // numeric result, or
-  "text": "10 Mar 2029",                  // text result (e.g. limitation date) instead of total
-  "rows": [ { "label": "Claim Amount", "value": "PKR 1,000,000" },
-            { "label": "Applicable Rate (2.5%)", "value": "PKR 25,000" } ],
-  "source": { "title": "Court Fees Act, 1870 (As Amended)", "reference": "Schedule I - Article 1A (Civil Suits)", "url": null },
-  "assumptions": ["Standard civil court fee structure applies."],
-  "calculatedAt": "..."
+  "text": "28 Dec 2026",                  // text result (the limitation date) instead of total
+  "rows": [ { "label": "Period", "value": "3 years (Article 115)" } ],
+  "notes": ["The last day was moved because the court is closed that day (section 4)."],
+  "confidence": "law",                    // or "reported"
+  "source": { "title": "Limitation Act, 1908", "reference": "First Schedule, Article 115", "url": "https://pakistancode.gov.pk/..." },
+  "assumptions": ["..."],
+  "verifiedOn": "2026-11-09", "calculatedAt": "...", "type": "limitation"
 }
 ```
-The formulas currently in `src/pages/Calculator.jsx` (`compute`) are mock estimates. Replace them with the officially notified rates per province, and keep those rates configurable on the server.
+Wrong input answers `422` with a plain message such as `date: enter a date between 1900 and a year from now.`
+
+How the rules were checked, and what stays open:
+* Limitation: First Schedule Articles 115, 116, 113, 48, 142, 120, 152, 156, 151, 157 read from the Limitation Act in the law library (Pakistan's version; Azad Kashmir changed some periods, so web articles can be wrong). Section 12(1) (the starting day is not counted), 12(2) (certified copy time, appeals only), section 4 (a Sunday or public holiday on the last day moves it to the next open day; vacations do not move it, offices stay open) and leap-day handling are applied.
+* Inheritance: Hanafi fixed shares with `'awl` (shares exceeding the estate) and `radd` (a return to heirs; never to the spouse), and the two cases where the mother takes a third of the remainder.
+* Compensation: Standing Order 12 (one month's notice or wages in lieu, gratuity of 30 days' wages per completed year or part above six months, no gratuity for provident-fund service).
+* Stamp duty and property transfer: Punjab stamp duty of 1% (Stamp (Amendment) Ordinance 2026, signed 10 April 2026) and the federal advance taxes for tax year 2027 (sections 236C and 236K) are from news reports and commentary. The non-filer rates come from one commentary source. Check with FBR or the sub-registrar before relying on them.
+* The pakistancode.gov.pk links were not reachable from the development machine, so the PDF links are not verified from there.
 
 ### POST `/calculators/saved`
-`{ "type": "court", "inputs": {...}, "result": {...} }` → `{ "id": "calc_1" }`
+`{ "type": "limitation", "inputs": {...} }` → `201 { "id": "...", "alreadySaved": false }`. The server works the result out again from the inputs, so a result sent by the browser is never stored. The calculation becomes a Vault item of kind `calculation` (shown in the Vault under Calculations, with its own page and PDF).
 ### GET `/calculators/saved/:id/summary`
-PDF download.
+PDF download of a saved calculation (`:id` is the Vault item id). `404` if the item is not the user's own calculation.
 
 ---
 
