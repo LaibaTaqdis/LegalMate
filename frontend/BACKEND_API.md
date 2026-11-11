@@ -28,6 +28,7 @@ The frontend switches services to the real backend one by one (`VITE_REAL_SERVIC
 | Dashboard: `GET /dashboard` | **Done** (section 4). Real Vault storage, real recent activity, court holidays and vacations, official links. |
 | Legal calculators: limitation, inheritance, compensation, stamp duty, property transfer; court holidays `GET /calendar/court-holidays` | **Done** (section 9). Every result says whether it rests on the law (`law`) or on news reports (`reported`). Court fee is deliberately not offered. |
 | Role-based "For you" dashboard (young adult, student, business, citizen) and calculators ranked per user | **Done** (section 4 `forYou`, section 9 `ranked`). Cards open the cited chat; the business tab has a checklist and recent contract risk. |
+| Step-by-step guides, draft letters, contract check | **Done** (section 9b). Letters are built by code from fill-in templates (no model); the contract check is a wording check (no model). |
 | Briefs, legal aid, lawyers, bookings, admin, community, emergency, offline, WhatsApp | Not built (mock). |
 
 Limits that exist today: 30 questions per hour and 100 per day per user, one answer at a time per user, 8 failed sign-ins per account per 15 minutes, 6 sign-ups per hour per address, 4000 characters per message.
@@ -302,6 +303,8 @@ One call, one database round trip. Everything comes from the user's own data or 
     "selected": "young_adult|student|business|citizen",      // from the Personalise profile (userType); anything else is "citizen"
     "verifiedOn": "2026-11-11", "note": "...",
     "personas": [ { "key": "business", "userType": "Business owner (SME)", "title": "For business owners", "subtitle": "...",
+                    "guides": [ { "id": "g_unpaid", "title": "Someone owes me money", "text": "...", "icon": "banknote" } ],      // open /guides/:id
+                    "letters": [ { "id": "payment_notice", "title": "...", "summary": "..." } ],                               // open /letters/:id
                     "calculators": [ { "key": "limitation", "name": "Limitation Period", "why": "...", "recommended": true } ],  // ranked, open /calculator?type=
                     "topics": [ { "id": "bz_staff", "title": "Employing staff", "text": "...", "icon": "users", "action": "ask|analyse|link",
                                   "question": "ready question (action ask)", "link": "/analysis/new or https://... (analyse, link)", "basis": ["Acts checked to be in the library"] } ],
@@ -734,6 +737,28 @@ PDF download of a saved calculation (`:id` is the Vault item id). `404` if the i
 
 ---
 
+## 9b. Guides, draft letters and contract check (built)
+
+All three need sign-in. None of them calls the AI model: a guide's plan is made by the chat (the page sends one ready message to `/chat?q=`), letters are built by code from the typed facts, and the contract check looks at the wording.
+
+### GET `/guides/:id`
+`{ "id", "title", "intro", "situation": "My landlord wants me to leave the property.", "questions": [ { "id": "q1", "text": "...", "options": ["...", "..."] } ],
+"tools": [ { "type": "calculator|letter|check", "name": "...", "label": "...", "link": "/letters/tenant_reply" } ], "note" }`. 2 to 3 questions with 2 to 5 options each; the app adds an "Other" box. The page builds one chat message: the situation, each question with its answer, and "please give me an ordered plan: what to do first, the documents to collect, any deadline that matters and where to go". `404` for an unknown guide.
+
+### Letters
+* `GET /letters` → `{ "items": [ { "id", "title", "summary", "who" } ] }`; `GET /letters/:id` → `{ "id", "title", "summary", "who", "note", "fields": [ { "key", "label", "type": "text|textarea|date|number|select", "required", "options", "default", "help", "placeholder" } ] }`.
+* `POST /letters/:id/render` `{ "fields": { "senderName": "...", ... } }` → `{ "id", "title", "subject", "text", "fields" }` (the finished letter as plain text). `422` with `details.field` for a missing or bad value.
+* `POST /letters/:id/pdf` `{ "fields" }` → PDF download. The PDF uses a Latin-1 font, so Urdu letters in names print as `?`.
+* `POST /letters/saved` `{ "letterId", "fields" }` → `201 { "id" }`: a Vault item of kind `letter`. The server builds the letter again from the facts, so text sent by the browser is never stored. `GET /letters/saved/:itemId/pdf` downloads it (`404` if it is not the user's own letter).
+* Templates: `tenant_reply`, `deposit_demand`, `payment_notice`, `employer_grievance`, `harassment_complaint`, `consumer_notice`. English only. The wording is general and does not name sections, except section 489-F of the Pakistan Penal Code in the bounced-cheque notice (checked in the law library). Each letter is a draft for a lawyer to read.
+
+### Contract check
+* `GET /contract-check` → `{ "types": [ { "key": "general|employment|rental|service|partnership", "label" } ], "limits" }`.
+* `POST /contract-check` `{ "documentId", "contractType" }` (the document was uploaded with `POST /documents`; the page deletes it afterwards) → `{ "level": "Low|Medium|High", "score", "typeLabel", "words", "summary": { "expected", "foundExpected", "missingExpected", "flags" }, "clauses": [ { "key", "label", "found", "expected", "snippet", "why", "question" } ], "flags": [ { "key", "label", "severity": "high|medium", "snippet", "why", "question" } ], "limits", "document" }`.
+* It checks 14 usual clauses (parties, scope, payment, term, termination, liability, confidentiality, disputes, governing law, force majeure, ownership of work, changes, stamp paper, signatures) and 11 warning phrases (end at will, one-sided changes, giving up claims, blank or security cheque, one-sided arbitrator, automatic renewal, penalty, non-compete, foreign law, non-refundable advance, blanks). A clause counts as expected depending on the kind of contract. The level is a simple score (missing expected clauses count 1, a medium warning 2, a high warning 3). It is a wording check, not a legal review, and a mostly Urdu text is refused (use the AI analysis). `422` when there are fewer than 40 words.
+
+---
+
 ## 10. Legal aid (Find a Lawyer search UI)
 
 The "Find a Lawyer" page (`/legal-aid` route) keeps its original list/map/detail-panel UI, but its `Provider` cards are now the same lawyers from the marketplace (section 15), reshaped into this page's view-model — a lawyer's `id` is shared across `/legal-aid/providers` and `/lawyers`, not two separate directories.
@@ -766,6 +791,7 @@ Tells the app what to cache for offline use (respecting the user's `offline.auto
 ```json
 { "documents": [ { "id": "doc_1", "updatedAt": "...", "url": "signed url" } ],
   "briefs": [ { "id": "brf_1", "updatedAt": "..." } ],
+  "guides": [ { "id": "res_tenancy", "updatedAt": "..." } ] }
 ```
 
 ### POST `/sync`

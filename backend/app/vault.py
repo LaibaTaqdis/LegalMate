@@ -18,7 +18,7 @@ from .users_repo import iso
 
 log = logging.getLogger("legalmate.vault")
 
-KINDS = ("answer", "analysis", "brief", "calculation")
+KINDS = ("answer", "analysis", "brief", "calculation", "letter")
 SORTS = {"updated_desc": "i.updated_at desc", "updated_asc": "i.updated_at asc", "name_asc": "lower(i.title) asc, i.updated_at desc",
          "name_desc": "lower(i.title) desc, i.updated_at desc"}
 LIST_COLS = ("i.id, i.kind, i.title, i.summary, i.meta, i.source_id, i.favourite, i.trashed_at, i.created_at, i.updated_at, "
@@ -120,8 +120,19 @@ def save_calculation(db: Database, cfg: DocSettings, user_id: str, kind: str, na
     return {"id": str(row["id"]), "alreadySaved": False}
 
 
+def save_letter(db: Database, cfg: DocSettings, user_id: str, letter_id: str, rendered: dict) -> dict:
+    """A drafted letter is saved as it was written (template, the facts typed in and the text); each save is its own item."""
+    _check_room(db, user_id, cfg)
+    title = rendered["title"] + ": " + rendered["subject"]
+    meta = {"tag": rendered["title"], "risk": None, "language": "en", "letterId": letter_id}
+    row = db.one("insert into app.vault_items (user_id, kind, title, summary, content, meta) values (%s, 'letter', %s, %s, %s, %s) returning id",
+                 [user_id, title[:160], rendered["subject"][:240], Jsonb({"letterId": letter_id, "fields": rendered["fields"], "text": rendered["text"], "subject": rendered["subject"]}), Jsonb(meta)])
+    _log(db, user_id, str(row["id"]), "saved")
+    return {"id": str(row["id"]), "alreadySaved": False}
+
+
 # ------------------------------------------------------------------------------------------------ reading
-Category = Literal["all", "answer", "analysis", "brief", "calculation", "favourites", "trash"]
+Category = Literal["all", "answer", "analysis", "brief", "calculation", "letter", "favourites", "trash"]
 
 
 def list_items(db: Database, cfg: DocSettings, user_id: str, *, category: str = "all", q: str = "", sort: str = "updated_desc", page: int = 1,
@@ -146,13 +157,13 @@ def list_items(db: Database, cfg: DocSettings, user_id: str, *, category: str = 
 
 
 COUNTS_SQL = ("select count(*) filter (where trashed_at is null) as every, count(*) filter (where trashed_at is null and kind = 'answer') as answers, "
-              "count(*) filter (where trashed_at is null and kind = 'analysis') as analyses, count(*) filter (where trashed_at is null and kind = 'brief') as briefs, count(*) filter (where trashed_at is null and kind = 'calculation') as calcs, "
+              "count(*) filter (where trashed_at is null and kind = 'analysis') as analyses, count(*) filter (where trashed_at is null and kind = 'brief') as briefs, count(*) filter (where trashed_at is null and kind = 'calculation') as calcs, count(*) filter (where trashed_at is null and kind = 'letter') as letters, "
               "count(*) filter (where trashed_at is null and favourite) as favourites, count(*) filter (where trashed_at is not null) as trash "
               "from app.vault_items where user_id = %s")
 
 
 def counts_out(c: dict) -> dict:
-    return {"all": c["every"], "answer": c["answers"], "analysis": c["analyses"], "brief": c["briefs"], "calculation": c["calcs"], "favourites": c["favourites"], "trash": c["trash"]}
+    return {"all": c["every"], "answer": c["answers"], "analysis": c["analyses"], "brief": c["briefs"], "calculation": c["calcs"], "letter": c["letters"], "favourites": c["favourites"], "trash": c["trash"]}
 
 
 def stats(db: Database, user_id: str) -> dict:

@@ -154,8 +154,8 @@ export async function stream(path, body, { onEvent, signal } = {}) {
 }
 
 /** Downloads a file from an authenticated endpoint and saves it with the given name. */
-export async function download(path, filename, { query } = {}) {
-  const res = await request(path, { query, raw: true, headers: { Accept: '*/*' } })
+export async function download(path, filename, { query, method, body } = {}) {
+  const res = await request(path, { query, method, body, raw: true, headers: { Accept: '*/*' } })
   const blob = await res.blob()
   const disposition = res.headers.get('content-disposition') || ''
   const name = /filename="?([^";]+)"?/.exec(disposition)?.[1] || filename

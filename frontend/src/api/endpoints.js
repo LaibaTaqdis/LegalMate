@@ -78,6 +78,16 @@ export const EP = {
   calendar: {
     courtHolidays: '/calendar/court-holidays',
   },
+  guidance: {
+    guide: id => `/guides/${id}`,
+    letters: '/letters',
+    letter: id => `/letters/${id}`,
+    renderLetter: id => `/letters/${id}/render`,
+    letterPdf: id => `/letters/${id}/pdf`,
+    saveLetter: '/letters/saved',
+    savedLetterPdf: id => `/letters/saved/${id}/pdf`,
+    contractCheck: '/contract-check',
+  },
   legalAid: {
     providers: '/legal-aid/providers',
     saved: id => `/legal-aid/providers/${id}/save`,

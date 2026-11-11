@@ -4,7 +4,7 @@ React + Vite implementation of the **UI Designs By Isha** screens (18 screens / 
 
 All data flows through an API layer. By default it runs on built-in **mock data** (no backend needed: login and signup accept any input). Point it at a real backend with one environment switch, and every page loads and saves through the API with no page changes.
 
-The real backend exists now for **auth, chat, profile, documents, the Legal Vault, calculators and the dashboard**: list those in `VITE_REAL_SERVICES` in `.env.local` (see `.env.example`: `VITE_REAL_SERVICES=auth,chat,profile,documents,vault,calculators,dashboard`). Every other service stays on mock data until its backend is built.
+The real backend exists now for **auth, chat, profile, documents, the Legal Vault, calculators, the dashboard and the guides, letters and contract check**: list those in `VITE_REAL_SERVICES` in `.env.local` (see `.env.example`: `VITE_REAL_SERVICES=auth,chat,profile,documents,vault,calculators,dashboard,guidance`). Every other service stays on mock data until its backend is built.
 
 ## Run
 

@@ -148,7 +148,7 @@ def test_list_filters_search_sort_and_pages(client):
     def items(**p):
         return client.get(f"{A}/vault/items", params=p, headers=h).json()
 
-    assert items()["total"] == 4 and items()["counts"] == {"all": 4, "answer": 3, "analysis": 1, "brief": 0, "calculation": 0, "favourites": 1, "trash": 0}
+    assert items()["total"] == 4 and items()["counts"] == {"all": 4, "answer": 3, "analysis": 1, "brief": 0, "calculation": 0, "letter": 0, "favourites": 1, "trash": 0}
     assert items(category="analysis")["total"] == 1 and items(category="answer")["total"] == 3
     assert [i["title"] for i in items(category="favourites")["items"]] == ["Alimony after divorce"]
     assert [i["title"] for i in items(q="bail")["items"]] == ["Bail in a theft case"]                 # title search, any case

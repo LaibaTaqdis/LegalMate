@@ -102,6 +102,22 @@
           "basis": []
         }
       ],
+      "guides": [
+        "g_fired",
+        "g_landlord",
+        "g_deposit",
+        "g_unpaid",
+        "g_online",
+        "g_police",
+        "g_workharass",
+        "g_sign"
+      ],
+      "letters": [
+        "tenant_reply",
+        "deposit_demand",
+        "employer_grievance",
+        "payment_notice"
+      ],
       "calculators": [
         {
           "key": "compensation",
@@ -201,6 +217,21 @@
           "link": "/analysis/new",
           "basis": []
         }
+      ],
+      "guides": [
+        "g_landlord",
+        "g_deposit",
+        "g_workharass",
+        "g_online",
+        "g_police",
+        "g_consumer",
+        "g_sign"
+      ],
+      "letters": [
+        "deposit_demand",
+        "tenant_reply",
+        "harassment_complaint",
+        "consumer_notice"
       ],
       "calculators": [
         {
@@ -305,10 +336,10 @@
         {
           "id": "bz_doc",
           "title": "Check a contract for risks",
-          "text": "Upload a contract and see the risks.",
+          "text": "Upload a contract: missing clauses and warning phrases.",
           "icon": "file",
           "action": "analyse",
-          "link": "/analysis/new",
+          "link": "/contract-check",
           "basis": []
         },
         {
@@ -352,6 +383,17 @@
           "text": "Decide how disputes will be settled, and note the time limits for chasing unpaid money.",
           "ask": "bz_cheque"
         }
+      ],
+      "guides": [
+        "g_unpaid",
+        "g_staff_end",
+        "g_sign",
+        "g_consumer"
+      ],
+      "letters": [
+        "payment_notice",
+        "tenant_reply",
+        "consumer_notice"
       ],
       "calculators": [
         {
@@ -448,6 +490,20 @@
           "basis": []
         }
       ],
+      "guides": [
+        "g_landlord",
+        "g_fired",
+        "g_deposit",
+        "g_unpaid",
+        "g_consumer",
+        "g_police"
+      ],
+      "letters": [
+        "tenant_reply",
+        "payment_notice",
+        "consumer_notice",
+        "employer_grievance"
+      ],
       "calculators": [
         {
           "key": "limitation",
@@ -464,6 +520,442 @@
         {
           "key": "property",
           "why": "Taxes on buying or selling property."
+        }
+      ]
+    }
+  ],
+  "guides": [
+    {
+      "id": "g_fired",
+      "title": "I lost my job",
+      "text": "Notice, dues and what to put in writing.",
+      "icon": "briefcase",
+      "intro": "Tell us a little about what happened and we will give you an ordered plan.",
+      "situation": "My employer ended my job.",
+      "questions": [
+        {
+          "id": "q1",
+          "text": "Did you get anything in writing?",
+          "options": [
+            "A termination letter",
+            "Only told verbally",
+            "Nothing yet"
+          ]
+        },
+        {
+          "id": "q2",
+          "text": "How long did you work there?",
+          "options": [
+            "Under 3 months",
+            "3 months to 1 year",
+            "1 to 3 years",
+            "More than 3 years"
+          ]
+        },
+        {
+          "id": "q3",
+          "text": "What kind of workplace was it?",
+          "options": [
+            "Private company or shop",
+            "Factory",
+            "Government",
+            "Home or informal"
+          ]
+        }
+      ],
+      "tools": [
+        {
+          "type": "calculator",
+          "key": "compensation",
+          "label": "Work out what you may be owed"
+        },
+        {
+          "type": "letter",
+          "id": "employer_grievance",
+          "label": "Draft a written grievance"
+        }
+      ]
+    },
+    {
+      "id": "g_landlord",
+      "title": "My landlord wants me out",
+      "text": "Notice, your rights and a written reply.",
+      "icon": "house",
+      "intro": "A few quick questions, then a plan for what to do first.",
+      "situation": "My landlord wants me to leave the property.",
+      "questions": [
+        {
+          "id": "q1",
+          "text": "What did the landlord do?",
+          "options": [
+            "Told me to leave verbally",
+            "Sent a written notice",
+            "Filed a case",
+            "Cut off water, power or gas"
+          ]
+        },
+        {
+          "id": "q2",
+          "text": "Is your rent paid up to date?",
+          "options": [
+            "Yes",
+            "Some rent is unpaid",
+            "We disagree about the rent"
+          ]
+        },
+        {
+          "id": "q3",
+          "text": "Do you have a written tenancy agreement?",
+          "options": [
+            "Yes",
+            "No"
+          ]
+        }
+      ],
+      "tools": [
+        {
+          "type": "letter",
+          "id": "tenant_reply",
+          "label": "Draft a reply to the landlord"
+        },
+        {
+          "type": "calculator",
+          "key": "limitation",
+          "label": "Check a time limit"
+        }
+      ]
+    },
+    {
+      "id": "g_deposit",
+      "title": "My landlord keeps my deposit",
+      "text": "How to ask for it back in writing.",
+      "icon": "banknote",
+      "intro": "Answer a few questions and we will plan the steps to get your deposit back.",
+      "situation": "My landlord is not returning my security deposit.",
+      "questions": [
+        {
+          "id": "q1",
+          "text": "Have you already left the property?",
+          "options": [
+            "Yes",
+            "Not yet"
+          ]
+        },
+        {
+          "id": "q2",
+          "text": "What reason did the landlord give?",
+          "options": [
+            "No reason",
+            "Damage to the property",
+            "Unpaid rent or bills",
+            "They say the deposit was not paid"
+          ]
+        },
+        {
+          "id": "q3",
+          "text": "Do you have proof you paid it?",
+          "options": [
+            "Receipt or bank transfer",
+            "Messages only",
+            "No proof"
+          ]
+        }
+      ],
+      "tools": [
+        {
+          "type": "letter",
+          "id": "deposit_demand",
+          "label": "Draft a demand for the deposit"
+        },
+        {
+          "type": "calculator",
+          "key": "limitation",
+          "label": "Check a time limit"
+        }
+      ]
+    },
+    {
+      "id": "g_unpaid",
+      "title": "Someone owes me money",
+      "text": "A bounced cheque, an unpaid bill or a loan.",
+      "icon": "banknote",
+      "intro": "Tell us how the money is owed and we will plan the steps.",
+      "situation": "Someone owes me money and is not paying it.",
+      "questions": [
+        {
+          "id": "q1",
+          "text": "What is owed?",
+          "options": [
+            "Money I lent",
+            "Goods or services I supplied",
+            "A bounced cheque",
+            "Unpaid rent"
+          ]
+        },
+        {
+          "id": "q2",
+          "text": "What do you have in writing?",
+          "options": [
+            "A signed agreement",
+            "Messages or invoices only",
+            "Nothing in writing"
+          ]
+        },
+        {
+          "id": "q3",
+          "text": "How long ago was it due?",
+          "options": [
+            "Under 6 months",
+            "6 months to 3 years",
+            "More than 3 years"
+          ]
+        }
+      ],
+      "tools": [
+        {
+          "type": "letter",
+          "id": "payment_notice",
+          "label": "Draft a payment demand notice"
+        },
+        {
+          "type": "calculator",
+          "key": "limitation",
+          "label": "Check the time limit to sue"
+        }
+      ]
+    },
+    {
+      "id": "g_online",
+      "title": "Online harassment or blackmail",
+      "text": "What to keep, and where to complain.",
+      "icon": "laptop",
+      "intro": "Tell us what is happening and we will plan the steps. Your safety comes first.",
+      "situation": "I am being harassed or blackmailed online.",
+      "questions": [
+        {
+          "id": "q1",
+          "text": "What is happening?",
+          "options": [
+            "Threats to leak photos",
+            "A fake account in my name",
+            "Abusive messages",
+            "My account was hacked",
+            "Money fraud"
+          ]
+        },
+        {
+          "id": "q2",
+          "text": "Do you know who is doing it?",
+          "options": [
+            "Yes",
+            "No",
+            "Not sure"
+          ]
+        },
+        {
+          "id": "q3",
+          "text": "Do you have screenshots or messages saved?",
+          "options": [
+            "Yes",
+            "No"
+          ]
+        }
+      ],
+      "tools": []
+    },
+    {
+      "id": "g_police",
+      "title": "Stopped, arrested or ignored by police",
+      "text": "Your rights and what to do now.",
+      "icon": "shield",
+      "intro": "Two quick questions, then the steps.",
+      "situation": "I have a problem with the police.",
+      "questions": [
+        {
+          "id": "q1",
+          "text": "What is the situation?",
+          "options": [
+            "Stopped or searched",
+            "Arrested or detained",
+            "Asked to come to the station",
+            "Police will not register my complaint"
+          ]
+        },
+        {
+          "id": "q2",
+          "text": "Is it happening now?",
+          "options": [
+            "Yes, right now",
+            "No, it already happened"
+          ]
+        }
+      ],
+      "tools": []
+    },
+    {
+      "id": "g_workharass",
+      "title": "Harassment at work or campus",
+      "text": "How to complain and be protected.",
+      "icon": "alert",
+      "intro": "A few questions, then a plan and a draft complaint.",
+      "situation": "I am being harassed.",
+      "questions": [
+        {
+          "id": "q1",
+          "text": "Where is it happening?",
+          "options": [
+            "At work",
+            "At university or college"
+          ]
+        },
+        {
+          "id": "q2",
+          "text": "What kind of behaviour?",
+          "options": [
+            "Unwelcome comments or advances",
+            "Pressure or threats",
+            "Physical contact",
+            "Online messages"
+          ]
+        },
+        {
+          "id": "q3",
+          "text": "Have you complained already?",
+          "options": [
+            "No",
+            "Yes, but nothing happened",
+            "Yes, and I faced retaliation"
+          ]
+        }
+      ],
+      "tools": [
+        {
+          "type": "letter",
+          "id": "harassment_complaint",
+          "label": "Draft a formal complaint"
+        }
+      ]
+    },
+    {
+      "id": "g_consumer",
+      "title": "A faulty product or poor service",
+      "text": "Refund, replacement and a written notice.",
+      "icon": "message",
+      "intro": "Tell us what went wrong and we will plan the steps.",
+      "situation": "I bought a faulty product or got a poor service.",
+      "questions": [
+        {
+          "id": "q1",
+          "text": "What went wrong?",
+          "options": [
+            "Faulty product",
+            "Poor service",
+            "Item never delivered",
+            "Wrong or fake item"
+          ]
+        },
+        {
+          "id": "q2",
+          "text": "How did the seller respond?",
+          "options": [
+            "No reply",
+            "Refused",
+            "Offered a repair only"
+          ]
+        },
+        {
+          "id": "q3",
+          "text": "Do you have a receipt?",
+          "options": [
+            "Yes",
+            "No"
+          ]
+        }
+      ],
+      "tools": [
+        {
+          "type": "letter",
+          "id": "consumer_notice",
+          "label": "Draft a notice to the seller"
+        }
+      ]
+    },
+    {
+      "id": "g_sign",
+      "title": "Before I sign a contract",
+      "text": "Check the wording, then ask what worries you.",
+      "icon": "file",
+      "intro": "Answer two questions, then check your contract for missing clauses and warning phrases.",
+      "situation": "I am about to sign a contract.",
+      "questions": [
+        {
+          "id": "q1",
+          "text": "What are you signing?",
+          "options": [
+            "A job or internship contract",
+            "A rental agreement",
+            "A supplier or customer contract",
+            "A loan or partnership agreement"
+          ]
+        },
+        {
+          "id": "q2",
+          "text": "Who wrote it?",
+          "options": [
+            "The other side",
+            "A lawyer I hired",
+            "A template I found"
+          ]
+        }
+      ],
+      "tools": [
+        {
+          "type": "check",
+          "label": "Check my contract for risks"
+        }
+      ]
+    },
+    {
+      "id": "g_staff_end",
+      "title": "Ending an employee's job properly",
+      "text": "Notice, dues and the paperwork.",
+      "icon": "users",
+      "intro": "A few questions about the employee, then the steps to follow.",
+      "situation": "I need to end an employee's job in my business.",
+      "questions": [
+        {
+          "id": "q1",
+          "text": "Why are you ending the job?",
+          "options": [
+            "Poor performance",
+            "Misconduct",
+            "Business slowdown or closure",
+            "Probation not confirmed"
+          ]
+        },
+        {
+          "id": "q2",
+          "text": "Does the employee have written terms?",
+          "options": [
+            "Yes",
+            "No"
+          ]
+        },
+        {
+          "id": "q3",
+          "text": "How long have they worked for you?",
+          "options": [
+            "Under 3 months",
+            "3 months to 1 year",
+            "More than 1 year"
+          ]
+        }
+      ],
+      "tools": [
+        {
+          "type": "calculator",
+          "key": "compensation",
+          "label": "Work out notice pay and gratuity"
         }
       ]
     }

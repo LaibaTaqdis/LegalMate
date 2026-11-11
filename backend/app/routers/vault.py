@@ -32,7 +32,7 @@ def save_item(body: VaultSaveIn, user: dict = Depends(current_user), state: AppS
         if not body.analysisId:
             raise ApiError(400, "VALIDATION_ERROR", "analysisId: this field is required.", {"field": "analysisId"})
         return vault.save_analysis(state.db, cfg, uid, _uuid(body.analysisId, "analysisId"))
-    raise ApiError(422, "UNPROCESSABLE", "Case briefs and calculations cannot be saved with this call. Calculations are saved from the calculator.")
+    raise ApiError(422, "UNPROCESSABLE", "Case briefs, calculations and letters cannot be saved with this call. Calculations are saved from the calculator and letters from the letter page.")
 
 
 def _uuid(value: str, field: str) -> str:
@@ -43,7 +43,7 @@ def _uuid(value: str, field: str) -> str:
 
 
 @router.get("/items")
-def list_items(category: Literal["all", "answer", "analysis", "brief", "calculation", "favourites", "trash"] = "all", q: str = Query("", max_length=80),
+def list_items(category: Literal["all", "answer", "analysis", "brief", "calculation", "letter", "favourites", "trash"] = "all", q: str = Query("", max_length=80),
                sort: Literal["updated_desc", "updated_asc", "name_asc", "name_desc"] = "updated_desc", page: int = Query(1, ge=1, le=10_000),
                pageSize: int | None = Query(None, ge=1, le=100), user: dict = Depends(current_user), state: AppState = Depends(get_state)):
     return vault.list_items(state.db, state.settings.docs, str(user["id"]), category=category, q=q, sort=sort, page=page, page_size=pageSize)

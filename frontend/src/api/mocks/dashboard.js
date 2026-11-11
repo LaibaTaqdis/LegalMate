@@ -42,6 +42,8 @@ export const MOCK_DASHBOARD = {
     personas: [
       {
         key: 'young_adult', userType: 'Young adult', title: 'For young adults', subtitle: 'Know your rights: renting, first jobs, police and online safety.', checklist: [],
+        guides: [{ id: 'g_fired', title: 'I lost my job', text: 'Notice, dues and what to put in writing.', icon: 'briefcase' }],
+        letters: [{ id: 'employer_grievance', title: 'Written grievance after losing a job', summary: 'Ask for the reasons in writing and your dues.' }],
         calculators: [{ key: 'compensation', name: 'Compensation', why: 'What you may be owed when a job ends.', recommended: true }],
         topics: [
           { id: 'ya_rent', title: 'Renting a room or flat', text: 'What your landlord can and cannot do.', icon: 'house', action: 'ask', question: 'What are my rights as a tenant?', link: null, basis: ['Punjab Rented Premises Act, 2009'] },
@@ -50,6 +52,8 @@ export const MOCK_DASHBOARD = {
       },
       {
         key: 'citizen', userType: 'Citizen', title: 'Everyday legal questions', subtitle: 'The questions people ask most.', checklist: [],
+        guides: [{ id: 'g_landlord', title: 'My landlord wants me out', text: 'Notice, your rights and a written reply.', icon: 'house' }],
+        letters: [{ id: 'tenant_reply', title: 'Reply to a landlord\'s eviction notice', summary: 'Say in writing that you have not agreed to leave.' }],
         calculators: [{ key: 'limitation', name: 'Limitation Period', why: 'How long you have to act on a claim.', recommended: true }],
         topics: [
           { id: 'ct_rent', title: 'Tenant and landlord', text: 'Rent, eviction and the deposit.', icon: 'house', action: 'ask', question: 'What are the rights of a tenant and a landlord?', link: null, basis: ['Punjab Rented Premises Act, 2009'] },

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Calculator, ChevronDown, ChevronLeft, ChevronRight, FileText, FolderOpen, Folder, LayoutGrid, List, Loader2, MessageCircleMore, MoreVertical,
+  Calculator, Mail, ChevronDown, ChevronLeft, ChevronRight, FileText, FolderOpen, Folder, LayoutGrid, List, Loader2, MessageCircleMore, MoreVertical,
   Pencil, RotateCcw, Search, Star, Trash2
 } from 'lucide-react'
 import { Modal, useClickOutside } from '../../components/common'
@@ -17,18 +17,20 @@ const CATEGORIES = [
   { key: 'answer', label: 'Chat Answers', icon: MessageCircleMore },
   { key: 'analysis', label: 'Analyses', icon: FileText },
   { key: 'calculation', label: 'Calculations', icon: Calculator },
+  { key: 'letter', label: 'Letters', icon: Mail },
   { key: 'favourites', label: 'Favourites', icon: Star },
   { key: 'trash', label: 'Trash', icon: Trash2 },
 ]
 const SORTS = [['Updated (Newest)', 'updated_desc'], ['Updated (Oldest)', 'updated_asc'], ['Name (A–Z)', 'name_asc'], ['Name (Z–A)', 'name_desc']]
-const KIND_LABEL = { answer: 'Chat answer', analysis: 'Analysis', brief: 'Case brief', calculation: 'Calculation' }
-const KIND_ICON = { answer: MessageCircleMore, analysis: FileText, brief: FileText, calculation: Calculator }
+const KIND_LABEL = { answer: 'Chat answer', analysis: 'Analysis', brief: 'Case brief', calculation: 'Calculation', letter: 'Letter' }
+const KIND_ICON = { answer: MessageCircleMore, analysis: FileText, brief: FileText, calculation: Calculator, letter: Mail }
 const RISK_PILL = { Low: 'pill-green', Medium: 'pill-orange', High: 'pill-red' }
 const EMPTY = {
   all: ['Nothing saved yet', 'Use “Save to Vault” under a chat answer or on an analysis, and it will be kept here.'],
   answer: ['No saved answers', 'Use “Save to Vault” under an answer in the chat to keep it here.'],
   analysis: ['No saved analyses', 'Open a finished analysis and choose “Save to Vault”.'],
   calculation: ['No saved calculations', 'Use “Save to Vault” on a result in the Legal Calculator to keep it here.'],
+  letter: ['No saved letters', 'Draft a letter from the dashboard and choose “Save to Vault”.'],
   favourites: ['No favourites yet', 'Tap the star on a saved item to keep it handy.'],
   trash: ['The Trash is empty', 'Items you delete wait here for 30 days before they are removed for good.'],
 }

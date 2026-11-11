@@ -161,6 +161,12 @@
 .fy-h { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 0 0 10px; font-size: 15px; font-weight: 700; }
 .fy-h span { font-size: 12.5px; font-weight: 400; color: var(--muted); }
 .fy-h-top { margin-top: 4px; }
+.fy-guides { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.fy-guide { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--line-2); border-radius: 10px; background: #fff; transition: .15s; }
+.fy-guide:hover { border-color: #cfd9e8; box-shadow: var(--shadow-md); }
+.fy-guide div { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.fy-guide b { font-size: 13.5px; }
+.fy-guide div span { font-size: 12.5px; color: var(--muted); line-height: 1.35; }
 .fy-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
 .fy-list { list-style: none; display: flex; flex-direction: column; border: 1px solid var(--line-2); border-radius: 10px; }
 .fy-list li + li { border-top: 1px solid var(--line-2); }
@@ -183,9 +189,11 @@
 .fy-sections button.on::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--navy-800); border-radius: 2px; }
 .fy-panel { margin-top: 18px; }
 .fy-lead { margin: 0 0 14px; font-size: 13.5px; color: var(--muted); }
+.fy-guides { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .fy-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .fy-card { padding: 16px; gap: 7px; }
 .fy-card .fy-basis { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fy-more { margin-top: 12px; padding: 0; }
 .fy-tools { grid-template-columns: 1fr 1fr; gap: 24px; }
 .fy-check-btn { margin-top: 12px; width: 100%; }
 .fy-foot { margin-top: 18px; font-size: 12px; color: var(--muted); }
@@ -203,6 +211,6 @@ details.dl-note summary { cursor: pointer; width: max-content; }
 details.dl-note p { margin-top: 6px; line-height: 1.5; }
 .dash-mid, .dash-bottom { margin-top: 20px; }
 @media (max-width: 1280px) { .fy-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (max-width: 1000px) { .fy-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .fy-tools { grid-template-columns: 1fr; } }
-@media (max-width: 640px) { .fy-grid { grid-template-columns: 1fr; } }
+@media (max-width: 1000px) { .fy-guides { grid-template-columns: repeat(2, minmax(0, 1fr)); } .fy-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .fy-tools { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .fy-guides, .fy-grid { grid-template-columns: 1fr; } }
 .dash-bottom .res-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

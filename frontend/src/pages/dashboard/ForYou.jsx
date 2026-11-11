@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   AlertTriangle, ArrowRight, Banknote, BookOpen, Briefcase, Building2, Calculator, ExternalLink, FileText, Heart, House, Landmark, Laptop,
-  MessageSquareText, Scale, ShieldCheck, Users
+  Mail, MessageSquareText, Scale, ShieldCheck, Users
 } from 'lucide-react'
 import { EmptyState } from '../../components/States'
 import { formatDate } from '../../utils/format'
@@ -26,18 +26,21 @@ function useChecked(userId) {
 export default function ForYou({ data, risk, userId }) {
   const navigate = useNavigate()
   const [key, setKey] = useState(data.selected)
-  const [section, setSection] = useState('rights')
+  const [section, setSection] = useState('guides')
+  const [allGuides, setAllGuides] = useState(false)
   const [done, toggle] = useChecked(userId)
   const persona = data.personas.find(p => p.key === key) || data.personas[0]
   const ask = q => navigate(`/chat?q=${encodeURIComponent(q)}`)
   const checklist = persona.checklist || []
   const finished = checklist.filter(c => done.includes(c.id)).length
   const sections = [
+    { key: 'guides', label: 'Guides', n: persona.guides?.length },
     { key: 'rights', label: 'Know your rights', n: persona.topics.length },
-    { key: 'tools', label: 'Calculators' },
+    { key: 'tools', label: 'Calculators & letters' },
     checklist.length > 0 && { key: 'checklist', label: 'Checklist & contracts' },
   ].filter(Boolean)
-  const active = sections.some(x => x.key === section) ? section : 'rights'
+  const active = sections.some(x => x.key === section) ? section : 'guides'
+  const guides = allGuides ? persona.guides : (persona.guides || []).slice(0, 6)
 
   return (
     <section className="card card-pad fy">
@@ -62,6 +65,25 @@ export default function ForYou({ data, risk, userId }) {
           </button>
         ))}
       </div>
+
+      {active === 'guides' && (
+        <div className="fy-panel">
+          <p className="fy-lead">Pick your situation, answer a few questions, and get a step-by-step plan.</p>
+          <div className="fy-guides">
+            {guides.map((g, i) => {
+              const Icon = ICONS[g.icon] || FileText
+              return (
+                <Link key={g.id} to={`/guides/${g.id}`} className="fy-guide">
+                  <span className={`icon-tile tile-${TONES[i % TONES.length]} tile-md`}><Icon /></span>
+                  <div><b>{g.title}</b><span>{g.text}</span></div>
+                  <ArrowRight size={16} />
+                </Link>
+              )
+            })}
+          </div>
+          {(persona.guides?.length || 0) > 6 && <button type="button" className="link small fy-more" onClick={() => setAllGuides(a => !a)}>{allGuides ? 'Show fewer' : `Show all ${persona.guides.length} guides`}</button>}
+        </div>
+      )}
 
       {active === 'rights' && (
         <div className="fy-panel">
@@ -94,6 +116,14 @@ export default function ForYou({ data, risk, userId }) {
             <ul className="fy-list">
               {(persona.calculators || []).map((c, i) => (
                 <li key={c.key}><Link to={`/calculator?type=${c.key}`}><span className="fy-rank">{i + 1}</span><div><b>{c.name}</b><span>{c.why}</span></div><Calculator size={16} /></Link></li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h3 className="fy-h">Draft a letter</h3>
+            <ul className="fy-list">
+              {(persona.letters || []).map(l => (
+                <li key={l.id}><Link to={`/letters/${l.id}`}><span className="fy-rank"><Mail size={14} /></span><div><b>{l.title}</b><span>{l.summary}</span></div><ArrowRight size={16} /></Link></li>
               ))}
             </ul>
           </div>

@@ -18,6 +18,9 @@ import VaultFile from './pages/VaultFile'
 import CaseBrief from './pages/CaseBrief'
 import CaseBriefView from './pages/CaseBriefView'
 import Calculator from './pages/Calculator'
+import Guide from './pages/Guide'
+import Letter from './pages/Letter'
+import ContractCheck from './pages/ContractCheck'
 import LegalAid from './pages/LegalAid'
 import Emergency from './pages/Emergency'
 import LawyerProfile from './pages/LawyerProfile'
@@ -80,6 +83,9 @@ export default function App() {
           <Route path="/case-briefs/new" element={<CaseBrief />} />
           <Route path="/case-briefs/:id" element={<CaseBriefView />} />
           <Route path="/calculator" element={<Calculator />} />
+          <Route path="/guides/:id" element={<Guide />} />
+          <Route path="/letters/:id" element={<Letter />} />
+          <Route path="/contract-check" element={<ContractCheck />} />
           <Route path="/legal-aid" element={<LegalAid />} />
           <Route path="/emergency" element={<Emergency />} />
           <Route path="/find-a-lawyer/:id" element={<LawyerProfile />} />
