@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from . import calendar_service, vault, vault_files
+from . import calendar_service, personas, vault, vault_files
 from .db import Database
 from .config import DocSettings
 from .users_repo import iso
@@ -38,12 +38,15 @@ union all
    from app.vault_files f where f.user_id = %(u)s and f.trashed_at is null order by f.created_at desc limit 6)
 order by at desc limit 8
 """
+RISK_SQL = ("select a.id::text as id, coalesce(a.result->'document'->>'name', a.input->>'name', 'Document') as name, a.result->'overallRisk'->>'level' as level, "
+            "coalesce(a.finished_at, a.created_at) as at from app.analyses a where a.user_id = %s and a.status = 'completed' and a.result is not null "
+            "order by coalesce(a.finished_at, a.created_at) desc limit 3")
 VAULT_SQL = ("select coalesce(sum(size_bytes) filter (where file_type in ('pdf', 'docx')), 0) as docs, coalesce(sum(size_bytes) filter (where file_type in ('jpg', 'png')), 0) as images, "
              "coalesce(sum(size_bytes), 0) as used, count(*) filter (where trashed_at is null) as files from app.vault_files where user_id = %s")
 
 
-def build(db: Database, cfg: DocSettings, user_id: str, files_enabled: bool, today: date | None = None) -> dict:
-    activity, (v,), (c,) = db.batch([(ACTIVITY_SQL, {"u": user_id}), (VAULT_SQL, [user_id]), (vault.COUNTS_SQL, [user_id])])
+def build(db: Database, cfg: DocSettings, user_id: str, files_enabled: bool, today: date | None = None, user_type: str | None = None) -> dict:
+    activity, (v,), (c,), risks = db.batch([(ACTIVITY_SQL, {"u": user_id}), (VAULT_SQL, [user_id]), (vault.COUNTS_SQL, [user_id]), (RISK_SQL, [user_id])])
     used = int(v["used"])
     quota = cfg.vault_quota_mb * 1024 * 1024
     saved = vault.counts_out(c)
@@ -52,5 +55,7 @@ def build(db: Database, cfg: DocSettings, user_id: str, files_enabled: bool, tod
         "vault": {"usedBytes": used, "quotaBytes": quota, "filesEnabled": files_enabled, "fileCount": int(v["files"]), "savedCount": saved["all"],
                   "breakdown": [{"category": "documents", "label": "Documents (PDF, Word)", "bytes": int(v["docs"])}, {"category": "images", "label": "Photos", "bytes": int(v["images"])}]},
         "resources": RESOURCES,
+        "forYou": personas.for_you(user_type),
+        "riskPreview": [{"id": r["id"], "name": r["name"], "level": r["level"], "occurredAt": iso(r["at"]), "link": "/analysis/" + r["id"]} for r in risks],
         "holidays": {"items": calendar_service.upcoming(today, limit=6), **calendar_service.meta()},
     }

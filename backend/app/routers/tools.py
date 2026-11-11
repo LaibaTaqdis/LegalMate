@@ -7,7 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, Response
 from pydantic import Field
 
-from .. import calculators, calendar_service, dashboard, vault
+from .. import calculators, calendar_service, dashboard, personas, vault
 from ..deps import current_user, get_state
 from ..errors import ApiError, not_found
 from ..schemas import Body
@@ -27,9 +27,9 @@ class CalcSaveIn(Body):
 
 # ---------------------------------------------------------------------------------------------- calculators
 @router.get("/calculators")
-def list_calculators(_: dict = Depends(current_user)):
+def list_calculators(user: dict = Depends(current_user)):
     """Which calculators exist, how far each can be trusted (`law` or `reported`), when its data was checked, and which one is not offered and why."""
-    return calculators.meta()
+    return {**calculators.meta(), "ranked": personas.calculators_for((user.get("profile") or {}).get("userType"))}
 
 
 @router.post("/calculators/saved", status_code=201)
@@ -67,4 +67,4 @@ def court_holidays(limit: int = Query(6, ge=1, le=60), court: str | None = Query
 # ---------------------------------------------------------------------------------------------- dashboard
 @router.get("/dashboard")
 def get_dashboard(user: dict = Depends(current_user), state: AppState = Depends(get_state)):
-    return dashboard.build(state.db, state.settings.docs, str(user["id"]), state.storage is not None)
+    return dashboard.build(state.db, state.settings.docs, str(user["id"]), state.storage is not None, user_type=(user.get("profile") or {}).get("userType"))

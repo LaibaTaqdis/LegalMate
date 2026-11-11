@@ -27,6 +27,7 @@ The frontend switches services to the real backend one by one (`VITE_REAL_SERVIC
 | Settings: security, sessions, preferences, avatar, export, delete account, integrations | Not built (mock). |
 | Dashboard: `GET /dashboard` | **Done** (section 4). Real Vault storage, real recent activity, court holidays and vacations, official links. |
 | Legal calculators: limitation, inheritance, compensation, stamp duty, property transfer; court holidays `GET /calendar/court-holidays` | **Done** (section 9). Every result says whether it rests on the law (`law`) or on news reports (`reported`). Court fee is deliberately not offered. |
+| Role-based "For you" dashboard (young adult, student, business, citizen) and calculators ranked per user | **Done** (section 4 `forYou`, section 9 `ranked`). Cards open the cited chat; the business tab has a checklist and recent contract risk. |
 | Briefs, legal aid, lawyers, bookings, admin, community, emergency, offline, WhatsApp | Not built (mock). |
 
 Limits that exist today: 30 questions per hour and 100 per day per user, one answer at a time per user, 8 failed sign-ins per account per 15 minutes, 6 sign-ups per hour per address, 4000 characters per message.
@@ -297,6 +298,16 @@ One call, one database round trip. Everything comes from the user's own data or 
     "breakdown": [ { "category": "documents|images", "label": "Documents (PDF, Word)", "bytes": 1500000 } ]
   },
   "resources": [ { "id": "res_laws", "category": "laws|courts|property|tax", "title": "Pakistan Code", "summary": "...", "link": "https://pakistancode.gov.pk" } ],
+  "forYou": {
+    "selected": "young_adult|student|business|citizen",      // from the Personalise profile (userType); anything else is "citizen"
+    "verifiedOn": "2026-11-11", "note": "...",
+    "personas": [ { "key": "business", "userType": "Business owner (SME)", "title": "For business owners", "subtitle": "...",
+                    "calculators": [ { "key": "limitation", "name": "Limitation Period", "why": "...", "recommended": true } ],  // ranked, open /calculator?type=
+                    "topics": [ { "id": "bz_staff", "title": "Employing staff", "text": "...", "icon": "users", "action": "ask|analyse|link",
+                                  "question": "ready question (action ask)", "link": "/analysis/new or https://... (analyse, link)", "basis": ["Acts checked to be in the library"] } ],
+                    "checklist": [ { "id": "ck_form", "text": "...", "question": "ready question or null", "link": "route, https link or null" } ] } ]
+  },
+  "riskPreview": [ { "id": "...", "name": "Supplier contract.pdf", "level": "Low|Medium|High|null", "occurredAt": "...", "link": "/analysis/<id>" } ],
   "holidays": {
     "items": [ { "id": "...", "title": "Quaid-e-Azam Day", "kind": "holiday|vacation|optional", "courts": ["all"], "courtNames": ["All courts (public holiday)"],
                  "start": "2026-12-25", "end": "2026-12-25", "days": 1, "status": "notified|reported|expected", "source": "ARY News, 19 Jan 2026 (...)",
@@ -310,6 +321,7 @@ One call, one database round trip. Everything comes from the user's own data or 
 * `resources` are official websites (external links). `holidays.items` are the 6 nearest court holidays and vacations that have not finished yet.
 * The calendar data is in `backend/app/reference/court_calendar.json`. Each entry has a status: `notified` (reported with its notification date), `reported` (one or two outlets) or `expected` (worked out from a published rule or a fixed national day). It was collected from news reports because the courts' own notifications could not be fetched, and it is dated (`verifiedOn`). Update the file when a new notification is issued.
 * The WhatsApp card on the dashboard is static until the WhatsApp module is built.
+* `forYou` drives the "For you" section: one tab per kind of user (young adult, student, business owner, citizen), the profile's choice is marked and opened first, and every user may open the other tabs. Content is in `backend/app/reference/personas.json`. A card never states the law: `ask` opens a chat with its ready question (`/chat?q=`), so the answer comes from the law library with its sources. `basis` lists the Acts that were checked to be in the library and to come up for that question (`verifiedOn`). Tax is not in the library, so that card links to the FBR. The business checklist ticks are stored in the browser only. `riskPreview` is the 3 newest completed analyses with their overall risk level (shown with the business checklist).
 
 ### GET `/calendar/court-holidays?limit=&court=&all=` (built)
 `court` = `lhc` | `ihc` | `sc` | `fcc` (also returns the public holidays). `all=true` returns past entries too. Same item shape as `holidays` above, plus the notes.
@@ -712,6 +724,9 @@ How the rules were checked, and what stays open:
 * Stamp duty and property transfer: Punjab stamp duty of 1% (Stamp (Amendment) Ordinance 2026, signed 10 April 2026) and the federal advance taxes for tax year 2027 (sections 236C and 236K) are from news reports and commentary. The non-filer rates come from one commentary source. Check with FBR or the sub-registrar before relying on them.
 * The pakistancode.gov.pk links were not reachable from the development machine, so the PDF links are not verified from there.
 
+### GET `/calculators` also returns `ranked`
+`"ranked": [ { "key": "compensation", "name": "Compensation", "why": "What you may be owed when a job ends.", "recommended": true }, ... ]`: all calculators, the ones recommended for the profile's user type first. The calculator page lists them in this order and opens `?type=<key>` directly.
+
 ### POST `/calculators/saved`
 `{ "type": "limitation", "inputs": {...} }` → `201 { "id": "...", "alreadySaved": false }`. The server works the result out again from the inputs, so a result sent by the browser is never stored. The calculation becomes a Vault item of kind `calculation` (shown in the Vault under Calculations, with its own page and PDF).
 ### GET `/calculators/saved/:id/summary`
@@ -751,7 +766,6 @@ Tells the app what to cache for offline use (respecting the user's `offline.auto
 ```json
 { "documents": [ { "id": "doc_1", "updatedAt": "...", "url": "signed url" } ],
   "briefs": [ { "id": "brf_1", "updatedAt": "..." } ],
-  "guides": [ { "id": "res_tenancy", "updatedAt": "..." } ] }
 ```
 
 ### POST `/sync`

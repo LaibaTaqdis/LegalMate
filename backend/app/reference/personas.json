@@ -1,0 +1,471 @@
+{
+  "verifiedOn": "2026-11-11",
+  "note": "Each card opens a chat with a ready question, so the answer is written from the law library with its sources. The Acts named on a card were checked to be in the library on the date above; a card never states the law itself.",
+  "personas": [
+    {
+      "key": "young_adult",
+      "userType": "Young adult",
+      "title": "For young adults",
+      "subtitle": "Know your rights: renting, first jobs, police, online safety and marriage.",
+      "topics": [
+        {
+          "id": "ya_rent",
+          "title": "Renting a room or flat",
+          "text": "What your landlord can and cannot do.",
+          "icon": "house",
+          "action": "ask",
+          "question": "I am a young person renting a room or flat. What are my rights as a tenant, and what can my landlord not do?",
+          "basis": [
+            "Punjab Rented Premises Act, 2009",
+            "Islamabad Rent Restriction Ordinance, 2001"
+          ]
+        },
+        {
+          "id": "ya_job",
+          "title": "My first job",
+          "text": "Notice, wages and being dismissed.",
+          "icon": "briefcase",
+          "action": "ask",
+          "question": "I am starting my first job. What notice, wages and protection against dismissal does the law give me?",
+          "basis": [
+            "Industrial and Commercial Employment (Standing Orders) Ordinance, 1968",
+            "Punjab Labour Code, 2026"
+          ]
+        },
+        {
+          "id": "ya_police",
+          "title": "Police stop or arrest",
+          "text": "Your rights if you are stopped or arrested.",
+          "icon": "shield",
+          "action": "ask",
+          "question": "What are my rights if the police stop me, search me or arrest me?",
+          "basis": [
+            "Code of Criminal Procedure, 1898",
+            "Constitution of the Islamic Republic of Pakistan, 1973"
+          ]
+        },
+        {
+          "id": "ya_cyber",
+          "title": "Online harassment and blackmail",
+          "text": "What you can do and where to complain.",
+          "icon": "laptop",
+          "action": "ask",
+          "question": "Someone is harassing or blackmailing me online. What can I do under Pakistani law?",
+          "basis": [
+            "Prevention of Electronic Crimes Act, 2016"
+          ]
+        },
+        {
+          "id": "ya_work_harass",
+          "title": "Harassment at work",
+          "text": "The complaint process at your workplace.",
+          "icon": "alert",
+          "action": "ask",
+          "question": "I am being harassed at my workplace. What does the law say and how do I complain?",
+          "basis": [
+            "Protection Against Harassment of Women at the Workplace Act, 2010 (Punjab)"
+          ]
+        },
+        {
+          "id": "ya_lend",
+          "title": "Money lent to a friend",
+          "text": "Written proof, cheques and time limits.",
+          "icon": "banknote",
+          "action": "ask",
+          "question": "I lent money to a friend and they are not paying it back. What can I do, and does a cheque or a time limit matter?",
+          "basis": [
+            "Contract Act, 1872",
+            "Negotiable Instruments Act, 1881",
+            "Limitation Act, 1908"
+          ]
+        },
+        {
+          "id": "ya_marriage",
+          "title": "Marriage: age and consent",
+          "text": "Legal age and what needs to be in place.",
+          "icon": "heart",
+          "action": "ask",
+          "question": "What is the legal age of marriage in Pakistan and what does the law say about consent?",
+          "basis": [
+            "Child Marriage Restraint Act, 1929",
+            "Punjab Child Marriage Restraint Act, 2026",
+            "Islamabad Capital Territory Child Marriage Restraint Act, 2025"
+          ]
+        },
+        {
+          "id": "ya_doc",
+          "title": "Check an agreement before you sign",
+          "text": "Upload a rental, job or loan agreement.",
+          "icon": "file",
+          "action": "analyse",
+          "link": "/analysis/new",
+          "basis": []
+        }
+      ],
+      "calculators": [
+        {
+          "key": "compensation",
+          "why": "What you may be owed when a job ends."
+        },
+        {
+          "key": "limitation",
+          "why": "How long you have to act on a claim."
+        },
+        {
+          "key": "inheritance",
+          "why": "A family share after a death."
+        }
+      ]
+    },
+    {
+      "key": "student",
+      "userType": "Student",
+      "title": "For students",
+      "subtitle": "Hostels, internships, campus safety, online life and your own work.",
+      "topics": [
+        {
+          "id": "st_hostel",
+          "title": "Hostel or rented room",
+          "text": "Deposits, rent and being asked to leave.",
+          "icon": "house",
+          "action": "ask",
+          "question": "I am a student renting a room or hostel. What are my rights about rent, the deposit and being asked to leave?",
+          "basis": [
+            "Punjab Rented Premises Act, 2009",
+            "Islamabad Rent Restriction Ordinance, 2001"
+          ]
+        },
+        {
+          "id": "st_intern",
+          "title": "Internship or part-time job",
+          "text": "Pay, notice and written terms.",
+          "icon": "briefcase",
+          "action": "ask",
+          "question": "I am a student doing an internship or a part-time job. What do I have a right to, such as pay, written terms and notice?",
+          "basis": [
+            "Industrial and Commercial Employment (Standing Orders) Ordinance, 1968",
+            "Punjab Labour Code, 2026"
+          ]
+        },
+        {
+          "id": "st_campus",
+          "title": "Harassment on campus",
+          "text": "Where the law protects you and how to complain.",
+          "icon": "alert",
+          "action": "ask",
+          "question": "I am being harassed at my university or college. What does the law say and how do I make a complaint?",
+          "basis": [
+            "Protection Against Harassment of Women at the Workplace Act, 2010 (Punjab)"
+          ]
+        },
+        {
+          "id": "st_cyber",
+          "title": "Cyber crime and blackmail",
+          "text": "Fake accounts, leaked photos, threats.",
+          "icon": "laptop",
+          "action": "ask",
+          "question": "Someone made a fake account or is threatening to leak my photos online. What can I do under Pakistani law?",
+          "basis": [
+            "Prevention of Electronic Crimes Act, 2016"
+          ]
+        },
+        {
+          "id": "st_copyright",
+          "title": "Using other people's work",
+          "text": "Copyright, projects and your own work.",
+          "icon": "book",
+          "action": "ask",
+          "question": "How does copyright law apply to my university projects, and who owns the work I create?",
+          "basis": [
+            "Copyright Ordinance, 1962"
+          ]
+        },
+        {
+          "id": "st_police",
+          "title": "Police stop or arrest",
+          "text": "Your rights if you are stopped or arrested.",
+          "icon": "shield",
+          "action": "ask",
+          "question": "What are my rights if the police stop me, search me or arrest me?",
+          "basis": [
+            "Code of Criminal Procedure, 1898",
+            "Constitution of the Islamic Republic of Pakistan, 1973"
+          ]
+        },
+        {
+          "id": "st_doc",
+          "title": "Check an agreement before you sign",
+          "text": "Upload a hostel, internship or loan agreement.",
+          "icon": "file",
+          "action": "analyse",
+          "link": "/analysis/new",
+          "basis": []
+        }
+      ],
+      "calculators": [
+        {
+          "key": "limitation",
+          "why": "How long you have to claim a deposit or act on a problem."
+        },
+        {
+          "key": "compensation",
+          "why": "What you may be owed when an internship or job ends."
+        }
+      ]
+    },
+    {
+      "key": "business",
+      "userType": "Business owner (SME)",
+      "title": "For business owners",
+      "subtitle": "Contracts, staff, getting paid and the checks every small business should make.",
+      "topics": [
+        {
+          "id": "bz_form",
+          "title": "Sole owner, partnership or company?",
+          "text": "How the business forms differ.",
+          "icon": "building",
+          "action": "ask",
+          "question": "What is the difference between a partnership, a limited liability partnership and a private limited company in Pakistan, and how is each one formed?",
+          "basis": [
+            "Partnership Act, 1932",
+            "Limited Liability Partnership Act, 2017",
+            "Companies Act, 2017"
+          ]
+        },
+        {
+          "id": "bz_staff",
+          "title": "Employing staff",
+          "text": "Hiring, wages, notice and termination.",
+          "icon": "users",
+          "action": "ask",
+          "question": "I own a small business in Punjab. What are my legal duties as an employer about hiring, wages, working conditions, notice and termination?",
+          "basis": [
+            "Industrial and Commercial Employment (Standing Orders) Ordinance, 1968",
+            "Punjab Labour Code, 2026",
+            "Punjab Shops and Establishments Ordinance, 1969"
+          ]
+        },
+        {
+          "id": "bz_contract",
+          "title": "Contracts with customers and suppliers",
+          "text": "What makes a contract valid and what if it is broken.",
+          "icon": "file",
+          "action": "ask",
+          "question": "What makes a business contract valid in Pakistan and what can I do if the other side breaks it?",
+          "basis": [
+            "Contract Act, 1872"
+          ]
+        },
+        {
+          "id": "bz_cheque",
+          "title": "Bounced cheque or unpaid invoice",
+          "text": "Your options and the time limit.",
+          "icon": "banknote",
+          "action": "ask",
+          "question": "A customer's cheque bounced or an invoice is unpaid. What can I do, and how long do I have to take action?",
+          "basis": [
+            "Negotiable Instruments Act, 1881",
+            "Limitation Act, 1908"
+          ]
+        },
+        {
+          "id": "bz_ip",
+          "title": "Protecting your work and designs",
+          "text": "Copyright and patents for a small business.",
+          "icon": "shield",
+          "action": "ask",
+          "question": "How can a small business protect its original work, such as content, software or designs, under Pakistani law?",
+          "basis": [
+            "Copyright Ordinance, 1962",
+            "Patents Ordinance, 2000"
+          ]
+        },
+        {
+          "id": "bz_consumer",
+          "title": "Customer complaints",
+          "text": "Your duties under consumer protection law.",
+          "icon": "message",
+          "action": "ask",
+          "question": "What are a seller's duties under consumer protection law in the Punjab, and how do customer complaints work?",
+          "basis": [
+            "Punjab Consumer Protection Act, 2005"
+          ]
+        },
+        {
+          "id": "bz_arb",
+          "title": "Settling a dispute without court",
+          "text": "Arbitration in a business contract.",
+          "icon": "scale",
+          "action": "ask",
+          "question": "How does arbitration work for a business dispute in Pakistan: an arbitration agreement, appointing an arbitrator and enforcing the award?",
+          "basis": [
+            "Arbitration Act, 1940"
+          ]
+        },
+        {
+          "id": "bz_doc",
+          "title": "Check a contract for risks",
+          "text": "Upload a contract and see the risks.",
+          "icon": "file",
+          "action": "analyse",
+          "link": "/analysis/new",
+          "basis": []
+        },
+        {
+          "id": "bz_tax",
+          "title": "Tax registration and filing",
+          "text": "Not in our law library: use the FBR.",
+          "icon": "landmark",
+          "action": "link",
+          "link": "https://www.fbr.gov.pk",
+          "basis": []
+        }
+      ],
+      "checklist": [
+        {
+          "id": "ck_form",
+          "text": "Choose your business form and register it where it needs registering (company or limited liability partnership at the SECP; a written partnership deed for a partnership).",
+          "ask": "bz_form"
+        },
+        {
+          "id": "ck_staff",
+          "text": "Give every employee written terms and check your duties as an employer.",
+          "ask": "bz_staff"
+        },
+        {
+          "id": "ck_contract",
+          "text": "Put important deals with customers and suppliers in writing, and keep a signed copy.",
+          "ask": "bz_contract"
+        },
+        {
+          "id": "ck_tax",
+          "text": "Check your tax registration and filing with the FBR (outside our law library).",
+          "link": "https://www.fbr.gov.pk"
+        },
+        {
+          "id": "ck_records",
+          "text": "Keep invoices, receipts and contracts together, for example in your Legal Vault.",
+          "link": "/vault"
+        },
+        {
+          "id": "ck_disputes",
+          "text": "Decide how disputes will be settled, and note the time limits for chasing unpaid money.",
+          "ask": "bz_cheque"
+        }
+      ],
+      "calculators": [
+        {
+          "key": "limitation",
+          "why": "How long you have to chase unpaid money."
+        },
+        {
+          "key": "compensation",
+          "why": "Notice pay and gratuity when staff leave."
+        },
+        {
+          "key": "stamp",
+          "why": "Stamp duty on a Punjab sale deed."
+        },
+        {
+          "key": "property",
+          "why": "Taxes on buying or selling a shop or office."
+        }
+      ]
+    },
+    {
+      "key": "citizen",
+      "userType": "Citizen",
+      "title": "Everyday legal questions",
+      "subtitle": "The questions people ask most.",
+      "topics": [
+        {
+          "id": "ct_rent",
+          "title": "Tenant and landlord",
+          "text": "Rent, eviction and the deposit.",
+          "icon": "house",
+          "action": "ask",
+          "question": "What are the rights of a tenant and a landlord in Pakistan about rent, eviction and the security deposit?",
+          "basis": [
+            "Punjab Rented Premises Act, 2009",
+            "Islamabad Rent Restriction Ordinance, 2001"
+          ]
+        },
+        {
+          "id": "ct_job",
+          "title": "Losing a job",
+          "text": "Notice, dues and termination.",
+          "icon": "briefcase",
+          "action": "ask",
+          "question": "My employer ended my job. What notice, dues and protection does the law give me?",
+          "basis": [
+            "Industrial and Commercial Employment (Standing Orders) Ordinance, 1968",
+            "Punjab Labour Code, 2026"
+          ]
+        },
+        {
+          "id": "ct_police",
+          "title": "Police and FIR",
+          "text": "Getting an FIR registered and your rights.",
+          "icon": "shield",
+          "action": "ask",
+          "question": "The police are not registering my FIR. What can I do and what are my rights?",
+          "basis": [
+            "Code of Criminal Procedure, 1898",
+            "Police Order, 2002"
+          ]
+        },
+        {
+          "id": "ct_consumer",
+          "title": "Consumer complaint",
+          "text": "A faulty product or poor service.",
+          "icon": "message",
+          "action": "ask",
+          "question": "I bought a faulty product or got a poor service. What are my rights as a consumer and where do I complain?",
+          "basis": [
+            "Punjab Consumer Protection Act, 2005",
+            "Islamabad Consumers Protection Act, 1995"
+          ]
+        },
+        {
+          "id": "ct_inherit",
+          "title": "Family inheritance",
+          "text": "Who gets what after a death.",
+          "icon": "users",
+          "action": "ask",
+          "question": "How is a family inheritance divided in Pakistan, and how do I get my share?",
+          "basis": [
+            "Enforcement of Women's Property Rights Act, 2020",
+            "Muslim Family Laws Ordinance, 1961"
+          ]
+        },
+        {
+          "id": "ct_doc",
+          "title": "Understand a legal document",
+          "text": "Upload a notice, agreement or letter.",
+          "icon": "file",
+          "action": "analyse",
+          "link": "/analysis/new",
+          "basis": []
+        }
+      ],
+      "calculators": [
+        {
+          "key": "limitation",
+          "why": "How long you have to act on a claim."
+        },
+        {
+          "key": "inheritance",
+          "why": "How an estate is divided under Hanafi law."
+        },
+        {
+          "key": "compensation",
+          "why": "What you may be owed when a job ends."
+        },
+        {
+          "key": "property",
+          "why": "Taxes on buying or selling property."
+        }
+      ]
+    }
+  ]
+}

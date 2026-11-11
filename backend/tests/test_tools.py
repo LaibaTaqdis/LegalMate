@@ -321,3 +321,48 @@ def test_dashboard_without_storage_says_files_are_off(pg_url):
     with TestClient(create_app(make_settings(pg_url), engine=FakeEngine())) as c:
         _, h = signup(c)
         assert c.get(f"{A}/dashboard", headers=h).json()["vault"]["filesEnabled"] is False
+
+
+# ------------------------------------------------------------------------------------------------ "For you" (young adult, student, business, citizen)
+def test_persona_content_is_well_formed():
+    from urllib.parse import urlparse
+    from app import personas
+    out = personas.for_you(None)
+    keys = [p["key"] for p in out["personas"]]
+    assert keys == ["young_adult", "student", "business", "citizen"] and out["verifiedOn"] and out["note"]
+    for p in out["personas"]:
+        ids = [t["id"] for t in p["topics"]]
+        assert len(ids) == len(set(ids)) and 4 <= len(ids) <= 10
+        for t in p["topics"]:
+            assert t["title"] and t["text"] and t["action"] in ("ask", "analyse", "link")
+            if t["action"] == "ask":
+                assert len(t["question"]) > 30 and t["basis"], t["id"]             # every question names the Acts it was checked against
+            else:
+                assert t["link"] and t["question"] is None
+                if t["action"] == "link":
+                    assert urlparse(t["link"]).scheme == "https"
+        for c in p["checklist"]:
+            assert c["text"] and (c["question"] or c["link"]), c["id"]
+    assert [c["id"] for c in out["personas"][2]["checklist"]] and not out["personas"][0]["checklist"]
+    # the tax card does not pretend our law library covers tax
+    tax = next(t for t in out["personas"][2]["topics"] if t["id"] == "bz_tax")
+    assert tax["action"] == "link" and "FBR" in tax["text"]
+
+
+def test_the_section_follows_the_profile_user_type():
+    from app import personas
+    assert [personas.selected_for(x) for x in ("Young adult", "Student", "Business owner (SME)", "Citizen", None, "Something else")] == \
+        ["young_adult", "student", "business", "citizen", "citizen", "citizen"]
+
+
+def test_dashboard_for_you_and_risk_preview(client):
+    _, h = signup(client)
+    d = client.get(f"{A}/dashboard", headers=h).json()
+    assert d["forYou"]["selected"] == "citizen" and len(d["forYou"]["personas"]) == 4 and d["riskPreview"] == []
+    body = {"province": "Punjab", "city": "Lahore", "userType": "Student", "employmentStatus": "Student", "roles": ["Tenant"], "ageBand": "18-24",
+            "maritalStatus": "Single", "language": "en", "interests": []}
+    assert client.put(f"{A}/users/me/profile", json=body, headers=h).status_code == 200
+    assert client.get(f"{A}/dashboard", headers=h).json()["forYou"]["selected"] == "student"
+    body["userType"] = "Business owner (SME)"
+    client.put(f"{A}/users/me/profile", json=body, headers=h)
+    assert client.get(f"{A}/dashboard", headers=h).json()["forYou"]["selected"] == "business"

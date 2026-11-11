@@ -568,9 +568,10 @@ export default function Chat() {
   }
 
   // Search from the top bar lands here with ?q=
+  const startedFromQuery = useRef(false)           // React runs effects twice in development: one ?q= must start one conversation
   useEffect(() => {
     const q = params.get('q')
-    if (q) { setParams({}, { replace: true }); startConversation(q) }
+    if (q && !startedFromQuery.current) { startedFromQuery.current = true; setParams({}, { replace: true }); startConversation(q) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

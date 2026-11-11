@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   AlertTriangle, ArrowRight, BadgeCheck, Calculator as CalcIcon, CheckCircle2, ChevronRight, Clock3, Download, FileText, House, Info,
   Landmark, Lightbulb, Loader2, RotateCcw, Scale, ShieldCheck, Users, Save
@@ -108,8 +108,15 @@ export default function Calculator() {
 function CalculatorPage({ meta }) {
   const navigate = useNavigate()
   const { toast } = useUI()
-  const [key, setKey] = useState('limitation')
-  const [values, setValues] = useState(() => initial('limitation', meta))
+  const [params] = useSearchParams()
+  // The calculators are ranked for the kind of user (Personalise): recommended ones first, each with a line on why. ?type= opens one directly.
+  const ranked = meta.ranked || []
+  const why = Object.fromEntries(ranked.filter(r => r.recommended).map(r => [r.key, r.why]))
+  const order = [...new Set([...ranked.map(r => r.key), ...Object.keys(CALCS)])].filter(k => CALCS[k])
+  const wanted = params.get('type')
+  const first = CALCS[wanted] ? wanted : order[0]
+  const [key, setKey] = useState(first)
+  const [values, setValues] = useState(() => initial(first, meta))
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
   const [calculating, setCalculating] = useState(false)
@@ -170,11 +177,11 @@ function CalculatorPage({ meta }) {
         <aside className="card calc-cats">
           <h2 className="cb-h2">Calculator Categories</h2>
           <ul>
-            {Object.entries(CALCS).map(([k, v]) => (
+            {order.map(k => [k, CALCS[k]]).map(([k, v]) => (
               <li key={k}>
                 <button className={key === k ? 'active' : ''} onClick={() => pick(k)}>
                   <v.icon size={28} strokeWidth={1.6} />
-                  <span><b>{v.name}</b><small>{v.sub}</small></span>
+                  <span><b>{v.name}{why[k] && <em className="calc-reco">For you</em>}</b><small>{why[k] || v.sub}</small></span>
                   {key === k && <ChevronRight size={20} />}
                 </button>
               </li>

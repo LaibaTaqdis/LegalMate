@@ -11,6 +11,7 @@ import { useAuth } from '../context/AuthContext'
 import { useQuery } from '../hooks/useApi'
 import { dashboardService } from '../api/services/dashboardService'
 import { formatBytes, formatDate, formatTime } from '../utils/format'
+import ForYou from './dashboard/ForYou'
 
 const QUICK = [
   { icon: MessageSquareText, tone: 'blue', title: 'Ask LegalMate', text: 'Get clear, source-backed answers to your legal questions.', cta: 'Start Chatting', to: '/chat' },
@@ -54,12 +55,13 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const [tab, setTab] = useState('All')
+  const [allHolidays, setAllHolidays] = useState(false)
   const g = greeting()
   const query = useQuery(signal => dashboardService.get(signal), [])
 
   if (!query.data) return <QueryBoundary query={query} skeleton={<PageSkeleton cards={4} rows={2} />}>{() => null}</QueryBoundary>
 
-  const { activity, vault, resources, holidays } = query.data
+  const { activity, vault, resources, holidays, forYou, riskPreview } = query.data
   const rows = tab === 'All' ? activity : activity.filter(a => ACTIVITY_STYLE[a.type]?.tab === tab)
   const vaultSegments = vault.breakdown.map(b => ({ label: b.label, value: b.bytes, color: VAULT_COLORS[b.category] || '#cbd5e1' }))
 
@@ -91,6 +93,8 @@ export default function Dashboard() {
           </Link>
         ))}
       </div>
+
+      {forYou && <ForYou data={forYou} risk={riskPreview} userId={user?.id} />}
 
       <div className="dash-mid">
         <section className="card card-pad dash-activity">
@@ -155,14 +159,13 @@ export default function Dashboard() {
               const body = (
                 <>
                   <span className={`icon-tile tile-${s.tone} tile-md`}><s.icon /></span>
-                  <b>{r.title}</b>
-                  <span>{r.summary}</span>
-                  <span className="link small">{external ? <>Open website <ExternalLink size={14} /></> : <>Read More <ArrowRight size={14} /></>}</span>
+                  <div><b>{r.title}</b><span>{r.summary}</span></div>
+                  {external ? <ExternalLink size={15} /> : <ArrowRight size={15} />}
                 </>
               )
               return external
-                ? <a href={r.link} key={r.id} className="res-card" target="_blank" rel="noopener noreferrer">{body}</a>
-                : <Link to={r.link} key={r.id} className="res-card">{body}</Link>
+                ? <a href={r.link} key={r.id} className="res-card res-compact" target="_blank" rel="noopener noreferrer">{body}</a>
+                : <Link to={r.link} key={r.id} className="res-card res-compact">{body}</Link>
             })}
           </div>
         </section>
@@ -172,7 +175,7 @@ export default function Dashboard() {
             <h2 className="card-title">Court Holidays &amp; Vacations</h2>
           </div>
           <ul className="dl-list">
-            {holidays.items.map(h => {
+            {(allHolidays ? holidays.items : holidays.items.slice(0, 3)).map(h => {
               const start = parseDay(h.start)
               const [label, tone] = HOLIDAY_STATUS[h.status] || [h.status, 'gray']
               return (
@@ -189,7 +192,8 @@ export default function Dashboard() {
             })}
           </ul>
           {!holidays.items.length && <EmptyState title="No upcoming court holidays on record" />}
-          <p className="dl-note">{holidays.note}{holidays.notYetAnnounced ? ` ${holidays.notYetAnnounced}` : ''}{holidays.verifiedOn ? ` Collected on ${formatDate(holidays.verifiedOn)}.` : ''}</p>
+          {holidays.items.length > 3 && <button type="button" className="link small dl-more" onClick={() => setAllHolidays(a => !a)}>{allHolidays ? 'Show fewer' : `Show all ${holidays.items.length}`}</button>}
+          <details className="dl-note"><summary>Where these dates come from</summary><p>{holidays.note}{holidays.notYetAnnounced ? ` ${holidays.notYetAnnounced}` : ''}{holidays.verifiedOn ? ` Collected on ${formatDate(holidays.verifiedOn)}.` : ''}</p></details>
         </section>
 
         <section className="card card-pad dash-wa">
