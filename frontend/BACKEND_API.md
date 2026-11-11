@@ -348,7 +348,9 @@ Assistant message (structured answer):
   "intro":   ["In general, your landlord cannot increase the rent ... unless ", { "b": "both parties" }, " agree. ", { "cite": 1 }],
   "lawTitle": "What the law generally says",
   "law":     ["Under the Rent Act, 2009, ... ", { "cite": 1 }, " ", { "cite": 2 }],
-  "steps":   [["Review your rental agreement for any rent increase clause."], ["... ", { "cite": 3 }]],
+  "assumptions": "I assumed you are the tenant in Punjab.",          // optional: what the answer had to assume (empty string when nothing)
+  "steps":   [["Review your rental agreement for any rent increase clause."], ["... ", { "cite": 3 }]],   // 3 to 6 steps
+  "prepare": ["Your rent receipts", "The notice, with dates"],        // optional: up to 4 things to keep ready (plain text, no legal claims)
   "important": "Do not stop paying rent without legal advice...",
   "outro":   "If you share your city, I can also guide you on local rules.",
   "sources": [
@@ -367,10 +369,12 @@ Other assistant message kinds (the UI renders each differently):
 // kind "clarify": the question was too general. Show the options as tappable chips; the user's choice is sent as an ordinary next message.
 { "id": "msg_3", "role": "assistant", "kind": "clarify", "intro": "To give you accurate guidance I need a little more information...",
   "questions": [ { "id": "q1", "text": "Are you the tenant or the landlord?", "options": ["Tenant", "Landlord"] } ], "createdAt": "..." }
+// Up to 3 questions with 2 to 5 options each. The options never include "Other": the UI adds its own "Other..." chip that opens a blank text box, and a
+// "Skip the questions and answer anyway" link. The answers are sent as one ordinary user message ("<question> <answer> <question> <answer>").
 // kind "info": a plain reply with no sources (greeting, out of scope, nothing found in the database).
 { "id": "msg_4", "role": "assistant", "kind": "info", "reason": "greeting|out_of_scope|unclear|no_source", "text": "Hello! I can explain Pakistani law...", "createdAt": "..." }
 ```
-At most one round of clarifying questions is asked per conversation; after the user answers, the assistant always answers.
+The assistant asks on a FIRST message that leaves out two or more decisive facts (who the user is in the matter, what happened, the stage, the place when the law differs). It asks at most one round per conversation; after the user answers (or skips), it always answers and states its assumptions.
 **Rich text** (`intro`, `law`, each item in `steps`) is an array of plain strings, `{ "b": "bold text" }` and `{ "cite": <source id> }`. Citation numbers must match `sources[].id`. Clicking a citation opens the Sources panel on that source.
 
 **Confidence** values are percentages (0-100). The UI labels 80 and above as "High Confidence" and 60-79 as "Medium Confidence". Compute them from your retrieval/verification pipeline:

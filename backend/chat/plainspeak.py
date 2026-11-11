@@ -41,11 +41,13 @@ def plain(text: str) -> str:
 def plain_answer(ans: dict) -> dict:
     """The model's answer JSON with every user-visible string cleaned (the `used` quotes are the law's own words and stay untouched)."""
     clean = dict(ans)
-    for k in ("intro", "law", "law_title", "important", "outro"):
+    for k in ("assumptions", "intro", "law", "law_title", "important", "outro"):
         if isinstance(clean.get(k), str):
             clean[k] = plain(clean[k])
     if isinstance(clean.get("steps"), list):
         clean["steps"] = [plain(s) if isinstance(s, str) else s for s in clean["steps"]]
+    if isinstance(clean.get("prepare"), list):
+        clean["prepare"] = [plain(s) if isinstance(s, str) else s for s in clean["prepare"]]
     if isinstance(clean.get("follow_ups"), list):
         clean["follow_ups"] = [plain(s) if isinstance(s, str) else s for s in clean["follow_ups"]]
     return clean

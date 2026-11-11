@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { AlertTriangle, Download, ListChecks, FileText, Loader2, MessageCircleMore, Pencil, RotateCcw, Star, Trash2 } from 'lucide-react'
+import { AlertTriangle, ClipboardList, Download, ListChecks, FileText, Loader2, MessageCircleMore, Pencil, RotateCcw, Star, Trash2 } from 'lucide-react'
 import { Breadcrumb, Modal } from '../components/common'
 import { VaultActivity, VaultNotes } from '../components/VaultParts'
 import { useUI } from '../components/UIContext'
@@ -64,6 +64,7 @@ function SavedAnswer({ content }) {
     <>
       {content.question && <section className="card vi-q"><small>Your question</small><p dir="auto">{content.question}</p></section>}
       <section className="card vi-answer-card answer" dir={dir}>
+        {a.assumptions && <p className="answer-assume"><span><b>{T.assumed}</b> {a.assumptions}</span></p>}
         <p><Segs parts={a.intro} onCite={cite} /></p>
         {a.law?.length > 0 && <><h4><FileText size={19} /> {a.lawTitle}</h4><p><Segs parts={a.law} onCite={cite} /></p></>}
         {a.steps?.length > 0 && (
@@ -72,6 +73,7 @@ function SavedAnswer({ content }) {
             <ol className="answer-steps">{a.steps.map((s, i) => <li key={i}><span>{i + 1}</span><p><Segs parts={s} onCite={cite} /></p></li>)}</ol>
           </>
         )}
+        {a.prepare?.length > 0 && <><h4><ClipboardList size={19} /> {T.prepare}</h4><ul className="answer-prepare">{a.prepare.map((x, i) => <li key={i}>{x}</li>)}</ul></>}
         {a.important && <div className="answer-important"><AlertTriangle size={22} /><div><b>{T.important}</b><p>{a.important}</p></div></div>}
         {a.outro && <p>{a.outro}</p>}
         {a.disclaimer && <p className="muted small">{a.disclaimer}</p>}

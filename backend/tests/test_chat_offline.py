@@ -333,3 +333,30 @@ if __name__ == "__main__":
         t()
         print("ok  ", t.__name__)
     print(f"\n{len(tests)} tests passed (no DeepSeek calls were made)")
+
+
+def test_clarification_asks_up_to_three_questions_and_never_offers_other():
+    qs = [{"text": "Q1?", "options": ["Tenant", "Landlord", "Other", "something else", "Agent", "A", "B"]},
+          {"text": "Q2?", "options": ["Not yet", "Notice received", "Case filed"]},
+          {"text": "Q3?", "options": ["Lahore", "Islamabad"]},
+          {"text": "Q4 is one too many?", "options": ["x", "y"]},
+          ]
+    llm = ScriptedLLM({**ANALYSIS, "needs_clarification": True, "questions": qs})
+    out = ChatEngine(FakeKB([passage(1)]), llm).respond("I need help with my house")
+    m = out["message"]
+    assert m["kind"] == "clarify" and [q["id"] for q in m["questions"]] == ["q1", "q2", "q3"]
+    assert m["questions"][0]["options"] == ["Tenant", "Landlord", "Agent", "A", "B"]       # the app adds its own "Other" box; at most 5 options
+    # a question with fewer than two tappable options is dropped, and with none left the engine just answers
+    llm = ScriptedLLM({**ANALYSIS, "needs_clarification": True, "questions": [{"text": "Free text?", "options": ["Other"]}]}, ANSWER)
+    out = ChatEngine(FakeKB([passage(1)]), llm).respond("I need help with my house")
+    assert out["message"]["kind"] == "answer"
+
+
+def test_answer_carries_assumptions_and_a_checklist():
+    ans = {**ANSWER, "assumptions": "I assumed you are the tenant in Punjab [[1]].", "prepare": ["Your rent receipts", "The notice, if any", "", 5, "Names of witnesses", "x", "y"]}
+    out = ChatEngine(FakeKB([passage(1)]), ScriptedLLM(ANALYSIS, ans)).respond("My landlord wants to evict me")
+    m = out["message"]
+    assert m["assumptions"] == "I assumed you are the tenant in Punjab."
+    assert m["prepare"] == ["Your rent receipts", "The notice, if any", "Names of witnesses", "x"]       # text only, at most four
+    out = ChatEngine(FakeKB([passage(1)]), ScriptedLLM(ANALYSIS, ANSWER)).respond("My landlord wants to evict me")
+    assert out["message"]["assumptions"] == "" and out["message"]["prepare"] == []            # old-shaped answers still work

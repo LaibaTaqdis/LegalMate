@@ -28,6 +28,8 @@ from .verify import verify
 DISCLAIMER = tr("disclaimer", "en")          # the English texts, kept as constants; every message uses tr(key, language)
 EMERGENCY = tr("emergency", "en")
 GREETING = re.compile(r"^\s*(hi|hello|hey|salam|salaam|assalam[\w\s\-']*|aoa|good\s(morning|afternoon|evening)|thanks?(\s+you)?|thank\s*you|shukriya|jazak\w*)\W*$", re.I)
+OTHER_WORDS = {"other", "others", "something else", "none of these", "kuch aur", "doosra", "کچھ اور", "دیگر"}      # the app adds its own "Other" box
+ANSWER_TOKENS = 3200            # Urdu script costs many tokens per word; a cut-off JSON answer cannot be read at all
 INTENTS = {"legal_question", "follow_up", "document_question", "greeting", "out_of_scope", "unclear"}
 TAGS = {"Property Law", "Family Law", "Criminal Law", "Labour & Employment", "Contract Law", "Consumer Rights",
         "Constitutional Rights", "Civil Procedure", "Cyber Law", "Other"}
@@ -114,7 +116,7 @@ class ChatEngine:
         msgs = prompts.analyser_messages(message, history=history, profile_line=profile_line(profile),
                                          ui_language=ui_language, has_document=has_document)
         try:
-            a = parse_json(self.llm.complete(msgs, tag="analyse", max_tokens=500).text)
+            a = parse_json(self.llm.complete(msgs, tag="analyse", max_tokens=900).text)
         except (ValueError, KeyError):
             a = {}
         a["intent"] = a.get("intent") if a.get("intent") in INTENTS else "legal_question"
@@ -126,10 +128,11 @@ class ChatEngine:
         a["emergency"] = bool(a.get("emergency"))
         rounds = sum(1 for h in history if h.get("kind") == "clarify")
         qs_ok = []
-        for q in (a.get("questions") or [])[:2]:
+        for q in (a.get("questions") or [])[:3]:
             if isinstance(q, dict) and q.get("text"):
-                opts = [str(o) for o in (q.get("options") or [])][:4]
-                qs_ok.append({"id": f"q{len(qs_ok) + 1}", "text": str(q["text"]), "options": opts})
+                opts = [str(o).strip() for o in (q.get("options") or []) if str(o).strip() and str(o).strip().lower() not in OTHER_WORDS][:5]
+                if len(opts) >= 2:                                       # a question with nothing to tap is just a sentence: the user can type it in the box below
+                    qs_ok.append({"id": f"q{len(qs_ok) + 1}", "text": str(q["text"]).strip(), "options": opts})
         a["questions"] = qs_ok
         a["needs_clarification"] = bool(a.get("needs_clarification")) and bool(qs_ok) and rounds < self.max_clarify_rounds \
             and a["intent"] in ("legal_question", "follow_up", "document_question")
@@ -216,7 +219,7 @@ class ChatEngine:
                                        passages=passages, document_note=doc_note)
         status("writing_answer")
         try:
-            ans = parse_json(self.llm.complete(msgs, tag="answer", max_tokens=1400).text)
+            ans = parse_json(self.llm.complete(msgs, tag="answer", max_tokens=ANSWER_TOKENS).text)
         except (BudgetExceeded, CacheMiss, LLMError, ValueError) as e:
             reason, text = _failure_text(e, "error_answer", lang)
             return self._done(self._info(reason, text, lang=lang), meta, t0, conv, error=f"{type(e).__name__}: {e}")
@@ -242,7 +245,7 @@ class ChatEngine:
             status("writing_answer")
             ans2 = parse_json(self.llm.complete(prompts.answer_messages(question, history=hist, profile_line=profile_line(profile),
                                                                        answer_language=answer_lang, passages=p2, document_note=doc_note),
-                                                tag="answer", max_tokens=1400).text)
+                                                tag="answer", max_tokens=ANSWER_TOKENS).text)
         except (BudgetExceeded, CacheMiss, LLMError, ValueError):
             return ans, passages
         meta["second_look"] = {"queries": qs, "helped": bool(ans2.get("sufficient", True))}
@@ -295,7 +298,9 @@ class ChatEngine:
             "role": "assistant", "kind": "answer", "createdAt": _now(), "language": lang, "sufficient": sufficient,
             "intro": to_segments(fix(ans.get("intro", "")), ids), "lawTitle": tr("law_title", lang),
             "law": to_segments(fix(ans.get("law", "")), ids),
-            "steps": [to_segments(fix(s), ids) for s in (ans.get("steps") or [])][:5],
+            "assumptions": strip_markup(fix(ans.get("assumptions", ""))) if isinstance(ans.get("assumptions"), str) else "",
+            "steps": [to_segments(fix(s), ids) for s in (ans.get("steps") or []) if isinstance(s, str)][:6],
+            "prepare": [strip_markup(fix(x)) for x in (ans.get("prepare") or []) if isinstance(x, str) and x.strip()][:4],
             "important": important, "outro": strip_markup(fix(ans.get("outro", ""))),
             "sources": sources, "confidence": conf, "followUps": [str(x) for x in (ans.get("follow_ups") or [])][:2],
             "disclaimer": tr("disclaimer", lang), "feedback": None,

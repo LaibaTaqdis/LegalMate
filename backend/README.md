@@ -122,7 +122,7 @@ python -m evals.run_eval_analyser --plan          # the 114-question analyser ev
 | Message | Calls | What happens |
 |---|---|---|
 | greeting / thanks | 0 | answered locally |
-| vague ("I need help with my property") | 1 | analyser -> up to 2 questions with tappable options (`kind: clarify`); never asks twice |
+| vague ("I need help with my property") | 1 | analyser -> up to 3 questions with 2-5 tappable options (`kind: clarify`); the app adds an "Other" box and a skip link; never asks twice |
 | out of scope / prompt injection | 1 | analyser -> polite redirect (`kind: info`) |
 | legal question | 2 | **analyser** (intent, language, jurisdiction, emergency, title/tag, THREE English search queries) -> retrieval (code) -> **answerer** (JSON, cites passages as `[[n]]`) -> verification (code) |
 

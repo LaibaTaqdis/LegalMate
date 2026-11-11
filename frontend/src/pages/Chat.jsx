@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
-  AlertTriangle, ArrowRight, Bookmark, Briefcase, CalendarDays, CheckCircle2, ChevronDown, Copy, FileText,
+  AlertTriangle, ArrowRight, Bookmark, Briefcase, CalendarDays, CheckCircle2, ChevronDown, ClipboardList, Copy, FileText,
   Flag, Globe, House, Info, ListChecks, Loader2, MessageCircleMore, MessageSquare, Mic, MoreHorizontal, MoreVertical,
   Paperclip, Plus, Search, SendHorizontal, Share, ShoppingCart, SlidersHorizontal, ThumbsDown, ThumbsUp,
   UserRound, UserRoundSearch, Users, X, ScrollText, NotebookText, Trash2, Pin
@@ -282,6 +282,7 @@ function Answer({ m, onCite, onPanel, panel, onAsk }) {
       <div className="msg-bot-body">
         <p className="msg-meta"><b>LegalMate</b> {m.time}</p>
         <div className="answer" dir={m.language === 'ur' ? 'rtl' : 'ltr'} lang={m.language === 'ur' ? 'ur' : undefined}>
+          {m.assumptions && <p className="answer-assume"><Info size={16} /> <span><b>{T.assumed}</b> {m.assumptions}</span></p>}
           <p><Rich parts={m.intro} onCite={onCite} /></p>
           {m.lawTitle && <h4><FileText size={20} /> {m.lawTitle}</h4>}
           {m.law && <p><Rich parts={m.law} onCite={onCite} /></p>}
@@ -291,6 +292,12 @@ function Answer({ m, onCite, onPanel, panel, onAsk }) {
               <ol className="answer-steps">
                 {m.steps.map((s, i) => <li key={i}><span>{i + 1}</span><p><Rich parts={s} onCite={onCite} /></p></li>)}
               </ol>
+            </>
+          )}
+          {m.prepare?.length > 0 && (
+            <>
+              <h4><ClipboardList size={20} /> {T.prepare}</h4>
+              <ul className="answer-prepare">{m.prepare.map((x, i) => <li key={i}>{x}</li>)}</ul>
             </>
           )}
           {m.important && (
@@ -325,17 +332,22 @@ function Answer({ m, onCite, onPanel, panel, onAsk }) {
 }
 
 /* ---------------- Clarifying questions and plain replies ---------------- */
+const OTHER = '__other__'
+
+/** Clarifying questions: tap an option, or choose "Other" and type freely, or skip. One question with a tapped option answers at once. */
 function Clarify({ m, onAsk, answered }) {
   const qs = m.questions || []
   const T = answerText(m.language)
   const [picked, setPicked] = useState({})
-  const ready = qs.length > 0 && qs.every(q => picked[q.id])
-  const send = (map = picked) => onAsk(qs.map(q => `${q.text} ${map[q.id]}`).join(' '))
+  const [typed, setTyped] = useState({})
+  const textOf = (q, map = picked, words = typed) => (map[q.id] === OTHER ? (words[q.id] || '').trim() : map[q.id])
+  const ready = qs.length > 0 && qs.every(q => textOf(q))
+  const needsButton = !answered && (qs.length > 1 || qs.some(q => picked[q.id] === OTHER))
+  const send = (map = picked, words = typed) => onAsk(qs.map(q => `${q.text} ${textOf(q, map, words)}`).join(' '))
   const choose = (q, o) => {
     if (answered) return
-    const next = { ...picked, [q.id]: o }
-    setPicked(next)
-    if (qs.length === 1) send(next)          // one question: tapping an option answers it at once
+    setPicked(p => ({ ...p, [q.id]: o }))
+    if (qs.length === 1 && o !== OTHER) send({ [q.id]: o })          // one question, one tap: answers at once
   }
   return (
     <div className="msg-bot">
@@ -352,13 +364,25 @@ function Clarify({ m, onAsk, answered }) {
                   <button key={o} role="radio" aria-checked={picked[q.id] === o} disabled={answered}
                     className={`ps-chip ${picked[q.id] === o ? 'on' : ''}`} onClick={() => choose(q, o)}>{o}</button>
                 ))}
+                <button role="radio" aria-checked={picked[q.id] === OTHER} disabled={answered}
+                  className={`ps-chip ps-chip-other ${picked[q.id] === OTHER ? 'on' : ''}`} onClick={() => choose(q, OTHER)}>{T.other}…</button>
               </div>
+              {picked[q.id] === OTHER && !answered && (
+                <input className="input clarify-input" autoFocus maxLength={300} value={typed[q.id] || ''} placeholder={T.otherPlaceholder} aria-label={`${q.text} ${T.other}`}
+                  onChange={e => setTyped(t => ({ ...t, [q.id]: e.target.value }))}
+                  onKeyDown={e => { if (e.key === 'Enter' && ready) { e.preventDefault(); send() } }} />
+              )}
             </div>
           ))}
-          {qs.length > 1 && !answered && (
-            <button className="btn btn-orange" disabled={!ready} onClick={() => send()}>{T.carry} <ArrowRight size={16} /></button>
+          {needsButton && (
+            <button className="btn btn-orange clarify-go" disabled={!ready} onClick={() => send()}>{T.carry} <ArrowRight size={16} /></button>
           )}
-          {!answered && <p className="clarify-hint">{T.typeOwn}</p>}
+          {!answered && (
+            <div className="clarify-foot">
+              <button type="button" className="link small" onClick={() => onAsk(T.skipText)}>{T.skip}</button>
+              <p className="clarify-hint">{T.typeOwn}</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

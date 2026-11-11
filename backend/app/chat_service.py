@@ -83,8 +83,10 @@ def run_turn(state: AppState, user: dict, conv_id: str, text: str, language: str
     uid = str(user["id"])
     user_msg = None
     try:
-        engine = state.engine.get()
         history = _history(state, conv_id)
+        if not state.engine.ready and state.engine.enabled:
+            on_status("loading_library")                                         # the library is still loading after a restart: say so instead of a silent wait
+        engine = state.engine.get()
         conv = get_conversation(state, uid, conv_id)
         user_msg = state.db.one("insert into app.messages (conversation_id, user_id, role, kind, content, attachment_ids) "
                                 "values (%s, %s, 'user', 'user', %s, %s::uuid[]) returning id",
